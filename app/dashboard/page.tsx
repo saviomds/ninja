@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Product {
   id: string;
@@ -333,7 +334,9 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-950">
       {/* Top Bar */}
       <div className="bg-gray-900 border-b border-gray-800 px-4 md:px-6 py-4 flex justify-between items-center relative z-20">
-        <h1 className="font-semibold text-xl text-white">Dashboard</h1>
+        <Link href="/" className="font-semibold text-xl text-white">
+          Home
+        </Link>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-4">
