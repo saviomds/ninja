@@ -33,6 +33,13 @@ export default function LoginPage() {
       <div className="bg-gray-900 p-6 rounded-lg shadow w-80 border border-gray-800">
         <h1 className="text-xl font-semibold mb-4 text-white">Login</h1>
 
+        {/* Inline Card Message */}
+        {toast && (
+          <div className={`mb-4 p-3 rounded-md text-sm border ${toast.type === "success" ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}`}>
+            {toast.message}
+          </div>
+        )}
+
         <input
           type="email"
           placeholder="Your email"
@@ -59,14 +66,6 @@ export default function LoginPage() {
         </button>
       </div>
 
-      {/* Toast Message */}
-      {toast && (
-        <div
-          className={`fixed bottom-4 right-4 px-6 py-3 rounded-md shadow-lg text-white z-[100] transition-all ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}
-        >
-          {toast.message}
-        </div>
-      )}
     </div>
     </>
   );

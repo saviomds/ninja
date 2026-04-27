@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Product {
   id: string;
@@ -125,7 +126,7 @@ export default function Home() {
                   <div key={profile.id} className="group bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl p-5 hover:border-indigo-500/50 transition-all duration-300 flex flex-col">
                     <div className="flex items-center gap-4 mb-4">
                       {profile.platform_icon ? (
-                        <img src={profile.platform_icon} alt={profile.platform_name} className="w-12 h-12 rounded-xl object-cover bg-gray-800 border border-gray-700" />
+                        <Image src={profile.platform_icon} alt={profile.platform_name} width={48} height={48} unoptimized className="w-12 h-12 rounded-xl object-cover bg-gray-800 border border-gray-700" />
                       ) : (
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600 flex items-center justify-center text-xl font-bold text-gray-300">
                           {profile.platform_name.charAt(0).toUpperCase()}
@@ -159,12 +160,12 @@ export default function Home() {
                   <div key={product.id} className="group bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 flex flex-col">
                     <div className="aspect-[4/3] w-full bg-gray-800 relative overflow-hidden">
                       {product.image ? (
-                        <img src={product.image} alt={product.name} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" />
+                        <Image src={product.image} alt={product.name} fill unoptimized className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-600">No Image</div>
                       )}
                       <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-full text-sm font-bold border border-gray-700 shadow-lg">
-                        ${product.price}
+                        Rs {product.price}
                       </div>
                     </div>
                     <div className="p-5 flex flex-col flex-1">
