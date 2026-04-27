@@ -104,11 +104,11 @@ export default function Navbar() {
                     <p className="text-sm font-medium text-white truncate">{user.email}</p>
                   </div>
                   <Link
-                    href="/dashboard"
+                    href="/"
                     onClick={() => setIsProfileOpen(false)}
                     className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
                   >
-                    Dashboard
+                    Home
                   </Link>
                   <button
                     onClick={handleLogout}

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
+import { User } from "@supabase/supabase-js";
 
 interface Product {
   id: string;
@@ -36,24 +37,36 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [socialProfiles, setSocialProfiles] = useState<SocialProfile[]>([]);
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAllData = async () => {
-      const [productsRes, socialRes, updatesRes] = await Promise.all([
+      const [productsRes, socialRes, updatesRes, authRes] = await Promise.all([
         supabase.from("products").select("*").order("created_at", { ascending: false }),
         // Only fetch safe fields—excluding email and password!
         supabase.from("social_profiles").select("id, platform_name, platform_icon, profile_link, username, description").order("created_at", { ascending: false }),
         supabase.from("updates").select("*").order("created_at", { ascending: false }),
+        supabase.auth.getUser(),
       ]);
 
       setProducts(productsRes.data || []);
       setSocialProfiles(socialRes.data || []);
       setUpdates(updatesRes.data || []);
+      setUser(authRes.data?.user || null);
       setLoading(false);
     };
 
     fetchAllData();
+
+    // Listen for auth changes (e.g., if they log out via the Navbar)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   return (
@@ -69,8 +82,8 @@ export default function Home() {
         <p className="text-lg text-gray-400 mb-8 max-w-2xl relative z-10">
           A simple platform to manage projects, share work, and stay updated with the latest announcements.
         </p>
-        <Link href="/login" className="relative z-10 bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-200 hover:scale-105 transition-all duration-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-          Get Started
+        <Link href={user ? "/dashboard" : "/login"} className="relative z-10 bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-200 hover:scale-105 transition-all duration-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+          {user ? "Jump In" : "Get Started"}
         </Link>
       </section>
 
