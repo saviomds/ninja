@@ -39,7 +39,6 @@ export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<{ name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -93,14 +92,6 @@ export default function Dashboard() {
 
     setProducts(data || []);
     setLoading(false);
-  };
-
-  const fetchCategories = async () => {
-    const { data } = await supabase
-      .from("categories")
-      .select("name")
-      .order("name", { ascending: true });
-    setCategories(data || []);
   };
 
   const fetchSocialProfiles = async () => {
@@ -157,7 +148,6 @@ export default function Dashboard() {
       await fetchProducts();
       await fetchSocialProfiles();
       await fetchUpdates();
-      await fetchCategories();
     };
 
     getUserAndProducts();
@@ -681,16 +671,13 @@ export default function Dashboard() {
                   value={newProduct.name}
                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                 />
-                <select
-                  className="w-full border border-gray-700 px-3 py-2 rounded-md text-white bg-gray-800 focus:outline-none focus:ring-2 focus:ring-white transition-colors appearance-none"
+                <input
+                  type="text"
+                  placeholder="Category (e.g. Electronics, Fashion)"
+                  className="w-full border border-gray-700 px-3 py-2 rounded-md text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white transition-colors"
                   value={newProduct.category}
                   onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-                >
-                  <option value="" disabled>Select a Category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.name} value={cat.name}>{cat.name}</option>
-                  ))}
-                </select>
+                />
                 <input
                   type="text"
                   placeholder="Image URL"
