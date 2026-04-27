@@ -13,6 +13,7 @@ interface Product {
   image: string;
   price: number;
   stock: number;
+  category?: string;
 }
 
 interface SocialProfile {
@@ -38,6 +39,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<{ name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,6 +58,7 @@ export default function Dashboard() {
     description: "",
     price: "",
     stock: "",
+    category: "",
   });
   
   // Social Media State
@@ -90,6 +93,14 @@ export default function Dashboard() {
 
     setProducts(data || []);
     setLoading(false);
+  };
+
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from("categories")
+      .select("name")
+      .order("name", { ascending: true });
+    setCategories(data || []);
   };
 
   const fetchSocialProfiles = async () => {
@@ -146,6 +157,7 @@ export default function Dashboard() {
       await fetchProducts();
       await fetchSocialProfiles();
       await fetchUpdates();
+      await fetchCategories();
     };
 
     getUserAndProducts();
@@ -160,6 +172,7 @@ export default function Dashboard() {
       description: newProduct.description,
       price: parseFloat(newProduct.price) || 0,
       stock: parseInt(newProduct.stock, 10) || 0,
+      category: newProduct.category,
     };
 
     let error;
@@ -182,7 +195,7 @@ export default function Dashboard() {
       showToast("Error saving product: " + error.message, "error");
     } else {
       setIsModalOpen(false);
-      setNewProduct({ name: "", image: "", description: "", price: "", stock: "" });
+      setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "" });
       setEditingProductId(null);
       showToast("Product saved successfully!", "success");
       fetchProducts();
@@ -196,6 +209,7 @@ export default function Dashboard() {
       description: product.description || "",
       price: product.price.toString(),
       stock: product.stock.toString(),
+      category: product.category || "",
     });
     setEditingProductId(product.id);
     setIsModalOpen(true);
@@ -523,7 +537,7 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold text-white hidden md:block mr-4">Products</h2>
             <button 
               onClick={() => {
-                setNewProduct({ name: "", image: "", description: "", price: "", stock: "" });
+                setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "" });
                 setEditingProductId(null);
                 setIsModalOpen(true);
               }}
@@ -580,6 +594,12 @@ export default function Dashboard() {
                           {expandedDesc[product.id] ? 'Show less' : 'Read more'}
                         </button>
                       )}
+                    </div>
+
+                    <div className="mb-4">
+                      <span className="text-xs font-semibold bg-indigo-500/10 text-indigo-400 px-2 py-1 rounded-md border border-indigo-500/20">
+                        {product.category || "Uncategorized"}
+                      </span>
                     </div>
 
                     <div className="flex items-center text-xs text-gray-400 mb-5 bg-gray-950/50 w-fit px-2.5 py-1.5 rounded-md border border-gray-800/50">
@@ -661,6 +681,16 @@ export default function Dashboard() {
                   value={newProduct.name}
                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                 />
+                <select
+                  className="w-full border border-gray-700 px-3 py-2 rounded-md text-white bg-gray-800 focus:outline-none focus:ring-2 focus:ring-white transition-colors appearance-none"
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                >
+                  <option value="" disabled>Select a Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.name} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
                 <input
                   type="text"
                   placeholder="Image URL"

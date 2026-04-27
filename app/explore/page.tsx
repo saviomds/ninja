@@ -5,21 +5,31 @@ import { supabase } from "@/lib/supabase";
 export const revalidate = 0; // Tells Next.js to always fetch fresh data for this page
 
 export default async function Explore() {
-  // Fetch all categories from your products
-  const { data: products } = await supabase
-    .from("products")
-    .select("category");
+  // Fetch categories directly from the new categories table
+  const { data: categoriesData, error } = await supabase
+    .from("categories")
+    .select("name, description");
 
-  // Extract unique categories (ignoring null or empty ones)
-  const rawCategories = products 
-    ? Array.from(new Set(products.map((p) => p.category).filter(Boolean)))
-    : [];
+  if (error) {
+    console.error("Error fetching categories from Supabase:", error.message);
+  }
 
-  // Map to our display format
-  const categories = rawCategories.map((cat) => ({
-    name: cat,
-    desc: `Discover our exclusive collection of ${cat}.`,
+  // Fallback to dummy categories if the database is empty or errors out
+  const fallbackCategories = [
+    "Electronics", "Fashion", "Home & Garden", "Sports & Outdoors", "Beauty", "Toys"
+  ].map((name) => ({
+    name,
+    desc: `Discover our exclusive collection of ${name}.`
   }));
+
+  // Map database categories to our display format
+  const categories = categoriesData && categoriesData.length > 0
+    ? categoriesData.map((cat) => ({
+        name: cat.name,
+        // Use the database description if it exists, otherwise use the default phrase
+        desc: cat.description || `Discover our exclusive collection of ${cat.name}.`,
+      }))
+    : fallbackCategories;
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
