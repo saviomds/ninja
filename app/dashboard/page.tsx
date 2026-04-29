@@ -709,12 +709,12 @@ export default function Dashboard() {
                   Prev
                 </button>
                 
-                <div className="flex items-center gap-1 mx-2">
+                <div className="flex flex-wrap justify-center items-center gap-1 mx-2">
                   {Array.from({ length: totalPages }).map((_, i) => (
                     <button 
                       key={i}
                       onClick={() => setCurrentPage(i + 1)} 
-                      className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all ${
+                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl text-sm font-semibold transition-all ${
                         currentPage === i + 1 
                           ? 'bg-white text-black shadow-[0_0_10px_rgba(255,255,255,0.2)]' 
                           : 'text-gray-400 hover:bg-gray-800 border border-transparent hover:border-gray-700'
