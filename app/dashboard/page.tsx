@@ -225,6 +225,75 @@ export default function Dashboard() {
     }
   };
 
+  const handleDownloadExcel = () => {
+    if (products.length === 0) {
+      showToast("No products to export", "error");
+      return;
+    }
+
+    const escapeHtml = (str: string) => {
+      return (str || "").toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    };
+
+    const tableHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
+            th { background-color: #4F46E5; color: #ffffff; font-weight: bold; border: 1px solid #d1d5db; padding: 12px; text-align: left; }
+            td { border: 1px solid #d1d5db; padding: 10px; vertical-align: top; }
+            .num { text-align: right; font-weight: bold; }
+            .title { font-size: 24px; font-weight: bold; color: #111827; margin-bottom: 15px; }
+            .empty { color: #9ca3af; font-style: italic; }
+          </style>
+        </head>
+        <body>
+          <div class="title">Product Inventory Report</div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 250px;">Product ID</th>
+                <th style="width: 200px;">Name</th>
+                <th style="width: 150px;">Category</th>
+                <th style="width: 120px;">Price (Rs)</th>
+                <th style="width: 120px;">Stock</th>
+                <th style="width: 350px;">Description</th>
+                <th style="width: 250px;">Image URL</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${products.map(p => `
+                <tr>
+                  <td style="color: #6b7280; font-family: monospace;">${escapeHtml(p.id)}</td>
+                  <td><strong>${escapeHtml(p.name)}</strong></td>
+                  <td>${p.category ? escapeHtml(p.category) : '<span class="empty">Uncategorized</span>'}</td>
+                  <td class="num" style="color: #059669;">${p.price}</td>
+                  <td class="num" style="color: ${p.stock > 0 ? '#2563eb' : '#dc2626'};">${p.stock}</td>
+                  <td>${escapeHtml(p.description) || '<span class="empty">No description</span>'}</td>
+                  <td>${p.image ? `<a href="${escapeHtml(p.image)}" style="color: #4F46E5; text-decoration: underline;">View Image</a>` : '<span class="empty">-</span>'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob([tableHtml], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "Products_Inventory.xls");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Products exported as Excel successfully!", "success");
+  };
+
   // Social Profile Handlers
   const handleSaveSocial = async () => {
     setIsSavingSocial(true);
@@ -528,6 +597,15 @@ export default function Dashboard() {
           </div>
           <div className="flex w-full md:w-auto items-center gap-4">
             <h2 className="text-2xl font-bold text-white hidden md:block mr-4">Products</h2>
+            <button 
+              onClick={handleDownloadExcel}
+              className="w-full md:w-auto flex items-center justify-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-700 transition-all duration-200 border border-gray-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-emerald-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+              Export Excel
+            </button>
             <button 
               onClick={() => {
                 setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "" });
