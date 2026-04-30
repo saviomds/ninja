@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
+import Image from "next/image";
 import Link from "next/link";
 import UpdateUsername from "./UpdateUsername";
 import * as XLSX from "xlsx";
@@ -712,9 +713,14 @@ export default function Dashboard() {
   };
 
   const handleToggleActive = async (p: SocialProfile) => {
-    const { error } = await supabase.from("social_profiles").update({ is_active: !p.is_active }).eq("id", p.id);
-    if (error) { showToast("Toggle failed", "error"); return; }
-    logActivity(`Marked ${p.platform_name} as ${!p.is_active ? "active" : "inactive"}`, p.platform_name, "update");
+    const newStatus = !p.is_active;
+    const { error } = await supabase.from("social_profiles").update({ is_active: newStatus }).eq("id", p.id);
+    if (error) { 
+      console.dir(error);
+      showToast("Toggle failed: " + (error.message || "Missing is_active column in DB"), "error"); 
+      return; 
+    }
+    logActivity(`Marked ${p.platform_name} as ${newStatus ? "active" : "inactive"}`, p.platform_name, "update");
     fetchSocialProfiles();
   };
 
@@ -977,14 +983,16 @@ export default function Dashboard() {
                           <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => toggleSelectProduct(product.id)} className="w-4 h-4 rounded accent-indigo-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()} />
                         </div>
                         {product.image ? (
-                          <img 
+                          <Image
                             key={product.image}
                             src={product.image.replace('/object/public/', '/render/image/public/')}
                             alt={product.name} 
-                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
+                            fill
+                            unoptimized
+                            className="object-cover group-hover:scale-105 transition-transform duration-500" 
                             onError={(e) => { 
                               console.error('Image failed to load:', product.image);
-                              e.currentTarget.src = "https://placehold.co/400x300/1f2937/9ca3af?text=Image+Not+Found"; 
+                              (e.target as HTMLImageElement).src = "https://placehold.co/400x300/1f2937/9ca3af?text=Image+Not+Found"; 
                             }}
                           />
                         ) : (
@@ -1087,7 +1095,7 @@ export default function Dashboard() {
 
                     <div className="flex items-center gap-4 mb-4 pr-8">
                       {profile.platform_icon ? (
-                        <img src={profile.platform_icon} alt={profile.platform_name} className="w-12 h-12 rounded-xl object-cover bg-gray-800 border border-gray-700" />
+                        <Image src={profile.platform_icon} alt={profile.platform_name} width={48} height={48} unoptimized className="rounded-xl object-cover bg-gray-800 border border-gray-700" />
                       ) : (
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600 flex items-center justify-center text-xl font-bold text-gray-300">{profile.platform_name.charAt(0).toUpperCase()}</div>
                       )}
@@ -1295,11 +1303,13 @@ export default function Dashboard() {
                 )}
                 {newProduct.image && (
                   <div className="relative w-full h-40 mt-1 bg-gray-900/50 rounded-xl border border-gray-700 overflow-hidden flex items-center justify-center">
-                    <img 
+                    <Image
                       src={newProduct.image.replace('/object/public/', '/render/image/public/')}
                       alt="Product preview" 
-                      className="object-contain max-w-full max-h-full" 
-                      onError={(e) => { e.currentTarget.src = "https://placehold.co/400x300/1f2937/9ca3af?text=Broken+Link"; }}
+                      fill
+                      unoptimized
+                      className="object-contain" 
+                      onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x300/1f2937/9ca3af?text=Broken+Link"; }}
                     />
                   </div>
                 )}
