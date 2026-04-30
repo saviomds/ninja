@@ -183,6 +183,7 @@ export default function Dashboard() {
   const [activeSection, setActiveSection] = useState<"products" | "social" | "updates" | "settings" | "log">("products");
 
   // Products
+  const productsRef = useRef<HTMLDivElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -910,7 +911,7 @@ export default function Dashboard() {
 
         {/* ══ PRODUCTS TAB ═══════════════════════════════════════════════════════ */}
         {activeSection === "products" && (
-          <div>
+          <div ref={productsRef} className="scroll-mt-32">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 pt-2">
               <div>
                 <h2 className="text-2xl font-bold text-white">Products</h2>
@@ -1015,6 +1016,12 @@ export default function Dashboard() {
                             <span className="text-[10px] shrink-0 font-semibold bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20">{product.category}</span>
                           )}
                         </div>
+
+                        {product.created_at && (
+                          <p className="text-xs text-gray-500 mb-2 font-medium">
+                            Added {new Date(product.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                          </p>
+                        )}
 
                         <div className="mb-3 flex-1">
                           <p className={`text-sm text-gray-400 ${expandedDesc[product.id] ? "" : "line-clamp-2"}`}>
@@ -1514,13 +1521,6 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {toast && (
-        <div className={`fixed bottom-5 right-5 px-5 py-3 rounded-xl shadow-2xl text-white z-[100] text-sm font-medium border transition-all ${toast.type === "success" ? "bg-gray-900 border-emerald-500/40 shadow-emerald-500/10" : "bg-gray-900 border-rose-500/40 shadow-rose-500/10"}`}>
-          <span className="mr-2">{toast.type === "success" ? "✅" : "❌"}</span>
-          {toast.message}
         </div>
       )}
     </div>
