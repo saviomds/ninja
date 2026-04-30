@@ -104,6 +104,14 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc" | "stock">("newest");
   const [activeUpdateType, setActiveUpdateType] = useState<string>("all");
+  
+  // Interactive States
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -153,6 +161,48 @@ export default function Home() {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  // ── Auto-open Quick View from URL ──────────────────────────────────────────
+  useEffect(() => {
+    if (!loading && products.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get("product");
+      if (productId) {
+        const productToOpen = products.find((p) => p.id === productId);
+        if (productToOpen) {
+          setQuickViewProduct(productToOpen);
+        }
+      }
+    }
+  }, [loading, products]);
+
+  const handleCopyLink = (productId: string) => {
+    const url = `${window.location.origin}/product/${productId}`;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(() => showToast("Product link copied!"));
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        showToast("Product link copied!");
+      } catch (err) {
+        showToast("Failed to copy link", "error");
+      }
+      textArea.remove();
+    }
+  };
+
+  const closeQuickView = () => {
+    setQuickViewProduct(null);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("product")) {
+      url.searchParams.delete("product");
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   // ── Derived filtered + sorted products ──────────────────────────────────────
   const filteredProducts = products
@@ -530,6 +580,18 @@ export default function Home() {
                       >
                         Visit Profile
                       </a>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(profile.profile_link);
+                          showToast("Profile link copied!");
+                        }}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-800 border border-gray-700 hover:border-indigo-500/50 hover:bg-indigo-500/10 text-gray-400 hover:text-indigo-400 transition-all"
+                        title="Copy Profile Link"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
                       {isAdmin && (
                         <Link
                           href={`/admin/social/${profile.id}/edit`}
@@ -651,6 +713,15 @@ export default function Home() {
                             </span>
                           </div>
                         )}
+                        {/* Interactive Hover Overlay */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3 z-20">
+                          <button onClick={() => setQuickViewProduct(product)} className="bg-white/90 hover:bg-white text-black px-4 py-2 rounded-full text-sm font-bold shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+                            Quick View
+                          </button>
+                          <button onClick={() => handleCopyLink(product.id)} className="bg-gray-800/90 hover:bg-gray-700 text-white w-9 h-9 flex items-center justify-center rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75" title="Copy Link">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                          </button>
+                        </div>
                       </div>
 
                       <div className="p-5 flex flex-col flex-1">
@@ -711,6 +782,54 @@ export default function Home() {
           </p>
         )}
       </footer>
+
+      {/* ── Modals & Toasts ─────────────────────────────────────────────────── */}
+      {quickViewProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 backdrop-blur-sm bg-black/70 transition-all animate-in fade-in duration-200" onClick={closeQuickView}>
+          <div className="bg-gray-900 border border-gray-700 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row relative" onClick={e => e.stopPropagation()}>
+            <button onClick={closeQuickView} className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-rose-500 text-white backdrop-blur-md transition-colors border border-gray-600 hover:border-rose-400">✕</button>
+            
+            <div className="w-full md:w-1/2 aspect-square md:aspect-auto relative bg-gray-800">
+              {quickViewProduct.image ? (
+                <Image src={quickViewProduct.image.replace('/object/public/', '/render/image/public/')} alt={quickViewProduct.name} fill unoptimized className="object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-500">No Image Available</div>
+              )}
+              <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-sm font-bold border border-gray-700 shadow-lg">
+                Rs {quickViewProduct.price.toLocaleString()}
+              </div>
+            </div>
+            
+            <div className="p-6 md:p-8 flex flex-col flex-1 max-h-full overflow-y-auto">
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                {quickViewProduct.category && <span className="text-xs font-semibold uppercase tracking-widest text-indigo-400 bg-indigo-400/10 border border-indigo-400/20 px-3 py-1 rounded-lg">{quickViewProduct.category}</span>}
+                <StockBadge stock={quickViewProduct.stock} />
+              </div>
+              
+              <h2 className="text-3xl font-extrabold text-white mb-6 leading-tight">{quickViewProduct.name}</h2>
+              
+              <div className="flex-1 mb-8">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Product Description</h4>
+                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-sm">{quickViewProduct.description || "No description provided."}</p>
+              </div>
+              
+              <div className="flex gap-3 mt-auto">
+                <button onClick={() => handleCopyLink(quickViewProduct.id)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-all border border-gray-700 hover:border-gray-500 flex justify-center items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                  Copy Direct Link
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${toast.type === "success" ? "bg-emerald-500/20 text-emerald-200 border border-emerald-500/30" : "bg-rose-500/20 text-rose-200 border border-rose-500/30"}`}>
+          <span className="text-xl">{toast.type === "success" ? "✅" : "❌"}</span>
+          <span className="text-sm font-semibold">{toast.message}</span>
+        </div>
+      )}
     </main>
   );
 }
