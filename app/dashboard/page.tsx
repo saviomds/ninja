@@ -1046,15 +1046,38 @@ export default function Dashboard() {
 
                 {totalPages > 1 && (
                   <div className="flex justify-center items-center mt-10 gap-2 flex-wrap">
-                    <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-4 py-2 rounded-xl border border-gray-800 text-sm text-gray-400 hover:bg-gray-800 disabled:opacity-40 transition-all">Prev</button>
+                    <button disabled={currentPage === 1} onClick={() => { setCurrentPage(p => p - 1); productsRef.current?.scrollIntoView({ behavior: "smooth" }); }} className="px-4 py-2 rounded-xl border border-gray-800 text-sm text-gray-400 hover:bg-gray-800 disabled:opacity-40 transition-all">Prev</button>
                     <div className="flex flex-wrap justify-center gap-1">
-                      {Array.from({ length: totalPages }).map((_, i) => (
-                        <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-9 h-9 rounded-xl text-sm font-semibold transition-all ${currentPage === i + 1 ? "bg-white text-black" : "text-gray-400 hover:bg-gray-800 border border-transparent hover:border-gray-700"}`}>
-                          {i + 1}
+                      {(totalPages <= 5
+                        ? Array.from({ length: totalPages }, (_, i) => i + 1)
+                        : currentPage <= 3
+                        ? [1, 2, 3, "...", totalPages]
+                        : currentPage >= totalPages - 2
+                        ? [1, "...", totalPages - 2, totalPages - 1, totalPages]
+                        : [1, "...", currentPage, "...", totalPages]
+                      ).map((page, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            if (typeof page === "number") {
+                              setCurrentPage(page);
+                              productsRef.current?.scrollIntoView({ behavior: "smooth" });
+                            }
+                          }}
+                          disabled={page === "..."}
+                          className={`w-9 h-9 rounded-xl text-sm font-semibold transition-all ${
+                            page === "..."
+                              ? "text-gray-500 cursor-default"
+                              : currentPage === page
+                              ? "bg-white text-black"
+                              : "text-gray-400 hover:bg-gray-800 border border-transparent hover:border-gray-700"
+                          }`}
+                        >
+                          {page}
                         </button>
                       ))}
                     </div>
-                    <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="px-4 py-2 rounded-xl border border-gray-800 text-sm text-gray-400 hover:bg-gray-800 disabled:opacity-40 transition-all">Next</button>
+                    <button disabled={currentPage === totalPages} onClick={() => { setCurrentPage(p => p + 1); productsRef.current?.scrollIntoView({ behavior: "smooth" }); }} className="px-4 py-2 rounded-xl border border-gray-800 text-sm text-gray-400 hover:bg-gray-800 disabled:opacity-40 transition-all">Next</button>
                   </div>
                 )}
               </>
