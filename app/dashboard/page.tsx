@@ -1095,7 +1095,18 @@ export default function Dashboard() {
 
                     <div className="flex items-center gap-4 mb-4 pr-8">
                       {profile.platform_icon ? (
-                        <Image src={profile.platform_icon} alt={profile.platform_name} width={48} height={48} unoptimized className="rounded-xl object-cover bg-gray-800 border border-gray-700" />
+                        <Image 
+                          src={profile.platform_icon} 
+                          alt={profile.platform_name} 
+                          width={48} 
+                          height={48} 
+                          unoptimized 
+                          className="rounded-xl object-cover bg-gray-800 border border-gray-700" 
+                          onError={(e) => {
+                            console.error('Social icon failed to load:', profile.platform_icon);
+                            (e.target as HTMLImageElement).src = `https://placehold.co/48x48/1f2937/9ca3af?text=${profile.platform_name.charAt(0).toUpperCase()}`;
+                          }}
+                        />
                       ) : (
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600 flex items-center justify-center text-xl font-bold text-gray-300">{profile.platform_name.charAt(0).toUpperCase()}</div>
                       )}

@@ -494,6 +494,10 @@ export default function Home() {
                           height={48}
                           unoptimized
                           className="w-12 h-12 rounded-xl object-cover bg-gray-800 border border-gray-700"
+                          onError={(e) => {
+                            console.error('Social icon failed to load:', profile.platform_icon);
+                            (e.target as HTMLImageElement).src = `https://placehold.co/48x48/1f2937/9ca3af?text=${profile.platform_name.charAt(0).toUpperCase()}`;
+                          }}
                         />
                       ) : (
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600 flex items-center justify-center text-xl font-bold text-gray-300">
@@ -623,11 +627,16 @@ export default function Home() {
                       <div className="aspect-[4/3] w-full bg-gray-800 relative overflow-hidden">
                         {product.image ? (
                           <Image
-                            src={product.image}
+                            key={product.image}
+                            src={product.image.replace('/object/public/', '/render/image/public/')}
                             alt={product.name}
                             fill
                             unoptimized
                             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              console.error('Image failed to load:', product.image);
+                              (e.target as HTMLImageElement).src = "https://placehold.co/400x300/1f2937/9ca3af?text=Image+Not+Found";
+                            }}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">No Image</div>
