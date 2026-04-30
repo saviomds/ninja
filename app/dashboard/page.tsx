@@ -182,6 +182,7 @@ export default function Dashboard() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeSection, setActiveSection] = useState<"products" | "social" | "updates" | "settings" | "log">("products");
 
+  const [viewMode, setViewMode] = useState<"card" | "excel">("card");
   // Products
   const productsRef = useRef<HTMLDivElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -352,6 +353,17 @@ export default function Dashboard() {
     showToast(editingProductId ? "Product updated!" : "Product added!", "success");
     logActivity(editingProductId ? "Updated product" : "Added product", newProduct.name, editingProductId ? "update" : "create");
     fetchProducts();
+  };
+
+  const handleInlineUpdate = async (id: string, field: keyof Product, value: string | number) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, [field]: value as never } : p));
+    const { error } = await supabase.from("products").update({ [field]: value }).eq("id", id);
+    if (error) {
+      showToast("Update failed: " + error.message, "error");
+      fetchProducts();
+    } else {
+      logActivity(`Updated ${field}`, id, "update");
+    }
   };
 
   const handleEditClick = (product: Product) => {
@@ -932,13 +944,16 @@ export default function Dashboard() {
                 <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "" }); setEditingProductId(null); setImageInputType("link"); setIsModalOpen(true); }} className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                   + New Product
                 </button>
+                <button onClick={() => setViewMode(v => v === "card" ? "excel" : "card")} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-700 transition-all">
+                  {viewMode === "card" ? "🗃️ Excel Mode" : "🃏 Card Mode"}
+                </button>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="relative flex-1">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <input type="text" placeholder="Search by name, description, category…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 transition-colors" />
+                <input type="text" placeholder="Search by name, description, category…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-base md:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 transition-colors" />
               </div>
               <div className="flex gap-2 flex-wrap">
                 {(["all", "in_stock", "low", "out"] as const).map(f => (
@@ -947,7 +962,7 @@ export default function Dashboard() {
                   </button>
                 ))}
               </div>
-              <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)} className="bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-gray-400 focus:outline-none focus:border-gray-600 cursor-pointer">
+              <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)} className="bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 text-base md:text-sm text-gray-400 focus:outline-none focus:border-gray-600 cursor-pointer">
                 <option value="newest">Newest</option>
                 <option value="price_asc">Price ↑</option>
                 <option value="price_desc">Price ↓</option>
@@ -976,10 +991,97 @@ export default function Dashboard() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {paginatedProducts.map(product => (
-                    <div key={product.id} className={`group bg-gray-900/40 backdrop-blur-md border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 flex flex-col ${selectedProducts.has(product.id) ? "border-indigo-500/50 ring-1 ring-indigo-500/30" : "border-gray-800 hover:border-gray-700"}`}>
-                      <div className="aspect-[4/3] w-full bg-gray-800 relative overflow-hidden">
+                {viewMode === "excel" ? (
+                  <div className="overflow-x-auto bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl">
+                    <table className="w-full text-sm text-left">
+                      <thead className="text-xs text-gray-400 uppercase bg-gray-800/50 border-b border-gray-800">
+                        <tr>
+                          <th className="px-4 py-3 w-10">
+                            <input type="checkbox" checked={selectedProducts.size > 0 && selectedProducts.size === paginatedProducts.length} onChange={toggleSelectAll} className="w-4 h-4 rounded accent-indigo-500 cursor-pointer" />
+                          </th>
+                          <th className="px-4 py-3 w-16">Img</th>
+                          <th className="px-4 py-3">Name</th>
+                          <th className="px-4 py-3">Category</th>
+                          <th className="px-4 py-3 min-w-[200px]">Description</th>
+                          <th className="px-4 py-3 w-24">Price</th>
+                          <th className="px-4 py-3 w-24">Stock</th>
+                          <th className="px-4 py-3 w-20">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedProducts.map((product) => (
+                          <tr key={product.id} className={`border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors ${selectedProducts.has(product.id) ? "bg-indigo-500/5" : ""}`}>
+                            <td className="px-4 py-3">
+                              <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => toggleSelectProduct(product.id)} className="w-4 h-4 rounded accent-indigo-500 cursor-pointer" />
+                            </td>
+                            <td className="px-4 py-3">
+                              {product.image ? (
+                                <div className="w-8 h-8 rounded relative overflow-hidden bg-gray-800">
+                                  <Image src={product.image.replace('/object/public/', '/render/image/public/')} alt="" fill className="object-cover" unoptimized />
+                                </div>
+                              ) : <div className="w-8 h-8 rounded bg-gray-800 text-[10px] flex items-center justify-center text-gray-500">N/A</div>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                defaultValue={product.name}
+                                onBlur={(e) => e.target.value !== product.name && handleInlineUpdate(product.id, "name", e.target.value)}
+                                className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                defaultValue={product.category || ""}
+                                onBlur={(e) => e.target.value !== (product.category || "") && handleInlineUpdate(product.id, "category", e.target.value)}
+                                className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <textarea
+                                rows={expandedDesc[`excel_${product.id}`] ? 4 : 1}
+                                onClick={() => setExpandedDesc(prev => ({ ...prev, [`excel_${product.id}`]: true }))}
+                                onBlur={(e) => {
+                                  setExpandedDesc(prev => ({ ...prev, [`excel_${product.id}`]: false }));
+                                  if (e.target.value !== (product.description || "")) {
+                                    handleInlineUpdate(product.id, "description", e.target.value);
+                                  }
+                                }}
+                                defaultValue={product.description || ""}
+                                className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all resize-none block align-middle [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                defaultValue={product.price}
+                                onBlur={(e) => parseFloat(e.target.value) !== product.price && handleInlineUpdate(product.id, "price", parseFloat(e.target.value) || 0)}
+                                className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                defaultValue={product.stock}
+                                onBlur={(e) => parseInt(e.target.value, 10) !== product.stock && handleInlineUpdate(product.id, "stock", parseInt(e.target.value, 10) || 0)}
+                                className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all"
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button onClick={() => setProductToDelete(product.id)} className="text-rose-400 hover:text-rose-300 p-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {paginatedProducts.map(product => (
+                      <div key={product.id} className={`group bg-gray-900/40 backdrop-blur-md border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 flex flex-col ${selectedProducts.has(product.id) ? "border-indigo-500/50 ring-1 ring-indigo-500/30" : "border-gray-800 hover:border-gray-700"}`}>
+                        <div className="aspect-[4/3] w-full bg-gray-800 relative overflow-hidden">
                         <div className="absolute top-3 left-3 z-10">
                           <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => toggleSelectProduct(product.id)} className="w-4 h-4 rounded accent-indigo-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()} />
                         </div>
@@ -1050,6 +1152,7 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
+                )}
 
                 {totalPages > 1 && (
                   <div className="flex justify-center items-center mt-10 gap-2 flex-wrap">
@@ -1315,7 +1418,7 @@ export default function Dashboard() {
                 { placeholder: "Product Name *", key: "name", type: "text" },
                 { placeholder: "Category (e.g. Electronics, Fashion)", key: "category", type: "text" },
               ].map(f => (
-                <input key={f.key} type={f.type} placeholder={f.placeholder} value={(newProduct as any)[f.key]} onChange={e => setNewProduct({ ...newProduct, [f.key]: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                <input key={f.key} type={f.type} placeholder={f.placeholder} value={(newProduct as any)[f.key]} onChange={e => setNewProduct({ ...newProduct, [f.key]: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" />
               ))}
 
               <div className="flex flex-col gap-2">
@@ -1327,7 +1430,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 {imageInputType === "link" ? (
-                  <input type="text" placeholder="Image URL" value={newProduct.image} onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                  <input type="text" placeholder="Image URL" value={newProduct.image} onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" />
                 ) : (
                   <div className="relative">
                     <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage} className="w-full border border-gray-700 px-3 py-2 rounded-xl text-white bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20 disabled:opacity-50 cursor-pointer" />
@@ -1356,10 +1459,10 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <textarea placeholder="Description" rows={3} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm resize-y" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
+              <textarea placeholder="Description" rows={3} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
               <div className="flex gap-3">
-                <input type="number" placeholder="Price (Rs)" className="flex-1 border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} />
-                <input type="number" placeholder="Stock qty" className="flex-1 border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })} />
+                <input type="number" placeholder="Price (Rs)" className="flex-1 border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} />
+                <input type="number" placeholder="Stock qty" className="flex-1 border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })} />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
@@ -1418,11 +1521,11 @@ export default function Dashboard() {
                 { placeholder: "Password", key: "password", type: "password" },
                 { placeholder: "Followers count", key: "followers", type: "number" },
               ].map(f => (
-                <input key={f.key} type={f.type} placeholder={f.placeholder} value={(newSocial as any)[f.key]} onChange={e => setNewSocial({ ...newSocial, [f.key]: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                <input key={f.key} type={f.type} placeholder={f.placeholder} value={(newSocial as any)[f.key]} onChange={e => setNewSocial({ ...newSocial, [f.key]: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" />
               ))}
-              <textarea placeholder="Description or extra info" rows={2} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm resize-y" value={newSocial.description} onChange={e => setNewSocial({ ...newSocial, description: e.target.value })} />
+              <textarea placeholder="Description or extra info" rows={2} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600" value={newSocial.description} onChange={e => setNewSocial({ ...newSocial, description: e.target.value })} />
               <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" checked={newSocial.is_active} onChange={e => setNewSocial({ ...newSocial, is_active: e.target.checked })} className="w-4 h-4 rounded accent-emerald-500" />
+                <input type="checkbox" checked={newSocial.is_active} onChange={e => setNewSocial({ ...newSocial, is_active: e.target.checked })} className="w-4 h-4 appearance-none border border-gray-600 bg-transparent checked:bg-emerald-500 checked:border-emerald-500 cursor-pointer transition-all rounded flex items-center justify-center relative after:content-['✓'] after:text-white after:text-[10px] after:font-bold after:absolute after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:opacity-0 checked:after:opacity-100" />
                 <span className="text-sm text-gray-300">Mark as active</span>
               </label>
             </div>
@@ -1457,7 +1560,7 @@ export default function Dashboard() {
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-white mb-5">{editingUpdateId ? "Edit Update" : "Post New Update"}</h2>
             <div className="space-y-3">
-              <input type="text" placeholder="Title / Info *" className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-sm" value={newUpdate.info} onChange={e => setNewUpdate({ ...newUpdate, info: e.target.value })} />
+              <input type="text" placeholder="Title / Info *" className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-base md:text-sm" value={newUpdate.info} onChange={e => setNewUpdate({ ...newUpdate, info: e.target.value })} />
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Type</label>
@@ -1480,8 +1583,8 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-              <textarea placeholder="Content / Snippets *" rows={6} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-sm resize-y" value={newUpdate.content} onChange={e => setNewUpdate({ ...newUpdate, content: e.target.value })} />
-              <input type="text" placeholder="Relevant Link (optional)" className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-sm" value={newUpdate.link} onChange={e => setNewUpdate({ ...newUpdate, link: e.target.value })} />
+              <textarea placeholder="Content / Snippets *" rows={6} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-base md:text-sm resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600" value={newUpdate.content} onChange={e => setNewUpdate({ ...newUpdate, content: e.target.value })} />
+              <input type="text" placeholder="Relevant Link (optional)" className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-base md:text-sm" value={newUpdate.link} onChange={e => setNewUpdate({ ...newUpdate, link: e.target.value })} />
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={() => setIsUpdateModalOpen(false)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>

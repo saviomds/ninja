@@ -41,7 +41,7 @@ export default function UpdateUsername({ userId, currentUsername, onUpdate }: { 
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         placeholder="e.g. tech_ninja"
-        className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+        className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-base md:text-sm text-white focus:outline-none focus:border-indigo-500"
         required
       />
       <button type="submit" disabled={isUpdating || !username} className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
