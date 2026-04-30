@@ -1047,7 +1047,7 @@ export default function Dashboard() {
                 {totalPages > 1 && (
                   <div className="flex justify-center items-center mt-10 gap-2 flex-wrap">
                     <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-4 py-2 rounded-xl border border-gray-800 text-sm text-gray-400 hover:bg-gray-800 disabled:opacity-40 transition-all">Prev</button>
-                    <div className="flex gap-1">
+                    <div className="flex flex-wrap justify-center gap-1">
                       {Array.from({ length: totalPages }).map((_, i) => (
                         <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-9 h-9 rounded-xl text-sm font-semibold transition-all ${currentPage === i + 1 ? "bg-white text-black" : "text-gray-400 hover:bg-gray-800 border border-transparent hover:border-gray-700"}`}>
                           {i + 1}
