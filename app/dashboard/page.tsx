@@ -7,6 +7,7 @@ import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
 import UpdateUsername from "./UpdateUsername";
+import * as XLSX from "xlsx";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -79,6 +80,72 @@ const logTypeColors: Record<string, string> = {
   delete: "text-rose-400 bg-rose-500/10 border-rose-500/20",
   info: "text-gray-400 bg-gray-500/10 border-gray-500/20",
 };
+
+// ─── Excel helpers ────────────────────────────────────────────────────────────
+
+/** Build a styled cell object for SheetJS */
+function sc(
+  v: string | number,
+  {
+    bold = false,
+    color = "000000",
+    bgColor = "FFFFFF",
+    fontSize = 11,
+    italic = false,
+    hAlign = "center" as "center" | "left" | "right",
+    wrapText = false,
+    numFmt = "",
+    border = false,
+    thick = false,
+  } = {}
+) {
+  const borderStyle = thick
+    ? { style: "medium", color: { rgb: "94A3B8" } }
+    : { style: "thin", color: { rgb: "CBD5E1" } };
+  return {
+    v,
+    t: typeof v === "number" ? "n" : "s",
+    s: {
+      font: { name: "Arial", bold, color: { rgb: color }, sz: fontSize, italic },
+      fill: { patternType: "solid", fgColor: { rgb: bgColor } },
+      alignment: { horizontal: hAlign, vertical: "center", wrapText },
+      numFmt,
+      ...(border && {
+        border: {
+          top: borderStyle,
+          bottom: borderStyle,
+          left: borderStyle,
+          right: borderStyle,
+        },
+      }),
+    },
+  };
+}
+
+function getStockStatus(stock: number): { label: string; bg: string; fg: string } {
+  if (stock === 0) return { label: "Out of Stock", bg: "FEE2E2", fg: "991B1B" };
+  if (stock <= 5)  return { label: "Low Stock",    bg: "FEF9C3", fg: "854D0E" };
+  return                  { label: "In Stock",     bg: "DCFCE7", fg: "166534" };
+}
+
+/** Set column widths on a worksheet */
+function setCols(ws: XLSX.WorkSheet, widths: number[]) {
+  ws["!cols"] = widths.map((w) => ({ wch: w }));
+}
+
+/** Helper to encode a cell address */
+const addr = (r: number, c: number) => XLSX.utils.encode_cell({ r, c });
+
+/** Write a cell directly into the worksheet */
+function writeCell(ws: XLSX.WorkSheet, r: number, c: number, cell: object) {
+  ws[addr(r, c)] = cell;
+}
+
+/** Merge cells in a worksheet */
+function merge(ws: XLSX.WorkSheet, r1: number, c1: number, r2: number, c2: number) {
+  if (!ws["!merges"]) ws["!merges"] = [];
+  ws["!merges"].push({ s: { r: r1, c: c1 }, e: { r: r2, c: c2 } });
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -206,7 +273,6 @@ export default function Dashboard() {
     if (user) loadAllData();
   }, [user]); // eslint-disable-line
 
-  // Keyboard shortcut: R to refresh
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "r" && !e.ctrlKey && !e.metaKey && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
@@ -333,21 +399,219 @@ export default function Dashboard() {
     fetchProducts();
   };
 
+  // ─── ✨ BEAUTIFUL EXCEL EXPORT ─────────────────────────────────────────────
   const handleDownloadExcel = () => {
     if (!products.length) { showToast("No products to export", "error"); return; }
-    const esc = (s: string) => (s || "").toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-      <head><meta charset="utf-8"/><style>table{border-collapse:collapse}th{background:#4F46E5;color:#fff;border:1px solid #d1d5db;padding:10px}td{border:1px solid #d1d5db;padding:8px}</style></head>
-      <body><h2>Product Inventory</h2><table>
-        <thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Price (Rs)</th><th>Stock</th><th>Description</th></tr></thead>
-        <tbody>${products.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.category || "")}</td><td>${p.price}</td><td>${p.stock}</td><td>${esc(p.description)}</td></tr>`).join("")}</tbody>
-      </table></body></html>`;
-    const blob = new Blob([html], { type: "application/vnd.ms-excel" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "Products_Inventory.xls";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    showToast("Exported as Excel!", "success");
-    logActivity("Exported product inventory", `${products.length} products`, "info");
+
+    const wb = XLSX.utils.book_new();
+    const now = new Date().toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
+
+    // ── SHEET 1: Inventory ──────────────────────────────────────────────────
+    const ws1: XLSX.WorkSheet = {};
+
+    // Title banner (row 0)
+    merge(ws1, 0, 0, 0, 7);
+    writeCell(ws1, 0, 0, sc(`  PRODUCT INVENTORY REPORT`, {
+      bold: true, fontSize: 16, color: "FFFFFF", bgColor: "6366F1", hAlign: "left", border: false,
+    }));
+
+    // Subtitle (row 1)
+    merge(ws1, 1, 0, 1, 7);
+    writeCell(ws1, 1, 0, sc(`  Generated: ${now}   |   Total Products: ${products.length}`, {
+      fontSize: 10, color: "94A3B8", bgColor: "334155", hAlign: "left", italic: true,
+    }));
+
+    // Spacer (row 2) — empty
+    for (let c = 0; c < 8; c++) writeCell(ws1, 2, c, sc("", { bgColor: "1E293B" }));
+
+    // Headers (row 3)
+    const headers = ["ID", "Product Name", "Category", "Price (Rs)", "Stock Qty", "Stock Value (Rs)", "Status", "Description"];
+    headers.forEach((h, c) => writeCell(ws1, 3, c, sc(h, {
+      bold: true, fontSize: 11, color: "FFFFFF", bgColor: "1E293B", border: true, thick: true,
+    })));
+
+    // Data rows
+    products.forEach((p, i) => {
+      const row = 4 + i;
+      const { label, bg, fg } = getStockStatus(p.stock);
+      const rowBg = i % 2 === 0 ? "FFFFFF" : "F8FAFC";
+      const stockValue = p.price * p.stock;
+
+      const rowData: [string | number, Partial<Parameters<typeof sc>[1]>][] = [
+        [p.id,                   { hAlign: "center", bgColor: rowBg }],
+        [p.name,                 { hAlign: "left",   bgColor: rowBg, bold: false }],
+        [p.category || "",       { hAlign: "center", bgColor: rowBg }],
+        [p.price,                { hAlign: "center", bgColor: rowBg, bold: true, numFmt: "#,##0" }],
+        [p.stock,                { hAlign: "center", bgColor: rowBg, numFmt: "#,##0" }],
+        [stockValue,             { hAlign: "center", bgColor: "F0FDF4", color: "166534", numFmt: "#,##0" }],
+        [label,                  { hAlign: "center", bgColor: bg, color: fg, bold: true }],
+        [p.description || "",    { hAlign: "left",   bgColor: rowBg, wrapText: true }],
+      ];
+      rowData.forEach(([v, opts], c) =>
+        writeCell(ws1, row, c, sc(v, { fontSize: 10, border: true, ...opts }))
+      );
+    });
+
+    // Summary section
+    const sr = 4 + products.length + 1;
+    const summaries: [string, number | string, string][] = [
+      ["TOTAL PRODUCTS",       products.length,                                                     "6366F1"],
+      ["TOTAL INVENTORY VALUE", `Rs ${inventoryValue.toLocaleString()}`,                            "10B981"],
+      ["OUT OF STOCK",         products.filter(p => p.stock === 0).length,                         "EF4444"],
+      ["LOW STOCK (≤5)",       products.filter(p => p.stock > 0 && p.stock <= 5).length,           "F59E0B"],
+      ["CATEGORIES",           [...new Set(products.map(p => p.category).filter(Boolean))].length,  "0EA5E9"],
+    ];
+    summaries.forEach(([label, value, accent], j) => {
+      const r = sr + j;
+      merge(ws1, r, 0, r, 2);
+      writeCell(ws1, r, 0, sc(label,        { bold: true, fontSize: 10, color: "FFFFFF", bgColor: accent, border: true }));
+      merge(ws1, r, 3, r, 5);
+      writeCell(ws1, r, 3, sc(String(value), { bold: true, fontSize: 13, color: accent, bgColor: "F8FAFC", border: true }));
+    });
+
+    // Range & col widths
+    const lastRow = sr + summaries.length;
+    ws1["!ref"] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: lastRow, c: 7 } });
+    setCols(ws1, [10, 28, 16, 14, 12, 20, 14, 36]);
+    ws1["!rows"] = [{ hpt: 36 }, { hpt: 22 }, { hpt: 8 }, { hpt: 28 }];
+
+    XLSX.utils.book_append_sheet(wb, ws1, "📦 Inventory");
+
+    // ── SHEET 2: Dashboard KPIs ─────────────────────────────────────────────
+    const ws2: XLSX.WorkSheet = {};
+
+    // Title
+    merge(ws2, 0, 0, 0, 5);
+    writeCell(ws2, 0, 0, sc("  INVENTORY DASHBOARD", {
+      bold: true, fontSize: 16, color: "FFFFFF", bgColor: "1E293B", hAlign: "left",
+    }));
+
+    // KPI cards (rows 2-4)
+    const kpis = [
+      { label: "Total Products",     value: products.length,                                             accent: "6366F1", bg: "EEF2FF" },
+      { label: "In Stock",           value: products.filter(p => p.stock > 5).length,                   accent: "10B981", bg: "DCFCE7" },
+      { label: "Low Stock",          value: products.filter(p => p.stock > 0 && p.stock <= 5).length,   accent: "F59E0B", bg: "FEF9C3" },
+      { label: "Out of Stock",       value: products.filter(p => p.stock === 0).length,                 accent: "EF4444", bg: "FEE2E2" },
+      { label: "Inventory Value",    value: `Rs ${inventoryValue.toLocaleString()}`,                    accent: "0EA5E9", bg: "E0F2FE" },
+      { label: "Unique Categories",  value: [...new Set(products.map(p => p.category).filter(Boolean))].length, accent: "A855F7", bg: "FAF5FF" },
+    ];
+    kpis.forEach(({ label, value, accent, bg }, col) => {
+      // color bar (row 2)
+      writeCell(ws2, 2, col, sc("", { bgColor: accent }));
+      // value (row 3)
+      writeCell(ws2, 3, col, sc(String(value), { bold: true, fontSize: 18, color: accent, bgColor: bg, border: true }));
+      // label (row 4)
+      writeCell(ws2, 4, col, sc(label, { fontSize: 9, bold: true, color: "64748B", bgColor: bg, border: true }));
+    });
+
+    // Category breakdown table
+    const cats: Record<string, { count: number; value: number; inStock: number; outStock: number; lowStock: number }> = {};
+    products.forEach(p => {
+      const cat = p.category || "Uncategorized";
+      if (!cats[cat]) cats[cat] = { count: 0, value: 0, inStock: 0, outStock: 0, lowStock: 0 };
+      cats[cat].count++;
+      cats[cat].value += p.price * p.stock;
+      if (p.stock === 0) cats[cat].outStock++;
+      else if (p.stock <= 5) cats[cat].lowStock++;
+      else cats[cat].inStock++;
+    });
+
+    const catHeaders = ["Category", "Products", "In Stock", "Low Stock", "Out of Stock", "Total Value (Rs)"];
+    catHeaders.forEach((h, c) => writeCell(ws2, 6, c, sc(h, {
+      bold: true, fontSize: 10, color: "FFFFFF", bgColor: "334155", border: true,
+    })));
+
+    Object.entries(cats).forEach(([cat, data], i) => {
+      const r = 7 + i;
+      const bg = i % 2 === 0 ? "FFFFFF" : "F8FAFC";
+      const row: [string | number, Partial<Parameters<typeof sc>[1]>][] = [
+        [cat,            { hAlign: "left",   bold: true }],
+        [data.count,     { hAlign: "center" }],
+        [data.inStock,   { hAlign: "center", color: "166534", bgColor: i % 2 === 0 ? "F0FDF4" : "DCFCE7" }],
+        [data.lowStock,  { hAlign: "center", color: "854D0E", bgColor: i % 2 === 0 ? "FEFCE8" : "FEF9C3" }],
+        [data.outStock,  { hAlign: "center", color: "991B1B", bgColor: i % 2 === 0 ? "FFF1F2" : "FEE2E2" }],
+        [data.value,     { hAlign: "center", color: "166534", numFmt: "#,##0" }],
+      ];
+      row.forEach(([v, opts], c) =>
+        writeCell(ws2, r, c, sc(v, { fontSize: 10, border: true, bgColor: bg, ...opts }))
+      );
+    });
+
+    ws2["!ref"] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: 7 + Object.keys(cats).length, c: 5 } });
+    setCols(ws2, [22, 14, 12, 12, 14, 20]);
+    ws2["!rows"] = [{ hpt: 36 }, { hpt: 8 }, { hpt: 8 }, { hpt: 40 }, { hpt: 22 }, { hpt: 10 }, { hpt: 24 }];
+
+    XLSX.utils.book_append_sheet(wb, ws2, "📊 Dashboard");
+
+    // ── SHEET 3: By Category ────────────────────────────────────────────────
+    const ws3: XLSX.WorkSheet = {};
+    merge(ws3, 0, 0, 0, 6);
+    writeCell(ws3, 0, 0, sc("  PRODUCTS BY CATEGORY", {
+      bold: true, fontSize: 15, color: "FFFFFF", bgColor: "6366F1", hAlign: "left",
+    }));
+
+    const catAccents: Record<string, { bg: string; accent: string }> = {};
+    const palette = [
+      { bg: "EEF2FF", accent: "6366F1" },
+      { bg: "FDF4FF", accent: "A855F7" },
+      { bg: "FFF7ED", accent: "F97316" },
+      { bg: "F0FDF4", accent: "22C55E" },
+      { bg: "E0F2FE", accent: "0EA5E9" },
+      { bg: "FFF1F2", accent: "F43F5E" },
+    ];
+    Object.keys(cats).forEach((cat, i) => { catAccents[cat] = palette[i % palette.length]; });
+
+    const colHeaders = ["ID", "Name", "Category", "Price (Rs)", "Stock", "Status", "Description"];
+    const colWidths3 = [10, 26, 16, 14, 10, 14, 36];
+
+    let row3 = 2;
+    Object.entries(cats).forEach(([cat, _data]) => {
+      const catProds = products.filter(p => (p.category || "Uncategorized") === cat);
+      const { accent, bg } = catAccents[cat];
+
+      // Category header
+      merge(ws3, row3, 0, row3, 6);
+      writeCell(ws3, row3, 0, sc(`  ${cat}  (${catProds.length} products)`, {
+        bold: true, fontSize: 12, color: "FFFFFF", bgColor: accent, hAlign: "left",
+      }));
+      row3++;
+
+      // Column headers
+      colHeaders.forEach((h, c) => writeCell(ws3, row3, c, sc(h, {
+        bold: true, fontSize: 10, color: "374151", bgColor: bg, border: true,
+      })));
+      row3++;
+
+      // Product rows
+      catProds.forEach((p, i) => {
+        const { label, bg: sBg, fg: sFg } = getStockStatus(p.stock);
+        const rowBg = i % 2 === 0 ? "FFFFFF" : "F8FAFC";
+        const cells: [string | number, Partial<Parameters<typeof sc>[1]>][] = [
+          [p.id,              { hAlign: "center" }],
+          [p.name,            { hAlign: "left"   }],
+          [p.category || "",  { hAlign: "center" }],
+          [p.price,           { hAlign: "center", bold: true, numFmt: "#,##0" }],
+          [p.stock,           { hAlign: "center", numFmt: "#,##0" }],
+          [label,             { hAlign: "center", color: sFg, bgColor: sBg, bold: true }],
+          [p.description||"", { hAlign: "left", wrapText: true }],
+        ];
+        cells.forEach(([v, opts], c) =>
+          writeCell(ws3, row3, c, sc(v, { fontSize: 10, border: true, bgColor: rowBg, ...opts }))
+        );
+        row3++;
+      });
+      row3++; // spacer
+    });
+
+    ws3["!ref"] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: row3, c: 6 } });
+    setCols(ws3, colWidths3);
+
+    XLSX.utils.book_append_sheet(wb, ws3, "🗂️ By Category");
+
+    // ── Write & download ───────────────────────────────────────────────────
+    XLSX.writeFile(wb, `Products_Inventory_${new Date().toISOString().slice(0, 10)}.xlsx`, { cellStyles: true });
+    showToast("Exported beautiful Excel!", "success");
+    logActivity("Exported product inventory (styled)", `${products.length} products`, "info");
   };
 
   // ─── Social ────────────────────────────────────────────────────────────────
@@ -475,7 +739,6 @@ export default function Dashboard() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          {/* Stats pills */}
           {outOfStockCount > 0 && (
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
               {outOfStockCount} out of stock
@@ -503,7 +766,6 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Mobile hamburger */}
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-gray-400 hover:text-white p-1">
           {isMobileMenuOpen ? (
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -587,7 +849,6 @@ export default function Dashboard() {
         {/* ══ PRODUCTS TAB ═══════════════════════════════════════════════════════ */}
         {activeSection === "products" && (
           <div>
-            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 pt-2">
               <div>
                 <h2 className="text-2xl font-bold text-white">Products</h2>
@@ -611,7 +872,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="relative flex-1">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -633,7 +893,6 @@ export default function Dashboard() {
               </select>
             </div>
 
-            {/* Bulk select bar */}
             {filteredProducts.length > 0 && (
               <div className="flex items-center gap-3 mb-4 px-1">
                 <input type="checkbox" checked={selectedProducts.size > 0 && selectedProducts.size === paginatedProducts.length} onChange={toggleSelectAll} className="w-4 h-4 rounded accent-white cursor-pointer" />
@@ -643,7 +902,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Grid */}
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map(n => <div key={n} className="h-80 bg-gray-900/50 rounded-2xl animate-pulse border border-gray-800" />)}
@@ -658,7 +916,6 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {paginatedProducts.map(product => (
                     <div key={product.id} className={`group bg-gray-900/40 backdrop-blur-md border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 flex flex-col ${selectedProducts.has(product.id) ? "border-indigo-500/50 ring-1 ring-indigo-500/30" : "border-gray-800 hover:border-gray-700"}`}>
-                      {/* Checkbox + image */}
                       <div className="aspect-[4/3] w-full bg-gray-800 relative overflow-hidden">
                         <div className="absolute top-3 left-3 z-10">
                           <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => toggleSelectProduct(product.id)} className="w-4 h-4 rounded accent-indigo-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()} />
@@ -697,7 +954,6 @@ export default function Dashboard() {
                           )}
                         </div>
 
-                        {/* Stock quick-edit */}
                         <div className="flex items-center gap-2 mb-4">
                           <button onClick={() => handleStockAdjust(product, -1)} disabled={product.stock === 0 || adjustingStockId === product.id} className="w-7 h-7 rounded-lg bg-gray-800 border border-gray-700 text-white flex items-center justify-center text-lg hover:bg-gray-700 disabled:opacity-30 transition-all">−</button>
                           <span className={`text-sm font-semibold min-w-[60px] text-center px-2 py-1 rounded-lg border ${product.stock === 0 ? "text-rose-400 bg-rose-500/10 border-rose-500/20" : product.stock <= 5 ? "text-amber-400 bg-amber-500/10 border-amber-500/20" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"}`}>
@@ -715,7 +971,6 @@ export default function Dashboard() {
                   ))}
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex justify-center items-center mt-10 gap-2 flex-wrap">
                     <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-4 py-2 rounded-xl border border-gray-800 text-sm text-gray-400 hover:bg-gray-800 disabled:opacity-40 transition-all">Prev</button>
@@ -759,7 +1014,6 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {socialProfiles.map(profile => (
                   <div key={profile.id} className="group bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all duration-300 flex flex-col relative">
-                    {/* Active toggle */}
                     <button
                       onClick={() => handleToggleActive(profile)}
                       title={profile.is_active ? "Mark as inactive" : "Mark as active"}
@@ -780,7 +1034,6 @@ export default function Dashboard() {
 
                     {profile.description && <p className="text-sm text-gray-400 mb-3 line-clamp-2">{profile.description}</p>}
 
-                    {/* Credentials block */}
                     <div className="space-y-2 mb-4 flex-1 text-sm text-gray-300 bg-gray-950/50 p-3.5 rounded-xl border border-gray-800/50">
                       {profile.username && (
                         <div className="flex justify-between items-center gap-2">
@@ -857,7 +1110,6 @@ export default function Dashboard() {
               <div className="space-y-4">
                 {updates.map(update => (
                   <div key={update.id} className="group bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all relative flex flex-col md:flex-row gap-4">
-                    {/* Priority tag */}
                     {update.priority && (
                       <div className={`absolute top-0 right-0 text-[10px] font-bold uppercase px-2.5 py-1 rounded-bl-xl rounded-tr-xl border-l border-b ${priorityColors[update.priority]}`}>
                         {update.priority}
@@ -940,7 +1192,6 @@ export default function Dashboard() {
 
       {/* ══ MODALS ══════════════════════════════════════════════════════════════ */}
 
-      {/* Product Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -969,7 +1220,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Delete Product Modal */}
       {productToDelete && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
@@ -986,7 +1236,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Bulk Delete Confirm */}
       {showBulkConfirm && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
@@ -1003,7 +1252,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Social Modal */}
       {isSocialModalOpen && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -1036,7 +1284,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Delete Social Modal */}
       {socialToDelete && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
@@ -1053,15 +1300,12 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Update Modal */}
       {isUpdateModalOpen && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-white mb-5">{editingUpdateId ? "Edit Update" : "Post New Update"}</h2>
             <div className="space-y-3">
               <input type="text" placeholder="Title / Info *" className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-sm" value={newUpdate.info} onChange={e => setNewUpdate({ ...newUpdate, info: e.target.value })} />
-              
-              {/* Type + Priority row */}
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Type</label>
@@ -1084,7 +1328,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-
               <textarea placeholder="Content / Snippets *" rows={6} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-sm resize-y" value={newUpdate.content} onChange={e => setNewUpdate({ ...newUpdate, content: e.target.value })} />
               <input type="text" placeholder="Relevant Link (optional)" className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-sm" value={newUpdate.link} onChange={e => setNewUpdate({ ...newUpdate, link: e.target.value })} />
             </div>
@@ -1098,7 +1341,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Delete Update Modal */}
       {updateToDelete && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
@@ -1115,7 +1357,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Logout Modal */}
       {isLogoutModalOpen && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
@@ -1131,7 +1372,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Toast */}
       {toast && (
         <div className={`fixed bottom-5 right-5 px-5 py-3 rounded-xl shadow-2xl text-white z-[100] text-sm font-medium border transition-all ${toast.type === "success" ? "bg-gray-900 border-emerald-500/40 shadow-emerald-500/10" : "bg-gray-900 border-rose-500/40 shadow-rose-500/10"}`}>
           <span className="mr-2">{toast.type === "success" ? "✅" : "❌"}</span>
