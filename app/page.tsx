@@ -1,7 +1,7 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
@@ -88,6 +88,9 @@ function StockBadge({ stock }: { stock: number }) {
 }
 
 export default function Home() {
+  const categoryContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftScroll, setShowLeftScroll] = useState(false);
+  const [showRightScroll, setShowRightScroll] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [socialProfiles, setSocialProfiles] = useState<SocialProfile[]>([]);
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
@@ -101,6 +104,8 @@ export default function Home() {
     lowStockCount: 0,
   });
   const [productFilter, setProductFilter] = useState<"all" | "in_stock" | "low" | "out">("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [categories, setCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc" | "stock">("newest");
   const [activeUpdateType, setActiveUpdateType] = useState<string>("all");
@@ -115,7 +120,7 @@ export default function Home() {
 
   useEffect(() => {
     const fetchAllData = async () => {
-      const [productsRes, socialRes, updatesRes, authRes, usersRes] = await Promise.all([
+      const [productsRes, socialRes, updatesRes, authRes, usersRes, categoriesRes] = await Promise.all([
         supabase.from("products").select("*").order("created_at", { ascending: false }),
         supabase
           .from("social_profiles")
@@ -124,6 +129,7 @@ export default function Home() {
         supabase.from("updates").select("*").order("created_at", { ascending: false }),
         supabase.auth.getUser(),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("categories").select("name"),
       ]);
 
       const fetchedProducts: Product[] = productsRes.data || [];
@@ -135,6 +141,11 @@ export default function Home() {
       setUpdates(fetchedUpdates);
       setUser(fetchedUser);
       setTotalUsers(usersRes.count || 0);
+
+      // Merge categories from DB and existing products to ensure completeness
+      const dbCategories = categoriesRes.data?.map((c) => c.name) || [];
+      const productCategories = fetchedProducts.map((p) => p.category).filter(Boolean) as string[];
+      setCategories(Array.from(new Set([...dbCategories, ...productCategories])));
 
       // Check admin role from user metadata or profiles table
       if (fetchedUser) {
@@ -173,6 +184,10 @@ export default function Home() {
           setQuickViewProduct(productToOpen);
         }
       }
+      const categoryParam = params.get("category");
+      if (categoryParam) {
+        setSelectedCategory(categoryParam);
+      }
     }
   }, [loading, products]);
 
@@ -204,6 +219,29 @@ export default function Home() {
     }
   };
 
+  const handleCategoryScroll = () => {
+    if (!categoryContainerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = categoryContainerRef.current;
+    setShowLeftScroll(scrollLeft > 0);
+    setShowRightScroll(scrollLeft < scrollWidth - clientWidth - 1);
+  };
+
+  useEffect(() => {
+    handleCategoryScroll();
+    window.addEventListener("resize", handleCategoryScroll);
+    return () => window.removeEventListener("resize", handleCategoryScroll);
+  }, [categories]);
+
+  const scrollCategories = (direction: "left" | "right") => {
+    if (categoryContainerRef.current) {
+      const scrollAmount = 250;
+      categoryContainerRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
   // ── Derived filtered + sorted products ──────────────────────────────────────
   const filteredProducts = products
     .filter((p) => {
@@ -218,7 +256,9 @@ export default function Home() {
         (productFilter === "low" && p.stock > 0 && p.stock <= 5) ||
         (productFilter === "out" && p.stock === 0);
 
-      return matchesSearch && matchesFilter;
+      const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
+
+      return matchesSearch && matchesFilter && matchesCategory;
     })
     .sort((a, b) => {
       if (sortBy === "price_asc") return a.price - b.price;
@@ -622,6 +662,71 @@ export default function Home() {
                   {products.length} Total Items Available
                 </div>
               </div>
+
+              {/* Category Filter Buttons */}
+              {categories.length > 0 && (
+                <div className="relative mb-2 group">
+                  {/* Left fade + arrow */}
+                  {showLeftScroll && (
+                    <div className="absolute left-0 top-0 bottom-4 w-16 bg-gradient-to-r from-gray-950 to-transparent pointer-events-none flex items-center z-10">
+                      <button
+                        onClick={() => scrollCategories("left")}
+                        className="hidden md:flex pointer-events-auto w-8 h-8 rounded-full bg-gray-800 border border-gray-700 text-white items-center justify-center hover:bg-gray-700 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity ml-1"
+                        title="Scroll Left"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+
+                  <div
+                    ref={categoryContainerRef}
+                    onScroll={handleCategoryScroll}
+                    className="flex gap-2 overflow-x-auto snap-x pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                  >
+                    <button
+                      onClick={() => setSelectedCategory("all")}
+                      className={`shrink-0 snap-start whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                        selectedCategory === "all"
+                          ? "bg-violet-500/20 text-violet-300 border border-violet-500/50"
+                          : "bg-gray-900/60 text-gray-400 border border-gray-800 hover:border-gray-600"
+                      }`}
+                    >
+                      All Categories
+                    </button>
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`shrink-0 snap-start whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                          selectedCategory === cat
+                            ? "bg-violet-500/20 text-violet-300 border border-violet-500/50"
+                            : "bg-gray-900/60 text-gray-400 border border-gray-800 hover:border-gray-600"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Right fade + arrow */}
+                  {showRightScroll && (
+                    <div className="absolute right-0 top-0 bottom-4 w-16 bg-gradient-to-l from-gray-950 to-transparent pointer-events-none flex items-center justify-end z-10">
+                      <button
+                        onClick={() => scrollCategories("right")}
+                        className="hidden md:flex pointer-events-auto w-8 h-8 rounded-full bg-gray-800 border border-gray-700 text-white items-center justify-center hover:bg-gray-700 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity mr-1"
+                        title="Scroll Right"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Search + Filter + Sort bar */}
               <div className="flex flex-col sm:flex-row gap-3 mb-6">
