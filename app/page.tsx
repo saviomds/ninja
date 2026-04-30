@@ -109,6 +109,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc" | "stock">("newest");
   const [activeUpdateType, setActiveUpdateType] = useState<string>("all");
+  const [visibleProductsCount, setVisibleProductsCount] = useState(6);
   
   // Interactive States
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
@@ -242,6 +243,10 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    setVisibleProductsCount(6);
+  }, [searchQuery, productFilter, selectedCategory, sortBy]);
+
   // ── Derived filtered + sorted products ──────────────────────────────────────
   const filteredProducts = products
     .filter((p) => {
@@ -267,6 +272,9 @@ export default function Home() {
       // newest: rely on existing sort from DB
       return 0;
     });
+
+  const visibleProducts = filteredProducts.slice(0, visibleProductsCount);
+  const hasMoreProducts = visibleProductsCount < filteredProducts.length;
 
   // ── Derived filtered updates ─────────────────────────────────────────────────
   const filteredUpdates =
@@ -336,11 +344,36 @@ export default function Home() {
       </section>
 
       {loading ? (
-        <div className="max-w-6xl mx-auto px-6 py-20 flex justify-center">
-          <div className="animate-pulse flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-gray-400 font-medium">Loading platform data...</p>
-          </div>
+        <div className="max-w-6xl mx-auto px-6 py-16 space-y-24">
+          {/* Stats Skeleton */}
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 -mt-8 relative z-20">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-gray-900/60 border border-gray-800 rounded-2xl h-[124px] animate-pulse" />
+            ))}
+          </section>
+
+          {/* Products Skeleton */}
+          <section>
+            <div className="mb-6 border-b border-gray-800 pb-4">
+              <div className="h-8 w-64 bg-gray-800 rounded-lg animate-pulse mb-3" />
+              <div className="h-4 w-48 bg-gray-800 rounded-md animate-pulse" />
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden flex flex-col animate-pulse">
+                  <div className="aspect-[4/3] w-full bg-gray-800/80" />
+                  <div className="p-5 flex flex-col gap-3">
+                    <div className="h-5 w-3/4 bg-gray-800 rounded-md" />
+                    <div className="h-3 w-1/4 bg-gray-800 rounded-sm mb-2" />
+                    <div className="h-3 w-full bg-gray-800 rounded-sm" />
+                    <div className="h-3 w-5/6 bg-gray-800 rounded-sm" />
+                    <div className="h-6 w-24 bg-gray-800 rounded-md mt-2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       ) : (
         <div className="max-w-6xl mx-auto px-6 py-16 space-y-24">
@@ -785,8 +818,9 @@ export default function Home() {
                   <p className="font-medium">No products match your filters.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProducts.map((product) => (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {visibleProducts.map((product) => (
                     <div
                       key={product.id}
                       className="group bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 flex flex-col"
@@ -866,7 +900,21 @@ export default function Home() {
                       </div>
                     </div>
                   ))}
-                </div>
+                  </div>
+                  {hasMoreProducts && (
+                    <div className="mt-10 flex justify-center">
+                      <button
+                        onClick={() => setVisibleProductsCount((prev) => prev + 6)}
+                        className="px-6 py-3 bg-gray-900/80 border border-gray-700 hover:border-indigo-500/50 hover:bg-indigo-500/10 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg flex items-center gap-2"
+                      >
+                        Load More Products
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </section>
           )}
