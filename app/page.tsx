@@ -39,21 +39,24 @@ export default function Home() {
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [totalUsers, setTotalUsers] = useState<number>(0);
 
   useEffect(() => {
     const fetchAllData = async () => {
-      const [productsRes, socialRes, updatesRes, authRes] = await Promise.all([
+      const [productsRes, socialRes, updatesRes, authRes, usersRes] = await Promise.all([
         supabase.from("products").select("*").order("created_at", { ascending: false }),
         // Only fetch safe fields—excluding email and password!
         supabase.from("social_profiles").select("id, platform_name, platform_icon, profile_link, username, description").order("created_at", { ascending: false }),
         supabase.from("updates").select("*").order("created_at", { ascending: false }),
         supabase.auth.getUser(),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
       ]);
 
       setProducts(productsRes.data || []);
       setSocialProfiles(socialRes.data || []);
       setUpdates(updatesRes.data || []);
       setUser(authRes.data?.user || null);
+      setTotalUsers(usersRes.count || 0);
       setLoading(false);
     };
 
@@ -97,6 +100,26 @@ export default function Home() {
       ) : (
         <div className="max-w-6xl mx-auto px-6 py-16 space-y-24">
           
+          {/* Stats Overview Section */}
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 -mt-8 relative z-20">
+            <div className="bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 text-center shadow-lg hover:border-indigo-500/50 transition-colors duration-300">
+              <h3 className="text-4xl font-extrabold text-indigo-400 mb-2">{products.length}</h3>
+              <p className="text-gray-400 font-medium tracking-wide">Total Products</p>
+            </div>
+            <div className="bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 text-center shadow-lg hover:border-emerald-500/50 transition-colors duration-300">
+              <h3 className="text-4xl font-extrabold text-emerald-400 mb-2">{updates.length}</h3>
+              <p className="text-gray-400 font-medium tracking-wide">Platform Updates</p>
+            </div>
+            <div className="bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 text-center shadow-lg hover:border-amber-500/50 transition-colors duration-300">
+              <h3 className="text-4xl font-extrabold text-amber-400 mb-2">{socialProfiles.length}</h3>
+              <p className="text-gray-400 font-medium tracking-wide">Connected Profiles</p>
+            </div>
+            <div className="bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 text-center shadow-lg hover:border-rose-500/50 transition-colors duration-300">
+              <h3 className="text-4xl font-extrabold text-rose-400 mb-2">{totalUsers}</h3>
+              <p className="text-gray-400 font-medium tracking-wide">Registered Users</p>
+            </div>
+          </section>
+
           {/* Updates Section */}
           {updates.length > 0 && (
             <section>
@@ -164,9 +187,15 @@ export default function Home() {
           {/* Products Section */}
           {products.length > 0 && (
             <section>
-              <div className="mb-8 border-b border-gray-800 pb-4">
-                <h2 className="text-3xl font-bold text-white">Featured Products</h2>
-                <p className="text-gray-400 mt-2">Explore our latest available items</p>
+              <div className="mb-8 border-b border-gray-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-3xl font-bold text-white">Featured Products</h2>
+                  <p className="text-gray-400 mt-2">Explore our latest available items</p>
+                </div>
+                <div className="text-sm font-medium bg-indigo-500/10 text-indigo-400 px-4 py-2 rounded-full border border-indigo-500/20 w-fit flex items-center shadow-inner">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 mr-2 animate-pulse"></span>
+                  {products.length} Total Items Available
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
