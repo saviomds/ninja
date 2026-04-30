@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
+import UpdateUsername from "./UpdateUsername";
 
 interface Product {
   id: string;
@@ -15,6 +16,11 @@ interface Product {
   price: number;
   stock: number;
   category?: string;
+}
+
+interface Profile {
+  id: string;
+  username: string | null;
 }
 
 interface SocialProfile {
@@ -39,6 +45,7 @@ interface AppUpdate {
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -111,6 +118,17 @@ export default function Dashboard() {
     setUpdates(data || []);
   };
 
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .eq('id', user.id)
+      .single();
+    if (error && error.code !== 'PGRST116') console.error("Error fetching profile:", error);
+    else setProfile(data);
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
@@ -137,22 +155,32 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const getUserAndProducts = async () => {
+    const getUserAndData = async () => {
       const { data: userData } = await supabase.auth.getUser();
 
       if (!userData.user) {
         router.push("/login");
         return;
       }
-
       setUser(userData.user);
-      await fetchProducts();
-      await fetchSocialProfiles();
-      await fetchUpdates();
     };
-
-    getUserAndProducts();
+    getUserAndData();
   }, [router]);
+
+  useEffect(() => {
+    if (user) {
+      const loadData = async () => {
+        // Fetch all data concurrently for better performance
+        await Promise.all([
+          fetchProducts(),
+          fetchSocialProfiles(),
+          fetchUpdates(),
+          fetchUserProfile(),
+        ]);
+      };
+      loadData();
+    }
+  }, [user]);
 
   const handleSaveProduct = async () => {
     setIsSaving(true);
@@ -452,6 +480,25 @@ export default function Dashboard() {
 
       {/* Content */}
       <div className="max-w-5xl mx-auto p-6">
+
+        {/* --- Account Settings Section --- */}
+        <div className="mb-14">
+          <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-white">Account Settings</h2>
+              <p className="text-gray-400 text-sm mt-1">Manage your public profile details.</p>
+            </div>
+          </div>
+          {user && (
+            <UpdateUsername 
+              userId={user.id} 
+              currentUsername={profile?.username || null}
+              onUpdate={fetchUserProfile}
+            />
+          )}
+        </div>
+
+        <hr className="border-gray-800 mb-10" />
 
         {/* --- Updates Section --- */}
         <div className="mb-14">
