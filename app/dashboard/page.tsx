@@ -747,11 +747,18 @@ export default function Dashboard() {
   const handleSaveUpdate = async () => {
     if (!newUpdate.info || !newUpdate.content) { showToast("Title and content required", "error"); return; }
     setIsSavingUpdate(true);
+    const updateData = {
+      info: newUpdate.info,
+      content: newUpdate.content,
+      link: newUpdate.link || null,
+      priority: newUpdate.priority,
+      type: newUpdate.type,
+    };
     let error;
     if (editingUpdateId) {
-      ({ error } = await supabase.from("updates").update(newUpdate).eq("id", editingUpdateId));
+      ({ error } = await supabase.from("updates").update(updateData).eq("id", editingUpdateId));
     } else {
-      ({ error } = await supabase.from("updates").insert([newUpdate]));
+      ({ error } = await supabase.from("updates").insert(updateData));
     }
     setIsSavingUpdate(false);
     if (error) { showToast("Error: " + error.message, "error"); return; }
@@ -1624,6 +1631,13 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${toast.type === "success" ? "bg-emerald-500/20 text-emerald-200 border border-emerald-500/30" : "bg-rose-500/20 text-rose-200 border border-rose-500/30"}`}>
+          <span className="text-xl">{toast.type === "success" ? "✅" : "❌"}</span>
+          <span className="text-sm font-semibold">{toast.message}</span>
         </div>
       )}
     </div>
