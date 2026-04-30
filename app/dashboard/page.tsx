@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import Image from "next/image";
 import Link from "next/link";
 import UpdateUsername from "./UpdateUsername";
 import * as XLSX from "xlsx";
@@ -147,6 +146,16 @@ function merge(ws: XLSX.WorkSheet, r1: number, c1: number, r2: number, c2: numbe
   ws["!merges"].push({ s: { r: r1, c: c1 }, e: { r: r2, c: c2 } });
 }
 
+const extractFileName = (url: string) => {
+  try {
+    const urlObj = new URL(url);
+    const parts = urlObj.pathname.split('/product-images/');
+    return parts.length > 1 ? parts[1] : null;
+  } catch {
+    return url.split('/').pop() ?? null;
+  }
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -186,6 +195,8 @@ export default function Dashboard() {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [adjustingStockId, setAdjustingStockId] = useState<string | null>(null);
+  const [imageInputType, setImageInputType] = useState<"link" | "upload">("link");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: "", image: "", description: "", price: "", stock: "", category: "",
   });
@@ -335,6 +346,7 @@ export default function Dashboard() {
     setIsModalOpen(false);
     setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "" });
     setEditingProductId(null);
+    setImageInputType("link");
     showToast(editingProductId ? "Product updated!" : "Product added!", "success");
     logActivity(editingProductId ? "Updated product" : "Added product", newProduct.name, editingProductId ? "update" : "create");
     fetchProducts();
@@ -343,6 +355,7 @@ export default function Dashboard() {
   const handleEditClick = (product: Product) => {
     setNewProduct({ name: product.name, image: product.image || "", description: product.description || "", price: product.price.toString(), stock: product.stock.toString(), category: product.category || "" });
     setEditingProductId(product.id);
+    setImageInputType(product.image?.includes('product-images') ? "upload" : "link");
     setIsModalOpen(true);
   };
 
@@ -350,6 +363,14 @@ export default function Dashboard() {
     if (!productToDelete) return;
     setIsDeleting(true);
     const prod = products.find(p => p.id === productToDelete);
+
+    if (prod?.image && prod.image.includes('product-images')) {
+      const fileName = extractFileName(prod.image);
+      if (fileName) {
+        await supabase.storage.from('product-images').remove([fileName]);
+      }
+    }
+
     const { error } = await supabase.from("products").delete().eq("id", productToDelete);
     setIsDeleting(false);
     setProductToDelete(null);
@@ -363,6 +384,16 @@ export default function Dashboard() {
     if (!selectedProducts.size) return;
     setIsBulkDeleting(true);
     const ids = Array.from(selectedProducts);
+
+    const fileNames = products
+      .filter(p => selectedProducts.has(p.id) && p.image?.includes('product-images'))
+      .map(p => extractFileName(p.image))
+      .filter(Boolean) as string[];
+
+    if (fileNames.length > 0) {
+      await supabase.storage.from('product-images').remove(fileNames);
+    }
+
     const { error } = await supabase.from("products").delete().in("id", ids);
     setIsBulkDeleting(false);
     setShowBulkConfirm(false);
@@ -397,6 +428,31 @@ export default function Dashboard() {
     if (error) { showToast("Stock update failed", "error"); return; }
     logActivity(`Adjusted stock ${delta > 0 ? "+" : ""}${delta}`, product.name, "update");
     fetchProducts();
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).slice(2)}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      showToast("Image upload failed: " + uploadError.message, "error");
+      setIsUploadingImage(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
+    console.log('Uploaded image public URL:', data.publicUrl);
+    setNewProduct(prev => ({ ...prev, image: data.publicUrl }));
+    setIsUploadingImage(false);
+    showToast("Image uploaded successfully!", "success");
   };
 
   // ─── ✨ BEAUTIFUL EXCEL EXPORT ─────────────────────────────────────────────
@@ -866,7 +922,7 @@ export default function Dashboard() {
                     🗑 Delete {selectedProducts.size} selected
                   </button>
                 )}
-                <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "" }); setEditingProductId(null); setIsModalOpen(true); }} className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "" }); setEditingProductId(null); setImageInputType("link"); setIsModalOpen(true); }} className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                   + New Product
                 </button>
               </div>
@@ -921,7 +977,16 @@ export default function Dashboard() {
                           <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => toggleSelectProduct(product.id)} className="w-4 h-4 rounded accent-indigo-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()} />
                         </div>
                         {product.image ? (
-                          <Image src={product.image} alt={product.name} fill unoptimized className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" />
+                          <img 
+                            key={product.image}
+                            src={product.image.replace('/object/public/', '/render/image/public/')}
+                            alt={product.name} 
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
+                            onError={(e) => { 
+                              console.error('Image failed to load:', product.image);
+                              e.currentTarget.src = "https://placehold.co/400x300/1f2937/9ca3af?text=Image+Not+Found"; 
+                            }}
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">No Image</div>
                         )}
@@ -1022,7 +1087,7 @@ export default function Dashboard() {
 
                     <div className="flex items-center gap-4 mb-4 pr-8">
                       {profile.platform_icon ? (
-                        <Image src={profile.platform_icon} alt={profile.platform_name} width={48} height={48} unoptimized className="w-12 h-12 rounded-xl object-cover bg-gray-800 border border-gray-700" />
+                        <img src={profile.platform_icon} alt={profile.platform_name} className="w-12 h-12 rounded-xl object-cover bg-gray-800 border border-gray-700" />
                       ) : (
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600 flex items-center justify-center text-xl font-bold text-gray-300">{profile.platform_name.charAt(0).toUpperCase()}</div>
                       )}
@@ -1200,10 +1265,46 @@ export default function Dashboard() {
               {[
                 { placeholder: "Product Name *", key: "name", type: "text" },
                 { placeholder: "Category (e.g. Electronics, Fashion)", key: "category", type: "text" },
-                { placeholder: "Image URL", key: "image", type: "text" },
               ].map(f => (
                 <input key={f.key} type={f.type} placeholder={f.placeholder} value={(newProduct as any)[f.key]} onChange={e => setNewProduct({ ...newProduct, [f.key]: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
               ))}
+
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-xs text-gray-500 uppercase tracking-wider">Product Image</label>
+                  <div className="flex gap-2 bg-gray-800/50 p-1 rounded-lg border border-gray-700/50">
+                    <button type="button" onClick={() => setImageInputType("link")} className={`text-xs px-3 py-1 rounded-md transition-colors ${imageInputType === "link" ? "bg-gray-700 text-white shadow-sm" : "text-gray-500 hover:text-gray-300"}`}>Link</button>
+                    <button type="button" onClick={() => setImageInputType("upload")} className={`text-xs px-3 py-1 rounded-md transition-colors ${imageInputType === "upload" ? "bg-gray-700 text-white shadow-sm" : "text-gray-500 hover:text-gray-300"}`}>Upload</button>
+                  </div>
+                </div>
+                {imageInputType === "link" ? (
+                  <input type="text" placeholder="Image URL" value={newProduct.image} onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                ) : (
+                  <div className="relative">
+                    <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage} className="w-full border border-gray-700 px-3 py-2 rounded-xl text-white bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20 disabled:opacity-50 cursor-pointer" />
+                    {isUploadingImage && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-indigo-400 font-medium flex items-center gap-1.5">
+                        <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75"></path></svg>
+                        Uploading...
+                      </div>
+                    )}
+                  </div>
+                )}
+                {imageInputType === "upload" && newProduct.image && !isUploadingImage && (
+                  <div className="text-xs text-emerald-400 ml-1 font-medium">✓ Image uploaded successfully</div>
+                )}
+                {newProduct.image && (
+                  <div className="relative w-full h-40 mt-1 bg-gray-900/50 rounded-xl border border-gray-700 overflow-hidden flex items-center justify-center">
+                    <img 
+                      src={newProduct.image.replace('/object/public/', '/render/image/public/')}
+                      alt="Product preview" 
+                      className="object-contain max-w-full max-h-full" 
+                      onError={(e) => { e.currentTarget.src = "https://placehold.co/400x300/1f2937/9ca3af?text=Broken+Link"; }}
+                    />
+                  </div>
+                )}
+              </div>
+
               <textarea placeholder="Description" rows={3} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm resize-y" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
               <div className="flex gap-3">
                 <input type="number" placeholder="Price (Rs)" className="flex-1 border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} />
@@ -1212,7 +1313,7 @@ export default function Dashboard() {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>
-              <button onClick={handleSaveProduct} disabled={isSaving} className="bg-white text-black px-5 py-2 rounded-xl font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 text-sm">
+              <button onClick={handleSaveProduct} disabled={isSaving || isUploadingImage} className="bg-white text-black px-5 py-2 rounded-xl font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 text-sm">
                 {isSaving ? "Saving…" : "Save Product"}
               </button>
             </div>
