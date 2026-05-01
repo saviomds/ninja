@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
@@ -56,6 +55,54 @@ interface ActivityLog {
   target: string;
   timestamp: Date;
   type: "create" | "update" | "delete" | "info";
+}
+
+interface ServiceRow {
+  id: string;
+  description: string;
+  qty: string;
+  unit: string;
+}
+
+interface PartRow {
+  id: string;
+  description: string;
+  partNo: string;
+  qty: string;
+  unit: string;
+}
+
+interface LabourRow {
+  id: string;
+  description: string;
+  hours: string;
+  rate: string;
+}
+
+interface InvoiceData {
+  id?: string;
+  version?: number;
+  invoiceNo: string;
+  date: string;
+  due: string;
+  customerTitle: string;
+  customerName: string;
+  address: string;
+  tel: string;
+  email: string;
+  device: string;
+  serial: string;
+  tech: string;
+  wo: string;
+  done: string;
+  services: ServiceRow[];
+  parts: PartRow[];
+  labour: LabourRow[];
+  terms: string;
+  bankTransfer: string;
+  card: string;
+  mobilePay: string;
+  cash: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -157,6 +204,609 @@ const extractFileName = (url: string) => {
   }
 };
 
+// ─── Invoice Helpers & Components ─────────────────────────────────────────────
+
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+const emptyService = (): ServiceRow => ({ id: uid(), description: "", qty: "", unit: "" });
+const emptyPart = (): PartRow => ({ id: uid(), description: "", partNo: "", qty: "", unit: "" });
+const emptyLabour = (): LabourRow => ({ id: uid(), description: "", hours: "", rate: "" });
+
+const defaultInvoiceData = (): InvoiceData => ({
+  version: 1,
+  invoiceNo: "",
+  date: new Date().toISOString().slice(0, 10),
+  due: "",
+  customerTitle: "Mr",
+  customerName: "",
+  address: "",
+  tel: "",
+  email: "",
+  device: "",
+  serial: "",
+  tech: "",
+  wo: "",
+  done: "",
+  services: [emptyService(), emptyService(), emptyService(), emptyService()],
+  parts: [emptyPart(), emptyPart(), emptyPart(), emptyPart()],
+  labour: [emptyLabour(), emptyLabour(), emptyLabour(), emptyLabour()],
+  terms: "",
+  bankTransfer: "",
+  card: "",
+  mobilePay: "",
+  cash: "",
+});
+
+const fmt = (v: string) => {
+  const n = parseFloat(v);
+  return isNaN(n) ? "" : `Rs ${n.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`;
+};
+
+const calcTotal = (qty: string, unit: string) => {
+  const q = parseFloat(qty);
+  const u = parseFloat(unit);
+  if (isNaN(q) || isNaN(u)) return "";
+  return (q * u).toFixed(2);
+};
+
+const calcLabourTotal = (hours: string, rate: string) => {
+  const h = parseFloat(hours);
+  const r = parseFloat(rate);
+  if (isNaN(h) || isNaN(r)) return "";
+  return (h * r).toFixed(2);
+};
+
+const sumRows = (rows: { qty: string; unit: string }[]) =>
+  rows.reduce((acc, r) => {
+    const t = parseFloat(calcTotal(r.qty, r.unit));
+    return acc + (isNaN(t) ? 0 : t);
+  }, 0);
+
+const sumLabour = (rows: LabourRow[]) =>
+  rows.reduce((acc, r) => {
+    const t = parseFloat(calcLabourTotal(r.hours, r.rate));
+    return acc + (isNaN(t) ? 0 : t);
+  }, 0);
+
+const InputField = ({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder = "",
+  className = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  className?: string;
+}) => (
+  <div className={`flex flex-col gap-1 ${className}`}>
+    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
+    />
+  </div>
+);
+
+function InvoicePreview({ data }: { data: InvoiceData }) {
+  const partsSubtotal = sumRows(data.parts);
+  const labourSubtotal = sumLabour(data.labour);
+  const servicesSubtotal = sumRows(data.services);
+  const subtotal = partsSubtotal + labourSubtotal + servicesSubtotal;
+  const vat = subtotal * 0.15;
+  const total = subtotal + vat;
+
+  const Cell = ({ children, className = "" }: { children?: React.ReactNode; className?: string }) => (
+    <td className={`border border-gray-600 px-2 py-1.5 text-xs ${className}`}>{children}</td>
+  );
+
+  const Th = ({ children, className = "" }: { children?: React.ReactNode; className?: string }) => (
+    <th className={`border border-gray-600 px-2 py-1.5 text-xs font-semibold text-center bg-gray-900 text-white ${className}`}>{children}</th>
+  );
+
+  return (
+    <div
+      id="invoice-preview"
+      className="bg-white text-black font-sans"
+      style={{ fontFamily: "'Arial', sans-serif", fontSize: "11px", minWidth: "700px" }}
+    >
+      {/* Header */}
+      <div style={{ background: "#0a0a0a", padding: "20px 24px 16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          {/* Logo */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+            <Image
+              src="/logo.png"
+              alt="TechNinja Logo"
+              width={64}
+              height={64}
+              unoptimized
+              style={{ objectFit: "contain", borderRadius: "8px" }}
+            />
+          </div>
+          <div style={{ color: "#aaa", fontSize: "10px" }}>Coromandel, Mauritius</div>
+          <div style={{ color: "#aaa", fontSize: "10px" }}>+230 5809 8080 • info@techninja.mu</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ color: "#FFD700", fontWeight: "900", fontSize: "32px", letterSpacing: "2px" }}>INVOICE</div>
+          <table style={{ marginTop: "8px", borderCollapse: "collapse", marginLeft: "auto" }}>
+            <tbody>
+              {[
+                ["No:", data.invoiceNo || "—"],
+                ["Date:", data.date ? new Date(data.date).toLocaleDateString("en-MU") : "—"],
+                ["Due:", data.due ? new Date(data.due).toLocaleDateString("en-MU") : "—"],
+              ].map(([label, val]) => (
+                <tr key={label as string}>
+                  <td style={{ color: "#aaa", paddingRight: "8px", fontSize: "10px" }}>{label}</td>
+                  <td style={{ background: "#333", color: "#fff", padding: "2px 8px", fontSize: "10px", borderRadius: "3px", minWidth: "90px" }}>{val}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style={{ padding: "16px 24px" }}>
+        {/* Bill To + Service Details */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
+          {/* Bill To */}
+          <div style={{ border: "1px solid #00d4ff", borderRadius: "6px", padding: "10px 12px" }}>
+            <div style={{ color: "#00d4ff", fontWeight: "700", fontSize: "11px", marginBottom: "8px", borderBottom: "1px solid #00d4ff", paddingBottom: "4px" }}>BILL TO</div>
+            <div><strong>Mr/Mrs/Miss:</strong> {data.customerTitle} {data.customerName || "—"}</div>
+            <div><strong>Address:</strong> {data.address || "—"}</div>
+            <div style={{ display: "flex", gap: "16px", marginTop: "2px" }}>
+              <span><strong>Tel:</strong> {data.tel || "—"}</span>
+              <span><strong>Email:</strong> {data.email || "—"}</span>
+            </div>
+          </div>
+          {/* Service Details */}
+          <div style={{ border: "1px solid #00d4ff", borderRadius: "6px", padding: "10px 12px" }}>
+            <div style={{ color: "#00d4ff", fontWeight: "700", fontSize: "11px", marginBottom: "8px", borderBottom: "1px solid #00d4ff", paddingBottom: "4px" }}>SERVICE DETAILS</div>
+            <div><strong>Device:</strong> {data.device || "—"}</div>
+            <div style={{ display: "flex", gap: "16px" }}>
+              <span><strong>Serial:</strong> {data.serial || "—"}</span>
+              <span><strong>Tech:</strong> {data.tech || "—"}</span>
+            </div>
+            <div style={{ display: "flex", gap: "16px" }}>
+              <span><strong>WO:</strong> {data.wo || "—"}</span>
+              <span><strong>Done:</strong> {data.done || "—"}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Services Performed */}
+        <div style={{ marginBottom: "14px" }}>
+          <div style={{ background: "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700", marginBottom: "0" }}>SERVICES PERFORMED</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#111" }}>
+                {["#", "Description", "Qty", "Unit (Rs)", "Total (Rs)"].map((h) => (
+                  <th key={h} style={{ border: "1px solid #555", padding: "5px 8px", color: "#00d4ff", fontWeight: "600", textAlign: "center", fontSize: "10px" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.services.map((s, i) => (
+                <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : "#f9f9f9" }}>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "30px" }}>{i + 1}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px" }}>{s.description}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "60px" }}>{s.qty}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "80px" }}>{s.unit}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "90px" }}>
+                    {calcTotal(s.qty, s.unit) ? `Rs ${parseFloat(calcTotal(s.qty, s.unit)).toLocaleString("en-MU", { minimumFractionDigits: 2 })}` : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Parts Used */}
+        <div style={{ marginBottom: "14px" }}>
+          <div style={{ background: "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700" }}>PARTS USED</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#111" }}>
+                {["#", "Part Description", "Part No", "Qty", "Unit (Rs)", "Total (Rs)"].map((h) => (
+                  <th key={h} style={{ border: "1px solid #555", padding: "5px 8px", color: "#00d4ff", fontWeight: "600", textAlign: "center", fontSize: "10px" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.parts.map((p, i) => (
+                <tr key={p.id} style={{ background: i % 2 === 0 ? "#fff" : "#f9f9f9" }}>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "30px" }}>{i + 1}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px" }}>{p.description}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "70px" }}>{p.partNo}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "50px" }}>{p.qty}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "80px" }}>{p.unit}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "90px" }}>
+                    {calcTotal(p.qty, p.unit) ? `Rs ${parseFloat(calcTotal(p.qty, p.unit)).toLocaleString("en-MU", { minimumFractionDigits: 2 })}` : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Labour Charges */}
+        <div style={{ marginBottom: "14px" }}>
+          <div style={{ background: "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700" }}>LABOUR CHARGES</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#111" }}>
+                {["#", "Description", "Hours", "Rate/Hr (Rs)", "Total (Rs)"].map((h) => (
+                  <th key={h} style={{ border: "1px solid #555", padding: "5px 8px", color: "#00d4ff", fontWeight: "600", textAlign: "center", fontSize: "10px" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.labour.map((l, i) => (
+                <tr key={l.id} style={{ background: i % 2 === 0 ? "#fff" : "#f9f9f9" }}>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "30px" }}>{i + 1}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px" }}>{l.description}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "60px" }}>{l.hours}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "90px" }}>{l.rate}</td>
+                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "90px" }}>
+                    {calcLabourTotal(l.hours, l.rate) ? `Rs ${parseFloat(calcLabourTotal(l.hours, l.rate)).toLocaleString("en-MU", { minimumFractionDigits: 2 })}` : ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Bottom: Payment + Totals */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          {/* Payment Terms */}
+          <div style={{ border: "1px solid #00d4ff", borderRadius: "6px", padding: "10px 12px" }}>
+            <div style={{ color: "#00d4ff", fontWeight: "700", fontSize: "11px", marginBottom: "8px", borderBottom: "1px solid #00d4ff", paddingBottom: "4px" }}>PAYMENT TERMS</div>
+            <div><strong>Terms:</strong> {data.terms || "—"}</div>
+            <div><strong>Bank Transfer:</strong> {data.bankTransfer || "—"}</div>
+            <div><strong>Card:</strong> {data.card || "—"}</div>
+            <div><strong>Mobile Pay:</strong> {data.mobilePay || "—"}</div>
+            <div><strong>Cash:</strong> {data.cash || "—"}</div>
+          </div>
+
+          {/* Totals */}
+          <div style={{ border: "1px solid #ddd", borderRadius: "6px", overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <tbody>
+                {[
+                  ["Parts Subtotal", partsSubtotal, false],
+                  ["Labour Subtotal", labourSubtotal, false],
+                  ["Subtotal", subtotal, true],
+                  ["VAT (15%)", vat, false],
+                ].map(([label, val, bold]) => (
+                  <tr key={String(label)}>
+                    <td style={{ padding: "6px 10px", fontSize: "11px", fontWeight: bold ? "700" : "400", borderBottom: "1px solid #eee" }}>{String(label)}</td>
+                    <td style={{ padding: "6px 10px", fontSize: "11px", fontWeight: bold ? "700" : "400", textAlign: "right", borderBottom: "1px solid #eee" }}>
+                      Rs {(val as number).toLocaleString("en-MU", { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                ))}
+                <tr style={{ background: "#0a0a0a" }}>
+                  <td style={{ padding: "8px 10px", color: "#fff", fontWeight: "900", fontSize: "12px" }}>TOTAL DUE</td>
+                  <td style={{ padding: "8px 10px", color: "#FFD700", fontWeight: "900", fontSize: "14px", textAlign: "right" }}>
+                    Rs {total.toLocaleString("en-MU", { minimumFractionDigits: 2 })}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ textAlign: "center", marginTop: "20px", paddingTop: "12px", borderTop: "2px solid #00d4ff" }}>
+          <div style={{ color: "#00d4ff", fontWeight: "700", fontSize: "13px", marginBottom: "4px" }}>Thank You for Choosing TechNinja!</div>
+          <div style={{ color: "#666", fontSize: "9px" }}>Questions about this invoice? Contact us at info@techninja.mu or +230 5809 8080</div>
+          <div style={{ color: "#666", fontSize: "9px" }}>TechNinja • Coromandel, Mauritius • Reg. No: MU-2020-00123</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InvoiceFormModal({
+  data,
+  onChange,
+  onClose,
+  onExport,
+  isExporting,
+  onSave,
+  isSaving,
+}: {
+  data: InvoiceData;
+  onChange: (d: InvoiceData) => void;
+  onClose: () => void;
+  onExport: () => void;
+  onSave: (d: InvoiceData) => void;
+  isExporting: boolean;
+  isSaving: boolean;
+}) {
+  const set = useCallback(
+    (key: keyof InvoiceData, val: string) => onChange({ ...data, [key]: val }),
+    [data, onChange]
+  );
+
+  const updateService = (i: number, key: keyof ServiceRow, val: string) => {
+    const rows = [...data.services];
+    rows[i] = { ...rows[i], [key]: val };
+    onChange({ ...data, services: rows });
+  };
+
+  const updatePart = (i: number, key: keyof PartRow, val: string) => {
+    const rows = [...data.parts];
+    rows[i] = { ...rows[i], [key]: val };
+    onChange({ ...data, parts: rows });
+  };
+
+  const updateLabour = (i: number, key: keyof LabourRow, val: string) => {
+    const rows = [...data.labour];
+    rows[i] = { ...rows[i], [key]: val };
+    onChange({ ...data, labour: rows });
+  };
+
+  const addRow = (section: "services" | "parts" | "labour") => {
+    if (section === "services") onChange({ ...data, services: [...data.services, emptyService()] });
+    if (section === "parts") onChange({ ...data, parts: [...data.parts, emptyPart()] });
+    if (section === "labour") onChange({ ...data, labour: [...data.labour, emptyLabour()] });
+  };
+
+  const removeRow = (section: "services" | "parts" | "labour", i: number) => {
+    if (section === "services") onChange({ ...data, services: data.services.filter((_, idx) => idx !== i) });
+    if (section === "parts") onChange({ ...data, parts: data.parts.filter((_, idx) => idx !== i) });
+    if (section === "labour") onChange({ ...data, labour: data.labour.filter((_, idx) => idx !== i) });
+  };
+
+  const sectionHeader = (title: string) => (
+    <div className="flex items-center gap-3 mb-4 mt-6">
+      <div className="h-px flex-1 bg-gray-700" />
+      <span className="text-xs font-bold uppercase tracking-widest text-cyan-400">{title}</span>
+      <div className="h-px flex-1 bg-gray-700" />
+    </div>
+  );
+
+  const tableInput = (value: string, onChange: (v: string) => void, type = "text", placeholder = "") => (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition-all"
+    />
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-[100] backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 py-8">
+      <div className="bg-gray-950 border border-gray-800 rounded-2xl w-full max-w-3xl shadow-2xl">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
+              <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h2 className="text-white font-bold text-lg">Invoice Details</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-6 space-y-1">
+          {/* Invoice Meta */}
+          {sectionHeader("Invoice Info")}
+          <div className="grid grid-cols-3 gap-3">
+            <InputField label="Invoice No" value={data.invoiceNo} onChange={(v) => set("invoiceNo", v)} placeholder="INV-001" />
+            <InputField label="Date" value={data.date} onChange={(v) => set("date", v)} type="date" />
+            <InputField label="Due Date" value={data.due} onChange={(v) => set("due", v)} type="date" />
+          </div>
+
+          {/* Bill To */}
+          {sectionHeader("Bill To")}
+          <div className="grid grid-cols-4 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Title</label>
+              <select
+                value={data.customerTitle}
+                onChange={(e) => set("customerTitle", e.target.value)}
+                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 transition-all"
+              >
+                {["Mr", "Mrs", "Miss", "Dr", "Prof"].map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-span-3">
+              <InputField label="Full Name" value={data.customerName} onChange={(v) => set("customerName", v)} placeholder="John Doe" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-3 mt-3">
+            <InputField label="Address" value={data.address} onChange={(v) => set("address", v)} placeholder="123 Main Street, Port Louis" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <InputField label="Tel" value={data.tel} onChange={(v) => set("tel", v)} placeholder="+230 5XXX XXXX" />
+            <InputField label="Email" value={data.email} onChange={(v) => set("email", v)} type="email" placeholder="customer@email.com" />
+          </div>
+
+          {/* Service Details */}
+          {sectionHeader("Service Details")}
+          <div className="grid grid-cols-2 gap-3">
+            <InputField label="Device" value={data.device} onChange={(v) => set("device", v)} placeholder="iPhone 14 Pro" />
+            <InputField label="Serial" value={data.serial} onChange={(v) => set("serial", v)} placeholder="SN123456789" />
+            <InputField label="Tech" value={data.tech} onChange={(v) => set("tech", v)} placeholder="Technician name" />
+            <InputField label="Work Order (WO)" value={data.wo} onChange={(v) => set("wo", v)} placeholder="WO-2024-001" />
+            <InputField label="Done" value={data.done} onChange={(v) => set("done", v)} placeholder="Completion status" />
+          </div>
+
+          {/* Services Performed */}
+          {sectionHeader("Services Performed")}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-900">
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-6">#</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold">Description</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-16">Qty</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Unit (Rs)</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Total</th>
+                  <th className="w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.services.map((s, i) => (
+                  <tr key={s.id} className="border-t border-gray-800">
+                    <td className="px-2 py-1.5 text-gray-500 text-center">{i + 1}</td>
+                    <td className="px-2 py-1.5">{tableInput(s.description, (v) => updateService(i, "description", v), "text", "Service description")}</td>
+                    <td className="px-2 py-1.5">{tableInput(s.qty, (v) => updateService(i, "qty", v), "number", "0")}</td>
+                    <td className="px-2 py-1.5">{tableInput(s.unit, (v) => updateService(i, "unit", v), "number", "0.00")}</td>
+                    <td className="px-2 py-1.5 text-emerald-400 font-semibold">
+                      {calcTotal(s.qty, s.unit) ? `Rs ${parseFloat(calcTotal(s.qty, s.unit)).toLocaleString()}` : "—"}
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <button onClick={() => removeRow("services", i)} className="text-gray-600 hover:text-rose-400 transition-colors">×</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button onClick={() => addRow("services")} className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
+            <span>+</span> Add Row
+          </button>
+
+          {/* Parts Used */}
+          {sectionHeader("Parts Used")}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-900">
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-6">#</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold">Description</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Part No</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-16">Qty</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Unit (Rs)</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Total</th>
+                  <th className="w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.parts.map((p, i) => (
+                  <tr key={p.id} className="border-t border-gray-800">
+                    <td className="px-2 py-1.5 text-gray-500 text-center">{i + 1}</td>
+                    <td className="px-2 py-1.5">{tableInput(p.description, (v) => updatePart(i, "description", v), "text", "Part name")}</td>
+                    <td className="px-2 py-1.5">{tableInput(p.partNo, (v) => updatePart(i, "partNo", v), "text", "PN-001")}</td>
+                    <td className="px-2 py-1.5">{tableInput(p.qty, (v) => updatePart(i, "qty", v), "number", "0")}</td>
+                    <td className="px-2 py-1.5">{tableInput(p.unit, (v) => updatePart(i, "unit", v), "number", "0.00")}</td>
+                    <td className="px-2 py-1.5 text-emerald-400 font-semibold">
+                      {calcTotal(p.qty, p.unit) ? `Rs ${parseFloat(calcTotal(p.qty, p.unit)).toLocaleString()}` : "—"}
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <button onClick={() => removeRow("parts", i)} className="text-gray-600 hover:text-rose-400 transition-colors">×</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button onClick={() => addRow("parts")} className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
+            <span>+</span> Add Row
+          </button>
+
+          {/* Labour Charges */}
+          {sectionHeader("Labour Charges")}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-900">
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-6">#</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold">Description</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-20">Hours</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-28">Rate/Hr (Rs)</th>
+                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Total</th>
+                  <th className="w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.labour.map((l, i) => (
+                  <tr key={l.id} className="border-t border-gray-800">
+                    <td className="px-2 py-1.5 text-gray-500 text-center">{i + 1}</td>
+                    <td className="px-2 py-1.5">{tableInput(l.description, (v) => updateLabour(i, "description", v), "text", "Labour description")}</td>
+                    <td className="px-2 py-1.5">{tableInput(l.hours, (v) => updateLabour(i, "hours", v), "number", "0")}</td>
+                    <td className="px-2 py-1.5">{tableInput(l.rate, (v) => updateLabour(i, "rate", v), "number", "0.00")}</td>
+                    <td className="px-2 py-1.5 text-emerald-400 font-semibold">
+                      {calcLabourTotal(l.hours, l.rate) ? `Rs ${parseFloat(calcLabourTotal(l.hours, l.rate)).toLocaleString()}` : "—"}
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <button onClick={() => removeRow("labour", i)} className="text-gray-600 hover:text-rose-400 transition-colors">×</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button onClick={() => addRow("labour")} className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
+            <span>+</span> Add Row
+          </button>
+
+          {/* Payment Terms */}
+          {sectionHeader("Payment Terms")}
+          <div className="grid grid-cols-2 gap-3">
+            <InputField label="Terms" value={data.terms} onChange={(v) => set("terms", v)} placeholder="Net 30" />
+            <InputField label="Bank Transfer" value={data.bankTransfer} onChange={(v) => set("bankTransfer", v)} placeholder="Account number" />
+            <InputField label="Card" value={data.card} onChange={(v) => set("card", v)} placeholder="Visa / Mastercard" />
+            <InputField label="Mobile Pay" value={data.mobilePay} onChange={(v) => set("mobilePay", v)} placeholder="Juice / MyT Money" />
+            <InputField label="Cash" value={data.cash} onChange={(v) => set("cash", v)} placeholder="Accepted" />
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800">
+          <button onClick={onClose} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white text-sm transition-colors">
+            Cancel
+          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium border border-gray-700 transition-all"
+            >
+              Preview
+            </button>
+            <button
+            onClick={() => onSave(data)}
+            disabled={isSaving}
+            className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium border border-indigo-700 transition-all disabled:opacity-50"
+          >
+            {isSaving ? "Saving..." : "Save to DB"}
+          </button>
+          <button
+              onClick={onExport}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-sm font-bold transition-all disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              {isExporting ? "Generating…" : "Export PDF"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -171,6 +821,7 @@ export default function Dashboard() {
   const [socialProfiles, setSocialProfiles] = useState<SocialProfile[]>([]);
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -180,7 +831,14 @@ export default function Dashboard() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeSection, setActiveSection] = useState<"products" | "social" | "updates" | "settings" | "log">("products");
+  const [activeSection, setActiveSection] = useState<"products" | "social" | "updates" | "settings" | "log" | "invoice">("products");
+
+  // Invoice state
+  const [invoiceData, setInvoiceData] = useState<InvoiceData>(defaultInvoiceData());
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isExportingInvoice, setIsExportingInvoice] = useState(false);
+  const [isSavingInvoice, setIsSavingInvoice] = useState(false);
+  const [activeEditors, setActiveEditors] = useState<string[]>([]);
 
   const [viewMode, setViewMode] = useState<"card" | "excel">("card");
   // Products
@@ -263,16 +921,48 @@ export default function Dashboard() {
     if (!error) setProfile(data);
   }, []);
 
+  const fetchInvoices = useCallback(async () => {
+    const { data } = await supabase.from("invoices").select("*").order("created_at", { ascending: false });
+    if (data) {
+      const mapped = data.map(inv => ({
+        id: inv.id,
+        version: inv.version || 1,
+        invoiceNo: inv.invoice_no || "",
+        date: inv.date || "",
+        due: inv.due || "",
+        customerTitle: inv.customer_title || "Mr",
+        customerName: inv.customer_name || "",
+        address: inv.address || "",
+        tel: inv.tel || "",
+        email: inv.email || "",
+        device: inv.device || "",
+        serial: inv.serial || "",
+        tech: inv.tech || "",
+        wo: inv.wo || "",
+        done: inv.done || "",
+        services: inv.services || [],
+        parts: inv.parts || [],
+        labour: inv.labour || [],
+        terms: inv.terms || "",
+        bankTransfer: inv.bank_transfer || "",
+        card: inv.card || "",
+        mobilePay: inv.mobile_pay || "",
+        cash: inv.cash || "",
+      }));
+      setInvoices(mapped);
+    }
+  }, []);
+
   const loadAllData = useCallback(async (showRefreshToast = false) => {
     if (!user) return;
     showRefreshToast ? setIsRefreshing(true) : setLoading(true);
-    await Promise.all([fetchProducts(), fetchSocialProfiles(), fetchUpdates(), fetchUserProfile(user.id)]);
+    await Promise.all([fetchProducts(), fetchSocialProfiles(), fetchUpdates(), fetchUserProfile(user.id), fetchInvoices()]);
     showRefreshToast ? setIsRefreshing(false) : setLoading(false);
     if (showRefreshToast) {
       showToast("Dashboard refreshed!", "success");
       logActivity("Refreshed dashboard data", "All sections", "info");
     }
-  }, [user, fetchProducts, fetchSocialProfiles, fetchUpdates, fetchUserProfile, showToast, logActivity]);
+  }, [user, fetchProducts, fetchSocialProfiles, fetchUpdates, fetchUserProfile, fetchInvoices, showToast, logActivity]);
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
 
@@ -286,6 +976,45 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) loadAllData();
   }, [user]); // eslint-disable-line
+
+  // ─── Realtime Presence for Invoices ────────────────────────────────────────
+  useEffect(() => {
+    let channel: RealtimeChannel | null = null;
+
+    if (isInvoiceModalOpen && invoiceData.id && user) {
+      // Subscribe to a unique channel for this specific invoice
+      channel = supabase.channel(`invoice-${invoiceData.id}`, {
+        config: { presence: { key: user.id } },
+      });
+
+      channel
+        .on("presence", { event: "sync" }, () => {
+          const state = channel!.presenceState();
+          // Extract emails of other users currently in the channel
+          const editors = Object.values(state)
+            .flat()
+            .map((p: any) => p.email)
+            .filter((email: string) => email !== user.email);
+            
+          setActiveEditors(editors);
+        })
+        .subscribe(async (status) => {
+          if (status === "SUBSCRIBED") {
+            // Broadcast that we are viewing/editing
+            await channel!.track({ email: user.email, status: "editing" });
+          }
+        });
+    } else {
+      setActiveEditors([]);
+    }
+
+    return () => {
+      if (channel) {
+        channel.untrack();
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [isInvoiceModalOpen, invoiceData.id, user]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -795,15 +1524,126 @@ export default function Dashboard() {
     router.push("/login");
   };
 
+  const handleExportInvoice = async () => {
+    setIsExportingInvoice(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
+      const el = document.getElementById("invoice-preview");
+      if (!el) throw new Error("Preview element not found");
+
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#fff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = (canvas.height * pdfW) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH);
+      pdf.save(`TechNinja_Invoice_${invoiceData.invoiceNo || "draft"}.pdf`);
+
+      showToast("Invoice PDF exported successfully!", "success");
+      setIsInvoiceModalOpen(false);
+      logActivity("Exported Invoice", `Invoice No: ${invoiceData.invoiceNo || "draft"}`, "info");
+    } catch (err) {
+      console.error(err);
+      window.print();
+      showToast("Opened print dialog as fallback", "success");
+    } finally {
+      setIsExportingInvoice(false);
+    }
+  };
+
+  const handleSaveInvoice = async (invoiceToSave: InvoiceData) => {
+    setIsSavingInvoice(true);
+    try {
+      const payload = {
+        invoice_no: invoiceToSave.invoiceNo,
+        date: invoiceToSave.date,
+        due: invoiceToSave.due,
+        customer_title: invoiceToSave.customerTitle,
+        customer_name: invoiceToSave.customerName,
+        address: invoiceToSave.address,
+        tel: invoiceToSave.tel,
+        email: invoiceToSave.email,
+        device: invoiceToSave.device,
+        serial: invoiceToSave.serial,
+        tech: invoiceToSave.tech,
+        wo: invoiceToSave.wo,
+        done: invoiceToSave.done,
+        services: invoiceToSave.services,
+        parts: invoiceToSave.parts,
+        labour: invoiceToSave.labour,
+        terms: invoiceToSave.terms,
+        bank_transfer: invoiceToSave.bankTransfer,
+        card: invoiceToSave.card,
+        mobile_pay: invoiceToSave.mobilePay,
+        cash: invoiceToSave.cash,
+        user_id: user?.id,
+        version: (invoiceToSave.version || 1) + 1,
+      };
+
+      if (invoiceToSave.id) {
+        // Using optimistic concurrency control: Only update if the version matches what we originally loaded
+        const { data, error } = await supabase
+          .from("invoices")
+          .update(payload)
+          .eq("id", invoiceToSave.id)
+          .eq("version", invoiceToSave.version || 1)
+          .select();
+          
+        if (error) throw error;
+        
+        // If no rows were returned, it means the version didn't match (someone else updated it)
+        if (!data || data.length === 0) {
+          throw new Error("Concurrency error: The invoice was modified elsewhere. Please refresh to see the latest changes.");
+        }
+        
+        setInvoiceData(prev => ({ ...prev, version: payload.version }));
+        showToast("Invoice updated in database!", "success");
+        logActivity("Updated Invoice", `Invoice No: ${invoiceToSave.invoiceNo}`, "update");
+      } else {
+        const { data, error } = await supabase.from("invoices").insert([payload]).select().single();
+        if (error) throw error;
+        setInvoiceData(prev => ({ ...prev, id: data.id, version: data.version }));
+        showToast("Invoice saved to database!", "success");
+        logActivity("Saved Invoice", `Invoice No: ${invoiceToSave.invoiceNo}`, "create");
+      }
+      fetchInvoices();
+    } catch (error: any) {
+      // Log error properties explicitly because Next.js sometimes stringifies Error instances as {}
+      console.error("Invoice Save Error Details:", {
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+        stack: error?.stack,
+      });
+      showToast(error?.message || "An unexpected error occurred while saving.", "error");
+    } finally {
+      setIsSavingInvoice(false);
+    }
+  };
+
   // ─── Nav sections ─────────────────────────────────────────────────────────
 
   const navSections = [
     { key: "products", label: "Products", count: products.length, icon: "📦" },
     { key: "social", label: "Social", count: socialProfiles.length, icon: "🔗" },
     { key: "updates", label: "Updates", count: updates.length, icon: "📣" },
+    { key: "invoice", label: "Invoice", count: null, icon: "📄" },
     { key: "settings", label: "Settings", count: null, icon: "⚙️" },
     { key: "log", label: "Activity", count: activityLog.length || null, icon: "🕐" },
   ] as const;
+
+  const invoiceCounter = invoices.length + 1;
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -1366,6 +2206,121 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ══ INVOICE TAB ═════════════════════════════════════════════════════════ */}
+        {activeSection === "invoice" && (() => {
+          const partsSubtotal = sumRows(invoiceData.parts);
+          const labourSubtotal = sumLabour(invoiceData.labour);
+          const servicesSubtotal = sumRows(invoiceData.services);
+          const subtotal = partsSubtotal + labourSubtotal + servicesSubtotal;
+          const vat = subtotal * 0.15;
+          const total = subtotal + vat;
+
+          return (
+            <div>
+              <style>{`
+                @media print {
+                  body > *:not(#print-root) { display: none !important; }
+                  #print-root { display: block !important; }
+                  #invoice-preview { width: 100%; }
+                }
+                @keyframes fadeSlideUp {
+                  from { opacity: 0; transform: translateY(12px); }
+                  to   { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fsu { animation: fadeSlideUp 0.35s ease both; }
+              `}</style>
+              <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 pt-2">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Invoice Generator</h2>
+                  <p className="text-gray-500 text-sm mt-0.5">Create and export PDF invoices</p>
+                </div>
+                <button onClick={() => setIsInvoiceModalOpen(true)} className="w-full md:w-auto flex justify-center items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black px-6 py-3 rounded-xl font-bold transition-all duration-200 shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_28px_rgba(0,212,255,0.5)]">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Fill Invoice
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-fsu">
+                {[
+                  { label: "Parts", val: `Rs ${partsSubtotal.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-blue-400" },
+                  { label: "Labour", val: `Rs ${labourSubtotal.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-violet-400" },
+                  { label: "VAT (15%)", val: `Rs ${vat.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-amber-400" },
+                  { label: "Total Due", val: `Rs ${total.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-cyan-400" },
+                ].map((s) => (
+                  <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                    <p className="text-xs text-gray-500 mb-1 font-semibold uppercase tracking-wider">{s.label}</p>
+                    <p className={`text-lg font-bold ${s.color}`}>{s.val}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="animate-fsu" style={{ animationDelay: "0.1s" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Live Preview</h2>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setInvoiceData(defaultInvoiceData()); showToast("Invoice reset", "success"); }}
+                      className="text-xs text-gray-500 hover:text-rose-400 px-3 py-1.5 rounded-lg border border-gray-800 hover:border-rose-500/30 transition-all"
+                    >
+                      Reset
+                    </button>
+                    <button
+                      onClick={handleExportInvoice}
+                      disabled={isExportingInvoice}
+                      className="flex items-center gap-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg border border-gray-700 transition-all disabled:opacity-50"
+                    >
+                      <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      {isExportingInvoice ? "Exporting…" : "Export PDF"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl overflow-hidden border border-gray-800 shadow-2xl overflow-x-auto bg-white p-4">
+                  <div id="print-root">
+                    <InvoicePreview data={invoiceData} />
+                  </div>
+                </div>
+              </div>
+
+              {!invoiceData.customerName && !invoiceData.device && (
+                <div className="mt-8 text-center animate-fsu" style={{ animationDelay: "0.2s" }}>
+                  <p className="text-gray-500 text-sm mb-3">No data yet — click <strong className="text-cyan-400">Fill Invoice</strong> to get started</p>
+                <button onClick={() => {
+                  if (!invoiceData.invoiceNo) {
+                    setInvoiceData(prev => ({ ...prev, invoiceNo: `INV-${String(invoiceCounter).padStart(3, '0')}` }));
+                  }
+                  setIsInvoiceModalOpen(true);
+                }} className="text-sm text-cyan-400 hover:text-cyan-300 underline underline-offset-2 transition-colors">
+                    Open form →
+                  </button>
+                </div>
+              )}
+
+          {invoices.length > 0 && (
+            <div className="mt-8 animate-fsu" style={{ animationDelay: "0.3s" }}>
+              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Recent Invoices</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {invoices.map(inv => (
+                  <div key={inv.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-cyan-500/50 transition-colors cursor-pointer" onClick={() => { setInvoiceData(inv); showToast(`Loaded ${inv.invoiceNo}`, "success"); }}>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-bold text-white">{inv.invoiceNo}</span>
+                      <span className="text-xs text-gray-500">{inv.date ? new Date(inv.date).toLocaleDateString() : "No Date"}</span>
+                    </div>
+                    <p className="text-sm text-gray-400">{inv.customerName || "Unknown Customer"}</p>
+                    <p className="text-xs text-cyan-400 mt-2">{inv.device || "No device specified"}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+            </div>
+          );
+        })()}
+
         {/* ══ SETTINGS TAB ════════════════════════════════════════════════════════ */}
         {activeSection === "settings" && (
           <div className="pt-2">
@@ -1632,6 +2587,19 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {isInvoiceModalOpen && (
+        <InvoiceFormModal
+          data={invoiceData}
+          onChange={setInvoiceData}
+          onClose={() => setIsInvoiceModalOpen(false)}
+          onExport={handleExportInvoice}
+        onSave={handleSaveInvoice}
+          isExporting={isExportingInvoice}
+        isSaving={isSavingInvoice}
+        activeEditors={activeEditors}
+        />
       )}
 
       {toast && (
