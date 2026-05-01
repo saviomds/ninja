@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { User, RealtimeChannel } from "@supabase/supabase-js";
@@ -103,6 +103,7 @@ interface InvoiceData {
   card: string;
   mobilePay: string;
   cash: string;
+  themeColor?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -235,6 +236,7 @@ const defaultInvoiceData = (): InvoiceData => ({
   card: "",
   mobilePay: "",
   cash: "",
+  themeColor: "#0a0a0a",
 });
 
 const fmt = (v: string) => {
@@ -318,7 +320,7 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
       style={{ fontFamily: "'Arial', sans-serif", fontSize: "11px", minWidth: "700px" }}
     >
       {/* Header */}
-      <div style={{ background: "#0a0a0a", padding: "20px 24px 16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div style={{ background: data.themeColor || "#0a0a0a", padding: "20px 24px 16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
@@ -383,7 +385,7 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
 
         {/* Services Performed */}
         <div style={{ marginBottom: "14px" }}>
-          <div style={{ background: "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700", marginBottom: "0" }}>SERVICES PERFORMED</div>
+          <div style={{ background: data.themeColor || "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700", marginBottom: "0" }}>SERVICES PERFORMED</div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#111" }}>
@@ -410,7 +412,7 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
 
         {/* Parts Used */}
         <div style={{ marginBottom: "14px" }}>
-          <div style={{ background: "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700" }}>PARTS USED</div>
+          <div style={{ background: data.themeColor || "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700" }}>PARTS USED</div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#111" }}>
@@ -438,7 +440,7 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
 
         {/* Labour Charges */}
         <div style={{ marginBottom: "14px" }}>
-          <div style={{ background: "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700" }}>LABOUR CHARGES</div>
+          <div style={{ background: data.themeColor || "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700" }}>LABOUR CHARGES</div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#111" }}>
@@ -492,7 +494,7 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
                     </td>
                   </tr>
                 ))}
-                <tr style={{ background: "#0a0a0a" }}>
+                <tr style={{ background: data.themeColor || "#0a0a0a" }}>
                   <td style={{ padding: "8px 10px", color: "#fff", fontWeight: "900", fontSize: "12px" }}>TOTAL DUE</td>
                   <td style={{ padding: "8px 10px", color: "#FFD700", fontWeight: "900", fontSize: "14px", textAlign: "right" }}>
                     Rs {total.toLocaleString("en-MU", { minimumFractionDigits: 2 })}
@@ -608,10 +610,22 @@ function InvoiceFormModal({
         <div className="p-6 space-y-1">
           {/* Invoice Meta */}
           {sectionHeader("Invoice Info")}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <InputField label="Invoice No" value={data.invoiceNo} onChange={(v) => set("invoiceNo", v)} placeholder="INV-001" />
             <InputField label="Date" value={data.date} onChange={(v) => set("date", v)} type="date" />
             <InputField label="Due Date" value={data.due} onChange={(v) => set("due", v)} type="date" />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Theme Color</label>
+              <div className="flex items-center gap-2 h-full pt-1">
+                <input 
+                  type="color" 
+                  value={data.themeColor || "#0a0a0a"} 
+                  onChange={(e) => set("themeColor", e.target.value)}
+                  className="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0"
+                />
+                <span className="text-xs text-gray-500 uppercase font-mono">{data.themeColor || "#0a0a0a"}</span>
+              </div>
+            </div>
           </div>
 
           {/* Bill To */}
@@ -951,6 +965,7 @@ export default function Dashboard() {
         card: inv.card || "",
         mobilePay: inv.mobile_pay || "",
         cash: inv.cash || "",
+        themeColor: inv.theme_color || "#0a0a0a",
       }));
       setInvoices(mapped);
     }
@@ -1605,6 +1620,7 @@ export default function Dashboard() {
         card: invoiceToSave.card,
         mobile_pay: invoiceToSave.mobilePay,
         cash: invoiceToSave.cash,
+        theme_color: invoiceToSave.themeColor,
         user_id: user?.id,
         version: (invoiceToSave.version || 1) + 1,
       };
