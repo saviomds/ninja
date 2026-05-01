@@ -102,6 +102,7 @@ interface InvoiceData {
   juice: string;
   cash: string;
   themeColor?: string;
+  notes?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -233,6 +234,7 @@ const defaultInvoiceData = (): InvoiceData => ({
   juice: "",
   cash: "",
   themeColor: "#0a0a0a",
+  notes: "",
 });
 
 const fmt = (v: string) => {
@@ -312,37 +314,63 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
   return (
     <div
       id="invoice-preview"
-      className="bg-white text-black font-sans"
+      className="bg-white text-black font-sans relative"
       style={{ fontFamily: "'Arial', sans-serif", fontSize: "11px", minWidth: "700px" }}
     >
+      {/* Background Watermark */}
+      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", opacity: 0.03, pointerEvents: "none", zIndex: 0 }}>
+        <Image
+          src="/logo.png"
+          alt="Watermark"
+          width={550}
+          height={550}
+          unoptimized
+          style={{ objectFit: "contain", filter: "brightness(0)" }}
+        />
+      </div>
+
       {/* Header */}
-      <div style={{ background: data.themeColor || "#0a0a0a", padding: "20px 24px 16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div style={{ padding: "32px 24px 24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: `4px solid ${data.themeColor || "#0a0a0a"}` }}>
         <div>
-          {/* Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-            <Image
-              src="/logo.png"
-              alt="TechNinja Logo"
-              width={100}
-              height={100}
-              unoptimized
-              style={{ objectFit: "contain", borderRadius: "8px" }}
-            />
+          {/* Logo & Company Info */}
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "18px" }}>
+            <div style={{ backgroundColor: data.themeColor || "#0a0a0a", padding: "12px", borderRadius: "14px", boxShadow: "0 4px 10px rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Image
+                src="/logo.png"
+                alt="TechNinja Logo"
+                width={56}
+                height={56}
+                unoptimized
+                style={{ objectFit: "contain" }}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: "28px", fontWeight: "900", color: data.themeColor || "#0a0a0a", letterSpacing: "-0.5px", lineHeight: "1.1" }}>TechNinja</div>
+              <div style={{ fontSize: "10px", fontWeight: "800", color: "#64748b", textTransform: "uppercase", letterSpacing: "1.5px", marginTop: "2px" }}>Premium Tech Services</div>
+            </div>
           </div>
-          <div style={{ color: "#aaa", fontSize: "10px" }}>Coromandel, Mauritius</div>
-          <div style={{ color: "#aaa", fontSize: "10px" }}>+230 5809 8080 • info@techninja.mu</div>
+          <div style={{ color: "#475569", fontSize: "10px", lineHeight: "1.6" }}>
+            <div style={{ fontWeight: "800", color: "#1e293b", fontSize: "11px", marginBottom: "4px" }}>Coromandel, Mauritius</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><span style={{ color: data.themeColor || "#0a0a0a" }}>📞</span> +230 5809 8080</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><span style={{ color: data.themeColor || "#0a0a0a" }}>✉️</span> info@techninja.mu</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><span style={{ color: data.themeColor || "#0a0a0a" }}>🌐</span> www.techninja.mu</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><span style={{ color: data.themeColor || "#0a0a0a" }}>📸</span> @techninja.mu</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginTop: "6px", fontWeight: "700", color: "#1e293b", background: "#f1f5f9", padding: "4px 8px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+              <span style={{ color: data.themeColor || "#0a0a0a" }}>🏢</span> BRN: MU-2020-00123
+            </div>
+          </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ color: "#FFD700", fontWeight: "900", fontSize: "32px", letterSpacing: "2px" }}>INVOICE</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "12px", alignItems: "flex-end" }}>
+          <div style={{ color: data.themeColor || "#0a0a0a", fontWeight: "900", fontSize: "36px", letterSpacing: "4px", textTransform: "uppercase", marginBottom: "16px" }}>INVOICE</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
             {[
               ["Invoice No", data.invoiceNo || "—"],
               ["Date", data.date ? new Date(data.date).toLocaleDateString("en-MU") : "—"],
               ["Due Date", data.due ? new Date(data.due).toLocaleDateString("en-MU") : "—"],
             ].map(([label, val]) => (
-              <div key={label as string} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", background: "rgba(255, 255, 255, 0.08)", padding: "5px 12px", borderRadius: "6px", minWidth: "200px", border: "1px solid rgba(255, 255, 255, 0.12)" }}>
-                <span style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "10px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</span>
-                <span style={{ color: "#fff", fontSize: "11px", fontWeight: "700" }}>{val}</span>
+              <div key={label as string} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "24px", background: "#f8fafc", padding: "6px 12px", borderRadius: "6px", minWidth: "220px", border: "1px solid #e2e8f0", borderLeft: `4px solid ${data.themeColor || "#0a0a0a"}` }}>
+                <span style={{ color: "#64748b", fontSize: "10px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</span>
+                <span style={{ color: "#0f172a", fontSize: "11px", fontWeight: "800" }}>{val}</span>
               </div>
             ))}
           </div>
@@ -377,23 +405,23 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
 
         {/* Services Performed */}
         <div style={{ marginBottom: "14px" }}>
-          <div style={{ background: data.themeColor || "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700", marginBottom: "0" }}>SERVICES PERFORMED</div>
+          <div style={{ background: data.themeColor || "#0a0a0a", color: "#fff", padding: "6px 12px", fontSize: "10px", fontWeight: "800", letterSpacing: "0.5px", textTransform: "uppercase" }}>SERVICES PERFORMED</div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#111" }}>
+              <tr style={{ background: "#f8fafc" }}>
                 {["#", "Description", "Qty", "Unit (Rs)", "Total (Rs)"].map((h) => (
-                  <th key={h} style={{ border: "1px solid #555", padding: "5px 8px", color: "#00d4ff", fontWeight: "600", textAlign: "center", fontSize: "10px" }}>{h}</th>
+                  <th key={h} style={{ border: "1px solid #e2e8f0", padding: "6px 8px", color: data.themeColor || "#0a0a0a", fontWeight: "700", textAlign: "center", fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {data.services.map((s, i) => (
-                <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : "#f9f9f9" }}>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "30px" }}>{i + 1}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px" }}>{s.description}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "60px" }}>{s.qty}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "80px" }}>{s.unit}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "90px" }}>
+                <tr key={s.id} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "30px", color: "#475569" }}>{i + 1}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", color: "#1e293b", fontWeight: "500" }}>{s.description}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "60px", color: "#475569" }}>{s.qty}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "80px", color: "#475569" }}>{s.unit}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "90px", color: "#1e293b", fontWeight: "600" }}>
                     {calcTotal(s.qty, s.unit) ? `Rs ${parseFloat(calcTotal(s.qty, s.unit)).toLocaleString("en-MU", { minimumFractionDigits: 2 })}` : ""}
                   </td>
                 </tr>
@@ -404,24 +432,24 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
 
         {/* Parts Used */}
         <div style={{ marginBottom: "14px" }}>
-          <div style={{ background: data.themeColor || "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700" }}>PARTS USED</div>
+          <div style={{ background: data.themeColor || "#0a0a0a", color: "#fff", padding: "6px 12px", fontSize: "10px", fontWeight: "800", letterSpacing: "0.5px", textTransform: "uppercase" }}>PARTS USED</div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#111" }}>
+              <tr style={{ background: "#f8fafc" }}>
                 {["#", "Part Description", "Part No", "Qty", "Unit (Rs)", "Total (Rs)"].map((h) => (
-                  <th key={h} style={{ border: "1px solid #555", padding: "5px 8px", color: "#00d4ff", fontWeight: "600", textAlign: "center", fontSize: "10px" }}>{h}</th>
+                  <th key={h} style={{ border: "1px solid #e2e8f0", padding: "6px 8px", color: data.themeColor || "#0a0a0a", fontWeight: "700", textAlign: "center", fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {data.parts.map((p, i) => (
-                <tr key={p.id} style={{ background: i % 2 === 0 ? "#fff" : "#f9f9f9" }}>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "30px" }}>{i + 1}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px" }}>{p.description}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "70px" }}>{p.partNo}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "50px" }}>{p.qty}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "80px" }}>{p.unit}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "90px" }}>
+                <tr key={p.id} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "30px", color: "#475569" }}>{i + 1}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", color: "#1e293b", fontWeight: "500" }}>{p.description}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "70px", color: "#475569" }}>{p.partNo}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "50px", color: "#475569" }}>{p.qty}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "80px", color: "#475569" }}>{p.unit}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "90px", color: "#1e293b", fontWeight: "600" }}>
                     {calcTotal(p.qty, p.unit) ? `Rs ${parseFloat(calcTotal(p.qty, p.unit)).toLocaleString("en-MU", { minimumFractionDigits: 2 })}` : ""}
                   </td>
                 </tr>
@@ -432,23 +460,23 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
 
         {/* Labour Charges */}
         <div style={{ marginBottom: "14px" }}>
-          <div style={{ background: data.themeColor || "#0a0a0a", color: "#fff", padding: "5px 10px", fontSize: "11px", fontWeight: "700" }}>LABOUR CHARGES</div>
+          <div style={{ background: data.themeColor || "#0a0a0a", color: "#fff", padding: "6px 12px", fontSize: "10px", fontWeight: "800", letterSpacing: "0.5px", textTransform: "uppercase" }}>LABOUR CHARGES</div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#111" }}>
+              <tr style={{ background: "#f8fafc" }}>
                 {["#", "Description", "Hours", "Rate/Hr (Rs)", "Total (Rs)"].map((h) => (
-                  <th key={h} style={{ border: "1px solid #555", padding: "5px 8px", color: "#00d4ff", fontWeight: "600", textAlign: "center", fontSize: "10px" }}>{h}</th>
+                  <th key={h} style={{ border: "1px solid #e2e8f0", padding: "6px 8px", color: data.themeColor || "#0a0a0a", fontWeight: "700", textAlign: "center", fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {data.labour.map((l, i) => (
-                <tr key={l.id} style={{ background: i % 2 === 0 ? "#fff" : "#f9f9f9" }}>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "30px" }}>{i + 1}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px" }}>{l.description}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "60px" }}>{l.hours}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "90px" }}>{l.rate}</td>
-                  <td style={{ border: "1px solid #ddd", padding: "5px 8px", textAlign: "center", width: "90px" }}>
+                <tr key={l.id} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "30px", color: "#475569" }}>{i + 1}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", color: "#1e293b", fontWeight: "500" }}>{l.description}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "60px", color: "#475569" }}>{l.hours}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "90px", color: "#475569" }}>{l.rate}</td>
+                  <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", width: "90px", color: "#1e293b", fontWeight: "600" }}>
                     {calcLabourTotal(l.hours, l.rate) ? `Rs ${parseFloat(calcLabourTotal(l.hours, l.rate)).toLocaleString("en-MU", { minimumFractionDigits: 2 })}` : ""}
                   </td>
                 </tr>
@@ -470,7 +498,7 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
           </div>
 
           {/* Totals */}
-          <div style={{ border: "1px solid #ddd", borderRadius: "6px", overflow: "hidden" }}>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <tbody>
                 {[
@@ -480,15 +508,15 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
                   ["VAT (15%)", vat, false],
                 ].map(([label, val, bold]) => (
                   <tr key={String(label)}>
-                    <td style={{ padding: "6px 10px", fontSize: "11px", fontWeight: bold ? "700" : "400", borderBottom: "1px solid #eee" }}>{String(label)}</td>
-                    <td style={{ padding: "6px 10px", fontSize: "11px", fontWeight: bold ? "700" : "400", textAlign: "right", borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "8px 12px", fontSize: "11px", color: bold ? "#1e293b" : "#475569", fontWeight: bold ? "700" : "500", borderBottom: "1px solid #e2e8f0" }}>{String(label)}</td>
+                    <td style={{ padding: "8px 12px", fontSize: "11px", color: "#1e293b", fontWeight: bold ? "700" : "600", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>
                       Rs {(val as number).toLocaleString("en-MU", { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
                 ))}
                 <tr style={{ background: data.themeColor || "#0a0a0a" }}>
-                  <td style={{ padding: "8px 10px", color: "#fff", fontWeight: "900", fontSize: "12px" }}>TOTAL DUE</td>
-                  <td style={{ padding: "8px 10px", color: "#FFD700", fontWeight: "900", fontSize: "14px", textAlign: "right" }}>
+                  <td style={{ padding: "10px 12px", color: "#fff", fontWeight: "900", fontSize: "12px" }}>TOTAL DUE</td>
+                  <td style={{ padding: "10px 12px", color: "#FFD700", fontWeight: "900", fontSize: "14px", textAlign: "right" }}>
                     Rs {total.toLocaleString("en-MU", { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
@@ -497,11 +525,26 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
           </div>
         </div>
 
+        {/* Notes / Remarks */}
+        {data.notes && (
+          <div style={{ marginTop: "16px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px 16px" }}>
+            <div style={{ color: data.themeColor || "#0a0a0a", fontWeight: "800", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "4px" }}>NOTES / REMARKS</div>
+            <div style={{ color: "#475569", fontSize: "11px", lineHeight: "1.5", whiteSpace: "pre-wrap" }}>{data.notes}</div>
+          </div>
+        )}
+
         {/* Footer */}
-        <div style={{ textAlign: "center", marginTop: "20px", paddingTop: "12px", borderTop: "2px solid #00d4ff" }}>
-          <div style={{ color: "#00d4ff", fontWeight: "700", fontSize: "13px", marginBottom: "4px" }}>Thank You for Choosing TechNinja!</div>
-          <div style={{ color: "#666", fontSize: "9px" }}>Questions about this invoice? Contact us at info@techninja.mu or +230 5809 8080</div>
-          <div style={{ color: "#666", fontSize: "9px" }}>TechNinja • Coromandel, Mauritius • Reg. No: MU-2020-00123</div>
+        <div style={{ textAlign: "center", marginTop: "24px", paddingTop: "16px", borderTop: `2px solid ${data.themeColor || "#0a0a0a"}` }}>
+          <div style={{ color: data.themeColor || "#0a0a0a", fontWeight: "800", fontSize: "13px", marginBottom: "8px" }}>Thank You for Choosing TechNinja!</div>
+          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "16px", color: "#475569", fontSize: "10px", marginBottom: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ color: data.themeColor || "#0a0a0a" }}>📞</span> +230 5809 8080</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ color: data.themeColor || "#0a0a0a" }}>✉️</span> info@techninja.mu</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ color: data.themeColor || "#0a0a0a" }}>🌐</span> www.techninja.mu</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ color: data.themeColor || "#0a0a0a" }}>📸</span> @techninja.mu</div>
+          </div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontWeight: "700", color: "#1e293b", background: "#f1f5f9", padding: "6px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "10px" }}>
+            <span style={{ color: data.themeColor || "#0a0a0a" }}>🏢</span> TechNinja • Coromandel, Mauritius • BRN: MU-2020-00123
+          </div>
         </div>
       </div>
     </div>
@@ -775,6 +818,18 @@ function InvoiceFormModal({
             <InputField label="Juice Payment" value={data.juice} onChange={(v) => set("juice", v)} placeholder="Phone number / Account" />
             <InputField label="Cash" value={data.cash} onChange={(v) => set("cash", v)} placeholder="Accepted" />
           </div>
+          <div className="mt-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notes / Remarks</label>
+              <textarea
+                value={data.notes || ""}
+                onChange={(e) => set("notes", e.target.value)}
+                placeholder="Additional notes, payment instructions, warranty info, or a thank you message..."
+                rows={3}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Modal Footer */}
@@ -955,6 +1010,7 @@ export default function Dashboard() {
         cash: inv.cash || "",
         juice: inv.juice || "",
         themeColor: inv.theme_color || "#0a0a0a",
+        notes: inv.notes || "",
       }));
       setInvoices(mapped);
     }
@@ -1608,6 +1664,7 @@ export default function Dashboard() {
         cash: invoiceToSave.cash,
         juice: invoiceToSave.juice,
         theme_color: invoiceToSave.themeColor,
+        notes: invoiceToSave.notes,
         user_id: user?.id,
         version: (invoiceToSave.version || 1) + 1,
       };
