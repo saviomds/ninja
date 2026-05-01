@@ -854,6 +854,7 @@ export default function Dashboard() {
   const [expandedDesc, setExpandedDesc] = useState<Record<string, boolean>>({});
   const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc" | "stock_asc" | "stock_desc">("newest");
   const [stockFilter, setStockFilter] = useState<"all" | "in_stock" | "low" | "out">("all");
+  const [prevProductFilters, setPrevProductFilters] = useState({ searchQuery: "", sortBy: "newest", stockFilter: "all" });
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
@@ -955,16 +956,17 @@ export default function Dashboard() {
     }
   }, []);
 
-  const loadAllData = useCallback(async (showRefreshToast = false) => {
-    if (!user) return;
+  const loadAllData = useCallback(async (showRefreshToast = false, uid?: string) => {
+    const targetUid = uid || user?.id;
+    if (!targetUid) return;
     showRefreshToast ? setIsRefreshing(true) : setLoading(true);
-    await Promise.all([fetchProducts(), fetchSocialProfiles(), fetchUpdates(), fetchUserProfile(user.id), fetchInvoices()]);
+    await Promise.all([fetchProducts(), fetchSocialProfiles(), fetchUpdates(), fetchUserProfile(targetUid), fetchInvoices()]);
     showRefreshToast ? setIsRefreshing(false) : setLoading(false);
     if (showRefreshToast) {
       showToast("Dashboard refreshed!", "success");
       logActivity("Refreshed dashboard data", "All sections", "info");
     }
-  }, [user, fetchProducts, fetchSocialProfiles, fetchUpdates, fetchUserProfile, fetchInvoices, showToast, logActivity]);
+  }, [user?.id, fetchProducts, fetchSocialProfiles, fetchUpdates, fetchUserProfile, fetchInvoices, showToast, logActivity]);
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
 
@@ -972,14 +974,16 @@ export default function Dashboard() {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.push("/login"); return; }
       setUser(data.user);
+      // Load data asynchronously directly after user resolution to bypass chained render delays
+      loadAllData(false, data.user.id);
     });
-  }, [router]);
-
-  useEffect(() => {
-    if (user) loadAllData();
-  }, [user]); // eslint-disable-line
+  }, [router, loadAllData]);
 
   // ─── Realtime Presence for Invoices ────────────────────────────────────────
+  if (!(isInvoiceModalOpen && invoiceData.id && user) && activeEditors.length > 0) {
+    setActiveEditors([]);
+  }
+
   useEffect(() => {
     let channel: RealtimeChannel | null = null;
 
@@ -1006,8 +1010,6 @@ export default function Dashboard() {
             await channel!.track({ email: user.email, status: "editing" });
           }
         });
-    } else {
-      setActiveEditors([]);
     }
 
     return () => {
@@ -1030,33 +1032,48 @@ export default function Dashboard() {
 
   // ─── Products ──────────────────────────────────────────────────────────────
 
-  useEffect(() => { setCurrentPage(1); }, [searchQuery, sortBy, stockFilter]);
+  if (searchQuery !== prevProductFilters.searchQuery || sortBy !== prevProductFilters.sortBy || stockFilter !== prevProductFilters.stockFilter) {
+    setPrevProductFilters({ searchQuery, sortBy, stockFilter });
+    setCurrentPage(1);
+  }
 
-  const filteredProducts = products
-    .filter(p => {
-      const q = searchQuery.toLowerCase();
-      const matchSearch = p.name.toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q);
-      const matchStock =
-        stockFilter === "all" ? true :
-        stockFilter === "in_stock" ? p.stock > 5 :
-        stockFilter === "low" ? p.stock > 0 && p.stock <= 5 :
-        p.stock === 0;
-      return matchSearch && matchStock;
-    })
-    .sort((a, b) => {
-      if (sortBy === "price_asc") return a.price - b.price;
-      if (sortBy === "price_desc") return b.price - a.price;
-      if (sortBy === "stock_asc") return a.stock - b.stock;
-      if (sortBy === "stock_desc") return b.stock - a.stock;
-      return 0;
-    });
+  const filteredProducts = useMemo(() => {
+    return products
+      .filter(p => {
+        const q = searchQuery.toLowerCase();
+        const matchSearch = p.name.toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q);
+        const matchStock =
+          stockFilter === "all" ? true :
+          stockFilter === "in_stock" ? p.stock > 5 :
+          stockFilter === "low" ? p.stock > 0 && p.stock <= 5 :
+          p.stock === 0;
+        return matchSearch && matchStock;
+      })
+      .sort((a, b) => {
+        if (sortBy === "price_asc") return a.price - b.price;
+        if (sortBy === "price_desc") return b.price - a.price;
+        if (sortBy === "stock_asc") return a.stock - b.stock;
+        if (sortBy === "stock_desc") return b.stock - a.stock;
+        return 0;
+      });
+  }, [products, searchQuery, sortBy, stockFilter]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = filteredProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    return filteredProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
 
-  const outOfStockCount = products.filter(p => p.stock === 0).length;
-  const lowStockCount = products.filter(p => p.stock > 0 && p.stock <= 5).length;
-  const inventoryValue = products.reduce((acc, p) => acc + p.price * p.stock, 0);
+  const { outOfStockCount, lowStockCount, inventoryValue } = useMemo(() => {
+    return products.reduce(
+      (acc, p) => {
+        if (p.stock === 0) acc.outOfStockCount++;
+        else if (p.stock <= 5) acc.lowStockCount++;
+        acc.inventoryValue += p.price * p.stock;
+        return acc;
+      },
+      { outOfStockCount: 0, lowStockCount: 0, inventoryValue: 0 }
+    );
+  }, [products]);
 
   const handleSaveProduct = async () => {
     if (!newProduct.name.trim()) { showToast("Product name is required", "error"); return; }

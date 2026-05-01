@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function UpdateUsername({ userId, currentUsername, onUpdate }: { userId: string, currentUsername: string | null, onUpdate: () => void }) {
   const [username, setUsername] = useState(currentUsername || "");
+  const [prevUsername, setPrevUsername] = useState(currentUsername);
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
+  if (currentUsername !== prevUsername) {
+    setPrevUsername(currentUsername);
     setUsername(currentUsername || "");
-  }, [currentUsername]);
+  }
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
