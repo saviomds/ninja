@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { User } from "@supabase/supabase-js";
+import { User, RealtimeChannel } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
 import UpdateUsername from "./UpdateUsername";
@@ -838,6 +838,7 @@ export default function Dashboard() {
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isExportingInvoice, setIsExportingInvoice] = useState(false);
   const [isSavingInvoice, setIsSavingInvoice] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
   const [activeEditors, setActiveEditors] = useState<string[]>([]);
 
   const [viewMode, setViewMode] = useState<"card" | "excel">("card");
@@ -1632,6 +1633,22 @@ export default function Dashboard() {
     }
   };
 
+  const confirmDeleteInvoice = async () => {
+    if (!invoiceToDelete) return;
+    setIsDeleting(true);
+    const inv = invoices.find(i => i.id === invoiceToDelete);
+    const { error } = await supabase.from("invoices").delete().eq("id", invoiceToDelete);
+    setIsDeleting(false);
+    setInvoiceToDelete(null);
+    if (error) { showToast("Error: " + error.message, "error"); return; }
+    showToast("Invoice deleted!", "success");
+    logActivity("Deleted Invoice", `Invoice No: ${inv?.invoiceNo || "Unknown"}`, "delete");
+    fetchInvoices();
+    if (invoiceData.id === invoiceToDelete) {
+      setInvoiceData(defaultInvoiceData());
+    }
+  };
+
   // ─── Nav sections ─────────────────────────────────────────────────────────
 
   const navSections = [
@@ -2307,8 +2324,17 @@ export default function Dashboard() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {invoices.map(inv => (
-                  <div key={inv.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-cyan-500/50 transition-colors cursor-pointer" onClick={() => { setInvoiceData(inv); showToast(`Loaded ${inv.invoiceNo}`, "success"); }}>
-                    <div className="flex justify-between items-start mb-2">
+                  <div key={inv.id} className="group relative bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-cyan-500/50 transition-colors cursor-pointer" onClick={() => { setInvoiceData(inv); showToast(`Loaded ${inv.invoiceNo}`, "success"); }}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setInvoiceToDelete(inv.id!); }}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 opacity-0 group-hover:opacity-100 transition-all"
+                      title="Delete invoice"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                    <div className="flex justify-between items-start mb-2 pr-6">
                       <span className="font-bold text-white">{inv.invoiceNo}</span>
                       <span className="text-xs text-gray-500">{inv.date ? new Date(inv.date).toLocaleDateString() : "No Date"}</span>
                     </div>
@@ -2569,6 +2595,22 @@ export default function Dashboard() {
             <div className="flex justify-center gap-3">
               <button onClick={() => setUpdateToDelete(null)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>
               <button onClick={confirmDeleteUpdate} disabled={isDeleting} className="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-xl font-semibold transition-colors disabled:opacity-50 text-sm">
+                {isDeleting ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {invoiceToDelete && (
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
+            <div className="text-4xl mb-3">🗑️</div>
+            <h2 className="text-xl font-bold text-white mb-2">Delete Invoice</h2>
+            <p className="text-gray-400 mb-6 text-sm">This action cannot be undone.</p>
+            <div className="flex justify-center gap-3">
+              <button onClick={() => setInvoiceToDelete(null)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>
+              <button onClick={confirmDeleteInvoice} disabled={isDeleting} className="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-xl font-semibold transition-colors disabled:opacity-50 text-sm">
                 {isDeleting ? "Deleting…" : "Delete"}
               </button>
             </div>
