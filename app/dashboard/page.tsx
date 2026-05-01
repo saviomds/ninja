@@ -530,6 +530,7 @@ function InvoiceFormModal({
   onSave: (d: InvoiceData) => void;
   isExporting: boolean;
   isSaving: boolean;
+  activeEditors?: string[];
 }) {
   const set = useCallback(
     (key: keyof InvoiceData, val: string) => onChange({ ...data, [key]: val }),
