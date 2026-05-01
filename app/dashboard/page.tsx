@@ -325,8 +325,8 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
             <Image
               src="/logo.png"
               alt="TechNinja Logo"
-              width={64}
-              height={64}
+              width={100}
+              height={100}
               unoptimized
               style={{ objectFit: "contain", borderRadius: "8px" }}
             />
@@ -1638,7 +1638,7 @@ export default function Dashboard() {
     { key: "products", label: "Products", count: products.length, icon: "📦" },
     { key: "social", label: "Social", count: socialProfiles.length, icon: "🔗" },
     { key: "updates", label: "Updates", count: updates.length, icon: "📣" },
-    { key: "invoice", label: "Invoice", count: null, icon: "📄" },
+    { key: "invoice", label: "Invoice", count: invoices.length, icon: "📄" },
     { key: "settings", label: "Settings", count: null, icon: "⚙️" },
     { key: "log", label: "Activity", count: activityLog.length || null, icon: "🕐" },
   ] as const;
@@ -2302,8 +2302,10 @@ export default function Dashboard() {
 
           {invoices.length > 0 && (
             <div className="mt-8 animate-fsu" style={{ animationDelay: "0.3s" }}>
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Recent Invoices</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                All Invoices ({invoices.length})
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {invoices.map(inv => (
                   <div key={inv.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-cyan-500/50 transition-colors cursor-pointer" onClick={() => { setInvoiceData(inv); showToast(`Loaded ${inv.invoiceNo}`, "success"); }}>
                     <div className="flex justify-between items-start mb-2">
