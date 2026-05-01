@@ -103,6 +103,7 @@ interface InvoiceData {
   cash: string;
   themeColor?: string;
   notes?: string;
+  discount?: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -235,6 +236,7 @@ const defaultInvoiceData = (): InvoiceData => ({
   cash: "",
   themeColor: "#0a0a0a",
   notes: "",
+  discount: "",
 });
 
 const fmt = (v: string) => {
@@ -300,9 +302,22 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
   const labourSubtotal = sumLabour(data.labour);
   const servicesSubtotal = sumRows(data.services);
   const subtotal = partsSubtotal + labourSubtotal + servicesSubtotal;
-  const vat = subtotal * 0.15;
-  const total = subtotal + vat;
+  const discountAmount = parseFloat(data.discount || '0');
+  const subtotalAfterDiscount = subtotal - discountAmount;
+  const vat = subtotalAfterDiscount * 0.15;
+  const total = subtotalAfterDiscount + vat;
 
+  const totalsRows: (string | number | boolean)[][] = [
+    ['Services Subtotal', servicesSubtotal, false],
+    ['Parts Subtotal', partsSubtotal, false],
+    ['Labour Subtotal', labourSubtotal, false],
+    ['Subtotal', subtotal, true],
+  ];
+  if (discountAmount > 0) {
+    totalsRows.push(['Discount', -discountAmount, false]);
+    totalsRows.push(['Subtotal after Discount', subtotalAfterDiscount, true]);
+  }
+  totalsRows.push(['VAT (15%)', vat, false]);
   const Cell = ({ children, className = "" }: { children?: React.ReactNode; className?: string }) => (
     <td className={`border border-gray-600 px-2 py-1.5 text-xs ${className}`}>{children}</td>
   );
@@ -501,15 +516,10 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
           <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <tbody>
-                {[
-                  ["Parts Subtotal", partsSubtotal, false],
-                  ["Labour Subtotal", labourSubtotal, false],
-                  ["Subtotal", subtotal, true],
-                  ["VAT (15%)", vat, false],
-                ].map(([label, val, bold]) => (
+                {totalsRows.map(([label, val, bold]) => (
                   <tr key={String(label)}>
                     <td style={{ padding: "8px 12px", fontSize: "11px", color: bold ? "#1e293b" : "#475569", fontWeight: bold ? "700" : "500", borderBottom: "1px solid #e2e8f0" }}>{String(label)}</td>
-                    <td style={{ padding: "8px 12px", fontSize: "11px", color: "#1e293b", fontWeight: bold ? "700" : "600", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>
+                    <td style={{ padding: "8px 12px", fontSize: "11px", color: (val as number) < 0 ? '#ef4444' : '#1e293b', fontWeight: bold ? "700" : "600", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>
                       Rs {(val as number).toLocaleString("en-MU", { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
@@ -811,6 +821,12 @@ function InvoiceFormModal({
             <span>+</span> Add Row
           </button>
 
+          {/* Discount */}
+          {sectionHeader("Discount")}
+          <div className="grid grid-cols-4 gap-3">
+            <InputField label="Discount Amount (Rs)" value={data.discount || ''} onChange={(v) => set("discount", v)} type="number" placeholder="0.00" />
+          </div>
+
           {/* Payment Terms */}
           {sectionHeader("Payment Terms")}
           <div className="grid grid-cols-2 gap-3">
@@ -834,9 +850,21 @@ function InvoiceFormModal({
 
         {/* Modal Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800">
-          <button onClick={onClose} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white text-sm transition-colors">
-            Cancel
-          </button>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white text-sm transition-colors">
+              Cancel
+            </button>
+            <button 
+              onClick={() => {
+                if (window.confirm("Are you sure you want to clear the entire form?")) {
+                  onChange(defaultInvoiceData());
+                }
+              }} 
+              className="px-4 py-2 rounded-xl text-rose-500 hover:bg-rose-500/10 hover:text-rose-400 text-sm transition-colors"
+            >
+              Clear
+            </button>
+          </div>
           <div className="flex gap-3">
             <button
               onClick={onClose}
@@ -1011,6 +1039,7 @@ export default function Dashboard() {
         juice: inv.juice || "",
         themeColor: inv.theme_color || "#0a0a0a",
         notes: inv.notes || "",
+        discount: String(inv.discount ?? ''),
       }));
       setInvoices(mapped);
     }
@@ -1645,8 +1674,8 @@ export default function Dashboard() {
     try {
       const payload = {
         invoice_no: invoiceToSave.invoiceNo,
-        date: invoiceToSave.date,
-        due: invoiceToSave.due,
+        date: invoiceToSave.date || null,
+        due: invoiceToSave.due || null,
         customer_title: invoiceToSave.customerTitle,
         customer_name: invoiceToSave.customerName,
         address: invoiceToSave.address,
@@ -1662,9 +1691,6 @@ export default function Dashboard() {
         labour: invoiceToSave.labour,
         terms: invoiceToSave.terms,
         cash: invoiceToSave.cash,
-        juice: invoiceToSave.juice,
-        theme_color: invoiceToSave.themeColor,
-        notes: invoiceToSave.notes,
         user_id: user?.id,
         version: (invoiceToSave.version || 1) + 1,
       };
@@ -1697,15 +1723,19 @@ export default function Dashboard() {
       }
       fetchInvoices();
     } catch (error: any) {
-      // Log error properties explicitly because Next.js sometimes stringifies Error instances as {}
-      console.error("Invoice Save Error Details:", {
+      // Map properties explicitly into a POJO so Next.js's stringifier doesn't swallow them
+      const errorDetails = {
         message: error?.message,
         details: error?.details,
         hint: error?.hint,
         code: error?.code,
-        stack: error?.stack,
-      });
-      showToast(error?.message || "An unexpected error occurred while saving.", "error");
+        name: error?.name,
+        fallback: error ? String(error) : "unknown error",
+      };
+      console.error("Invoice Save Error Details:", errorDetails);
+      
+      const msg = error?.message || error?.details || "An unexpected error occurred while saving.";
+      showToast(msg === "[object Object]" ? "Network error or unhandled exception." : msg, "error");
     } finally {
       setIsSavingInvoice(false);
     }
@@ -1725,6 +1755,24 @@ export default function Dashboard() {
     if (invoiceData.id === invoiceToDelete) {
       setInvoiceData(defaultInvoiceData());
     }
+  };
+
+  const handleDuplicateInvoice = (inv: InvoiceData, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const duplicated: InvoiceData = {
+      ...inv,
+      id: undefined,
+      version: 1,
+      invoiceNo: `INV-${String(invoiceCounter).padStart(3, '0')}`,
+      date: new Date().toISOString().slice(0, 10),
+      services: inv.services.map(s => ({ ...s, id: uid() })),
+      parts: inv.parts.map(p => ({ ...p, id: uid() })),
+      labour: inv.labour.map(l => ({ ...l, id: uid() }))
+    };
+    setInvoiceData(duplicated);
+    setIsInvoiceModalOpen(true);
+    showToast("Invoice duplicated!", "success");
+    logActivity("Duplicated Invoice", `From ${inv.invoiceNo || "Unknown"}`, "create");
   };
 
   // ─── Nav sections ─────────────────────────────────────────────────────────
@@ -2303,12 +2351,12 @@ export default function Dashboard() {
 
         {/* ══ INVOICE TAB ═════════════════════════════════════════════════════════ */}
         {activeSection === "invoice" && (() => {
-          const partsSubtotal = sumRows(invoiceData.parts);
-          const labourSubtotal = sumLabour(invoiceData.labour);
           const servicesSubtotal = sumRows(invoiceData.services);
-          const subtotal = partsSubtotal + labourSubtotal + servicesSubtotal;
-          const vat = subtotal * 0.15;
-          const total = subtotal + vat;
+          const subtotal = sumRows(invoiceData.parts) + sumLabour(invoiceData.labour) + servicesSubtotal;
+          const discountAmount = parseFloat(invoiceData.discount || '0');
+          const subtotalAfterDiscount = subtotal - discountAmount;
+          const vat = subtotalAfterDiscount * 0.15;
+          const total = subtotalAfterDiscount + vat;
 
           return (
             <div>
@@ -2339,9 +2387,9 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-fsu">
                 {[
-                  { label: "Parts", val: `Rs ${partsSubtotal.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-blue-400" },
-                  { label: "Labour", val: `Rs ${labourSubtotal.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-violet-400" },
+                  { label: "Subtotal", val: `Rs ${subtotal.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-blue-400" },
                   { label: "VAT (15%)", val: `Rs ${vat.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-amber-400" },
+                  { label: "Discount", val: `Rs ${discountAmount.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-rose-400" },
                   { label: "Total Due", val: `Rs ${total.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-cyan-400" },
                 ].map((s) => (
                   <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
@@ -2403,15 +2451,26 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {invoices.map(inv => (
                   <div key={inv.id} className="group relative bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-cyan-500/50 transition-colors cursor-pointer" onClick={() => { setInvoiceData(inv); showToast(`Loaded ${inv.invoiceNo}`, "success"); }}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setInvoiceToDelete(inv.id!); }}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 opacity-0 group-hover:opacity-100 transition-all"
-                      title="Delete invoice"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
-                    </button>
+                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                      <button
+                        onClick={(e) => handleDuplicateInvoice(inv, e)}
+                        className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 transition-all"
+                        title="Duplicate invoice"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.32-.883l-2.26-2.259" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setInvoiceToDelete(inv.id!); }}
+                        className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-all"
+                        title="Delete invoice"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                      </button>
+                    </div>
                     <div className="flex justify-between items-start mb-2 pr-6">
                       <span className="font-bold text-white">{inv.invoiceNo}</span>
                       <span className="text-xs text-gray-500">{inv.date ? new Date(inv.date).toLocaleDateString() : "No Date"}</span>
