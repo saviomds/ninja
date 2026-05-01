@@ -99,9 +99,7 @@ interface InvoiceData {
   parts: PartRow[];
   labour: LabourRow[];
   terms: string;
-  bankTransfer: string;
-  card: string;
-  mobilePay: string;
+  juice: string;
   cash: string;
   themeColor?: string;
 }
@@ -232,9 +230,7 @@ const defaultInvoiceData = (): InvoiceData => ({
   parts: [emptyPart(), emptyPart(), emptyPart(), emptyPart()],
   labour: [emptyLabour(), emptyLabour(), emptyLabour(), emptyLabour()],
   terms: "",
-  bankTransfer: "",
-  card: "",
-  mobilePay: "",
+  juice: "",
   cash: "",
   themeColor: "#0a0a0a",
 });
@@ -338,47 +334,43 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ color: "#FFD700", fontWeight: "900", fontSize: "32px", letterSpacing: "2px" }}>INVOICE</div>
-          <table style={{ marginTop: "8px", borderCollapse: "collapse", marginLeft: "auto" }}>
-            <tbody>
-              {[
-                ["No:", data.invoiceNo || "—"],
-                ["Date:", data.date ? new Date(data.date).toLocaleDateString("en-MU") : "—"],
-                ["Due:", data.due ? new Date(data.due).toLocaleDateString("en-MU") : "—"],
-              ].map(([label, val]) => (
-                <tr key={label as string}>
-                  <td style={{ color: "#aaa", paddingRight: "8px", fontSize: "10px" }}>{label}</td>
-                  <td style={{ background: "#333", color: "#fff", padding: "2px 8px", fontSize: "10px", borderRadius: "3px", minWidth: "90px" }}>{val}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "12px", alignItems: "flex-end" }}>
+            {[
+              ["Invoice No", data.invoiceNo || "—"],
+              ["Date", data.date ? new Date(data.date).toLocaleDateString("en-MU") : "—"],
+              ["Due Date", data.due ? new Date(data.due).toLocaleDateString("en-MU") : "—"],
+            ].map(([label, val]) => (
+              <div key={label as string} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", background: "rgba(255, 255, 255, 0.08)", padding: "5px 12px", borderRadius: "6px", minWidth: "200px", border: "1px solid rgba(255, 255, 255, 0.12)" }}>
+                <span style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "10px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</span>
+                <span style={{ color: "#fff", fontSize: "11px", fontWeight: "700" }}>{val}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       <div style={{ padding: "16px 24px" }}>
         {/* Bill To + Service Details */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
           {/* Bill To */}
-          <div style={{ border: "1px solid #00d4ff", borderRadius: "6px", padding: "10px 12px" }}>
-            <div style={{ color: "#00d4ff", fontWeight: "700", fontSize: "11px", marginBottom: "8px", borderBottom: "1px solid #00d4ff", paddingBottom: "4px" }}>BILL TO</div>
-            <div><strong>Mr/Mrs/Miss:</strong> {data.customerTitle} {data.customerName || "—"}</div>
-            <div><strong>Address:</strong> {data.address || "—"}</div>
-            <div style={{ display: "flex", gap: "16px", marginTop: "2px" }}>
-              <span><strong>Tel:</strong> {data.tel || "—"}</span>
-              <span><strong>Email:</strong> {data.email || "—"}</span>
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px 16px", borderTop: `3px solid ${data.themeColor || "#0a0a0a"}` }}>
+            <div style={{ color: data.themeColor || "#0a0a0a", fontWeight: "800", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>BILL TO</div>
+            <div style={{ fontWeight: "700", fontSize: "12px", color: "#1e293b", marginBottom: "4px" }}>{data.customerTitle} {data.customerName || "—"}</div>
+            <div style={{ color: "#475569", marginBottom: "8px", lineHeight: "1.4" }}>{data.address || "—"}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", color: "#475569" }}>
+              <span style={{ display: "flex", gap: "6px" }}><strong style={{ color: "#1e293b" }}>Tel:</strong> {data.tel || "—"}</span>
+              <span style={{ display: "flex", gap: "6px" }}><strong style={{ color: "#1e293b" }}>Email:</strong> {data.email || "—"}</span>
             </div>
           </div>
           {/* Service Details */}
-          <div style={{ border: "1px solid #00d4ff", borderRadius: "6px", padding: "10px 12px" }}>
-            <div style={{ color: "#00d4ff", fontWeight: "700", fontSize: "11px", marginBottom: "8px", borderBottom: "1px solid #00d4ff", paddingBottom: "4px" }}>SERVICE DETAILS</div>
-            <div><strong>Device:</strong> {data.device || "—"}</div>
-            <div style={{ display: "flex", gap: "16px" }}>
-              <span><strong>Serial:</strong> {data.serial || "—"}</span>
-              <span><strong>Tech:</strong> {data.tech || "—"}</span>
-            </div>
-            <div style={{ display: "flex", gap: "16px" }}>
-              <span><strong>WO:</strong> {data.wo || "—"}</span>
-              <span><strong>Done:</strong> {data.done || "—"}</span>
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px 16px", borderTop: `3px solid ${data.themeColor || "#0a0a0a"}` }}>
+            <div style={{ color: data.themeColor || "#0a0a0a", fontWeight: "800", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>SERVICE DETAILS</div>
+            <div style={{ fontWeight: "700", fontSize: "12px", color: "#1e293b", marginBottom: "4px" }}>{data.device || "—"}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", color: "#475569", marginTop: "8px", lineHeight: "1.4" }}>
+              <span style={{ display: "flex", flexDirection: "column" }}><strong style={{ color: "#1e293b", fontSize: "9px", textTransform: "uppercase" }}>Serial</strong> {data.serial || "—"}</span>
+              <span style={{ display: "flex", flexDirection: "column" }}><strong style={{ color: "#1e293b", fontSize: "9px", textTransform: "uppercase" }}>Tech</strong> {data.tech || "—"}</span>
+              <span style={{ display: "flex", flexDirection: "column" }}><strong style={{ color: "#1e293b", fontSize: "9px", textTransform: "uppercase" }}>Work Order</strong> {data.wo || "—"}</span>
+              <span style={{ display: "flex", flexDirection: "column" }}><strong style={{ color: "#1e293b", fontSize: "9px", textTransform: "uppercase" }}>Done</strong> {data.done || "—"}</span>
             </div>
           </div>
         </div>
@@ -468,13 +460,13 @@ function InvoicePreview({ data }: { data: InvoiceData }) {
         {/* Bottom: Payment + Totals */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
           {/* Payment Terms */}
-          <div style={{ border: "1px solid #00d4ff", borderRadius: "6px", padding: "10px 12px" }}>
-            <div style={{ color: "#00d4ff", fontWeight: "700", fontSize: "11px", marginBottom: "8px", borderBottom: "1px solid #00d4ff", paddingBottom: "4px" }}>PAYMENT TERMS</div>
-            <div><strong>Terms:</strong> {data.terms || "—"}</div>
-            <div><strong>Bank Transfer:</strong> {data.bankTransfer || "—"}</div>
-            <div><strong>Card:</strong> {data.card || "—"}</div>
-            <div><strong>Mobile Pay:</strong> {data.mobilePay || "—"}</div>
-            <div><strong>Cash:</strong> {data.cash || "—"}</div>
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "12px 16px", borderTop: `3px solid ${data.themeColor || "#0a0a0a"}` }}>
+            <div style={{ color: data.themeColor || "#0a0a0a", fontWeight: "800", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>PAYMENT TERMS</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "6px", color: "#475569", lineHeight: "1.4" }}>
+              <span style={{ display: "flex", justifyContent: "space-between" }}><strong style={{ color: "#1e293b" }}>Terms:</strong> <span>{data.terms || "—"}</span></span>
+              <span style={{ display: "flex", justifyContent: "space-between" }}><strong style={{ color: "#1e293b" }}>Juice Payment:</strong> <span>{data.juice || "—"}</span></span>
+              <span style={{ display: "flex", justifyContent: "space-between" }}><strong style={{ color: "#1e293b" }}>Cash:</strong> <span>{data.cash || "—"}</span></span>
+            </div>
           </div>
 
           {/* Totals */}
@@ -616,15 +608,16 @@ function InvoiceFormModal({
             <InputField label="Due Date" value={data.due} onChange={(v) => set("due", v)} type="date" />
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Theme Color</label>
-              <div className="flex items-center gap-2 h-full pt-1">
-                <input 
-                  type="color" 
-                  value={data.themeColor || "#0a0a0a"} 
-                  onChange={(e) => set("themeColor", e.target.value)}
-                  className="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0"
-                />
-                <span className="text-xs text-gray-500 uppercase font-mono">{data.themeColor || "#0a0a0a"}</span>
-              </div>
+              <select
+                value={data.themeColor || "#0a0a0a"}
+                onChange={(e) => set("themeColor", e.target.value)}
+                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
+              >
+                <option value="#0a0a0a">Dark</option>
+                <option value="#1f2937">A bit dark</option>
+                <option value="#374151">Dark Gray</option>
+                <option value="#4b5563">Gray</option>
+              </select>
             </div>
           </div>
 
@@ -779,9 +772,7 @@ function InvoiceFormModal({
           {sectionHeader("Payment Terms")}
           <div className="grid grid-cols-2 gap-3">
             <InputField label="Terms" value={data.terms} onChange={(v) => set("terms", v)} placeholder="Net 30" />
-            <InputField label="Bank Transfer" value={data.bankTransfer} onChange={(v) => set("bankTransfer", v)} placeholder="Account number" />
-            <InputField label="Card" value={data.card} onChange={(v) => set("card", v)} placeholder="Visa / Mastercard" />
-            <InputField label="Mobile Pay" value={data.mobilePay} onChange={(v) => set("mobilePay", v)} placeholder="Juice / MyT Money" />
+            <InputField label="Juice Payment" value={data.juice} onChange={(v) => set("juice", v)} placeholder="Phone number / Account" />
             <InputField label="Cash" value={data.cash} onChange={(v) => set("cash", v)} placeholder="Accepted" />
           </div>
         </div>
@@ -961,10 +952,8 @@ export default function Dashboard() {
         parts: inv.parts || [],
         labour: inv.labour || [],
         terms: inv.terms || "",
-        bankTransfer: inv.bank_transfer || "",
-        card: inv.card || "",
-        mobilePay: inv.mobile_pay || "",
         cash: inv.cash || "",
+        juice: inv.juice || "",
         themeColor: inv.theme_color || "#0a0a0a",
       }));
       setInvoices(mapped);
@@ -1616,10 +1605,8 @@ export default function Dashboard() {
         parts: invoiceToSave.parts,
         labour: invoiceToSave.labour,
         terms: invoiceToSave.terms,
-        bank_transfer: invoiceToSave.bankTransfer,
-        card: invoiceToSave.card,
-        mobile_pay: invoiceToSave.mobilePay,
         cash: invoiceToSave.cash,
+        juice: invoiceToSave.juice,
         theme_color: invoiceToSave.themeColor,
         user_id: user?.id,
         version: (invoiceToSave.version || 1) + 1,
