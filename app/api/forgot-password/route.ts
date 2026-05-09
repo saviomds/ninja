@@ -3,10 +3,7 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   try {
     const { email, origin } = await request.json();
-
-    if (!email) {
-      return NextResponse.json({ error: "Email is required." }, { status: 400 });
-    }
+    if (!email) return NextResponse.json({ error: "Email is required." }, { status: 400 });
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -25,23 +22,29 @@ export async function POST(request: Request) {
       }),
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    if (!text) return NextResponse.json({ error: "Empty response from auth server." }, { status: 500 });
+
+    let data: { action_link?: string; msg?: string; error_description?: string };
+    try { data = JSON.parse(text); }
+    catch { return NextResponse.json({ error: `Auth server error: ${text.slice(0, 200)}` }, { status: 500 }); }
 
     if (!res.ok) {
       return NextResponse.json(
-        { error: data.msg || data.error_description || data.message || "Failed to generate link" },
+        { error: data.msg || data.error_description || "Failed to generate reset link." },
         { status: 400 }
       );
     }
 
-    const actionLink = data.action_link;
-    if (!actionLink) {
-      return NextResponse.json({ error: "No reset link returned from server." }, { status: 500 });
+    if (!data.action_link) {
+      return NextResponse.json({ error: "No link returned from auth server." }, { status: 500 });
     }
 
-    return NextResponse.json({ actionLink });
+    return NextResponse.json({ actionLink: data.action_link });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unexpected error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Unexpected error" },
+      { status: 500 }
+    );
   }
 }

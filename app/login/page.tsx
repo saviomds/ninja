@@ -16,10 +16,34 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [error, setError] = useState("");
   const [resetSent, setResetSent] = useState(false);
 
   const switchMode = (m: Mode) => { setMode(m); setError(""); setResetSent(false); };
+
+  const handleMagicLink = async () => {
+    if (!email.trim()) { setError("Enter your email first."); return; }
+    setError("");
+    setIsMagicLoading(true);
+    try {
+      const res = await fetch("/api/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), origin: window.location.origin }),
+      });
+      const text = await res.text();
+      if (!text) throw new Error(`Server returned empty response (status ${res.status})`);
+      let result: { actionLink?: string; error?: string };
+      try { result = JSON.parse(text); }
+      catch { throw new Error(`Bad response (${res.status}): ${text.slice(0, 200)}`); }
+      if (!res.ok) throw new Error(result.error || "Failed to generate magic link");
+      window.location.href = result.actionLink!;
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    }
+    setIsMagicLoading(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +69,11 @@ export default function LoginPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: email.trim(), password, username: username.trim() }),
         });
-        const result = await res.json();
+        const rawText = await res.text();
+        if (!rawText) throw new Error(`Server error (${res.status}): empty response`);
+        let result: { success?: boolean; userId?: string; error?: string };
+        try { result = JSON.parse(rawText); }
+        catch { throw new Error(`Bad response (${res.status}): ${rawText.slice(0, 200)}`); }
         if (!res.ok) throw new Error(result.error || "Registration failed");
 
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -284,7 +312,29 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+              {mode === "signin" && (
+                <div className="mt-4">
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="flex-1 h-px bg-gray-100" />
+                    <span className="text-xs text-gray-400">or</span>
+                    <div className="flex-1 h-px bg-gray-100" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleMagicLink}
+                    disabled={isMagicLoading}
+                    className="w-full border border-gray-200 text-gray-700 py-3 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isMagicLoading ? (
+                      <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Signing in…</>
+                    ) : (
+                      <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>Sign in with magic link</>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-6 pt-6 border-t border-gray-100 text-center">
                 <Link href="/Clients" className="text-sm text-indigo-600 hover:underline font-medium">
                   Browse products without signing in →
                 </Link>

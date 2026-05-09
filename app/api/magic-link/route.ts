@@ -2,20 +2,13 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { email, password, username } = await request.json();
-
-    if (!email || !password || !username) {
-      return NextResponse.json({ error: "Email, password and username are required." }, { status: 400 });
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
-    }
+    const { email, origin } = await request.json();
+    if (!email) return NextResponse.json({ error: "Email is required." }, { status: 400 });
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-    const res = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+    const res = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -23,28 +16,31 @@ export async function POST(request: Request) {
         apikey: serviceRoleKey,
       },
       body: JSON.stringify({
+        type: "magiclink",
         email: email.trim(),
-        password,
-        email_confirm: true,
-        user_metadata: { username: username.trim(), role: "client" },
+        redirect_to: `${origin}/auth/callback`,
       }),
     });
 
     const text = await res.text();
     if (!text) return NextResponse.json({ error: "Empty response from auth server." }, { status: 500 });
 
-    let data: { id?: string; msg?: string; error_description?: string; message?: string };
+    let data: { action_link?: string; msg?: string; error_description?: string };
     try { data = JSON.parse(text); }
     catch { return NextResponse.json({ error: `Auth server error: ${text.slice(0, 200)}` }, { status: 500 }); }
 
     if (!res.ok) {
       return NextResponse.json(
-        { error: data.msg || data.error_description || data.message || "Registration failed." },
+        { error: data.msg || data.error_description || "Failed to generate magic link." },
         { status: 400 }
       );
     }
 
-    return NextResponse.json({ success: true, userId: data.id });
+    if (!data.action_link) {
+      return NextResponse.json({ error: "No link returned from auth server." }, { status: 500 });
+    }
+
+    return NextResponse.json({ actionLink: data.action_link });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unexpected error" },
