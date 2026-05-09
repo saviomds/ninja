@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         type: "magiclink",
         email: email.trim(),
-        redirect_to: `${origin}/auth/callback`,
+        redirect_to: `${origin}/auth/confirm`,
       }),
     });
 
