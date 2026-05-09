@@ -216,9 +216,14 @@ export default function ClientDashboard() {
             <span className="text-base font-semibold text-gray-900 tracking-tight">Tech Ninja</span>
           </Link>
 
-          <p className="hidden sm:block text-sm text-gray-500">
-            Hi, <span className="font-semibold text-gray-900">{username}</span>
-          </p>
+          <div className="hidden sm:flex items-center gap-4">
+            <Link href="/Clients" className="text-sm font-medium text-[#0071e3] hover:underline transition-colors">
+              Shop
+            </Link>
+            <p className="text-sm text-gray-500">
+              Hi, <span className="font-semibold text-gray-900">{username}</span>
+            </p>
+          </div>
 
           <div className="flex items-center gap-3">
             {/* Cart button */}

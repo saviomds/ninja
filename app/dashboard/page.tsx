@@ -1852,6 +1852,10 @@ export default function Dashboard() {
           <Link href="/" className="font-bold text-lg text-white hover:text-gray-300 transition-colors">
             ← Home
           </Link>
+          <span className="text-gray-700">|</span>
+          <Link href="/Clients" className="text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+            Clients
+          </Link>
           <span className="hidden md:block text-gray-700">|</span>
           <span className="hidden md:block text-sm text-gray-500 font-mono">{user?.email}</span>
         </div>

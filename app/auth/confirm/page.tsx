@@ -40,6 +40,7 @@ export default function AuthConfirmPage() {
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
         <p className="text-gray-500 text-sm">Signing you in…</p>
+        <a href="/Clients" className="text-xs text-indigo-600 hover:underline mt-2 inline-block">Browse products</a>
       </div>
     </div>
   );

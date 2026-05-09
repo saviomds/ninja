@@ -185,9 +185,13 @@ export default function ResetPasswordPage() {
                 </button>
               </form>
 
-              <div className="mt-6 text-center">
-                <Link href="/login" className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
+              <div className="mt-6 flex items-center justify-center gap-4 text-sm">
+                <Link href="/login" className="text-gray-400 hover:text-gray-700 transition-colors">
                   ← Back to sign in
+                </Link>
+                <span className="text-gray-200">·</span>
+                <Link href="/Clients" className="text-indigo-600 hover:underline font-medium">
+                  Browse products
                 </Link>
               </div>
             </>
