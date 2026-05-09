@@ -63,9 +63,13 @@ export default function LoginPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: email.trim(), origin: window.location.origin }),
         });
-        const result = await res.json();
+        const text = await res.text();
+        if (!text) throw new Error(`Server returned empty response (status ${res.status})`);
+        let result: { actionLink?: string; error?: string };
+        try { result = JSON.parse(text); }
+        catch { throw new Error(`Bad response (${res.status}): ${text.slice(0, 200)}`); }
         if (!res.ok) throw new Error(result.error || "Failed to generate reset link");
-        window.location.href = result.actionLink;
+        window.location.href = result.actionLink!;
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
