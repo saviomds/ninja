@@ -328,17 +328,6 @@ export default function Home() {
             >
               {user ? "Jump In" : "Get Started"}
             </Link>
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-3 rounded-full font-semibold transition-all duration-200 flex items-center gap-2 shadow-[0_0_20px_rgba(139,92,246,0.3)]"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-                Admin Panel
-              </Link>
-            )}
           </div>
         </div>
       </section>
