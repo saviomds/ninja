@@ -2336,56 +2336,120 @@ export default function Dashboard() {
                 <p className="text-gray-400">No orders yet. They&apos;ll appear here in real time.</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {orders.map((order) => (
-                  <div key={order.id} className="bg-gray-900 rounded-2xl border border-gray-800 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <p className="font-semibold text-white text-sm">{order.product_name}</p>
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border capitalize ${
-                          order.status === "pending" ? "bg-amber-500/10 text-amber-400 border-amber-500/30" :
-                          order.status === "confirmed" ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30" :
-                          order.status === "completed" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
-                          "bg-rose-500/10 text-rose-400 border-rose-500/30"
-                        }`}>{order.status}</span>
+              <div className="space-y-4">
+                {orders.map((order, idx) => {
+                  const statusColors: Record<string, string> = {
+                    pending: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+                    confirmed: "bg-indigo-500/10 text-indigo-400 border-indigo-500/30",
+                    completed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+                    cancelled: "bg-rose-500/10 text-rose-400 border-rose-500/30",
+                  };
+                  const updateStatus = async (newStatus: ClientOrder["status"]) => {
+                    setUpdatingOrderId(order.id);
+                    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", order.id);
+                    if (!error) {
+                      setOrders((prev) => prev.map((o) => o.id === order.id ? { ...o, status: newStatus } : o));
+                      logActivity(`Order ${newStatus}`, order.product_name, "update");
+                    } else {
+                      showToast("Failed to update status", "error");
+                    }
+                    setUpdatingOrderId(null);
+                  };
+                  const isBusy = updatingOrderId === order.id;
+                  return (
+                    <div key={order.id} className={`bg-gray-900 rounded-2xl border p-5 transition-all ${order.status === "pending" ? "border-amber-500/40" : "border-gray-800"}`}>
+                      {/* Header row */}
+                      <div className="flex items-start justify-between gap-3 mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 border border-gray-700 flex-shrink-0">
+                            #{orders.length - idx}
+                          </div>
+                          <div>
+                            <p className="font-bold text-white text-sm leading-tight">{order.product_name}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{new Date(order.created_at).toLocaleString()}</p>
+                          </div>
+                        </div>
+                        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border capitalize flex-shrink-0 ${statusColors[order.status]}`}>
+                          {order.status}
+                        </span>
                       </div>
-                      <p className="text-xs text-gray-400">
-                        {order.client_name} · {order.client_email}
-                        {order.client_phone ? ` · ${order.client_phone}` : ""}
-                      </p>
-                      {order.notes && <p className="text-xs text-gray-500 mt-1 italic truncate">{order.notes}</p>}
-                      <p className="text-xs text-gray-600 mt-1">{new Date(order.created_at).toLocaleString()}</p>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-emerald-400">Rs {order.price.toLocaleString()}</p>
-                        <p className="text-xs text-gray-500">qty {order.quantity}</p>
+
+                      {/* Client info */}
+                      <div className="bg-gray-800/50 rounded-xl p-3 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Name</p>
+                          <p className="text-sm font-semibold text-white">{order.client_name}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Email</p>
+                          <p className="text-sm text-gray-300 truncate">{order.client_email}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Phone</p>
+                          <p className="text-sm text-gray-300">{order.client_phone || "—"}</p>
+                        </div>
                       </div>
-                      <select
-                        value={order.status}
-                        disabled={updatingOrderId === order.id}
-                        onChange={async (e) => {
-                          setUpdatingOrderId(order.id);
-                          const newStatus = e.target.value as ClientOrder["status"];
-                          const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", order.id);
-                          if (!error) {
-                            setOrders((prev) => prev.map((o) => o.id === order.id ? { ...o, status: newStatus } : o));
-                            logActivity(`Updated order status to ${newStatus}`, order.product_name, "update");
-                          } else {
-                            showToast("Failed to update status", "error");
-                          }
-                          setUpdatingOrderId(null);
-                        }}
-                        className="bg-gray-800 border border-gray-700 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 cursor-pointer"
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
+
+                      {/* Order details + actions */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-4">
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Amount</p>
+                            <p className="text-base font-bold text-emerald-400">Rs {order.price.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Qty</p>
+                            <p className="text-base font-bold text-white">{order.quantity}</p>
+                          </div>
+                          {order.notes && (
+                            <div className="hidden sm:block">
+                              <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Notes</p>
+                              <p className="text-xs text-gray-400 italic max-w-xs truncate">{order.notes}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {order.status === "pending" && (
+                            <>
+                              <button
+                                onClick={() => updateStatus("confirmed")}
+                                disabled={isBusy}
+                                className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                              >
+                                {isBusy ? <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> : "✓"} Confirm
+                              </button>
+                              <button
+                                onClick={() => updateStatus("cancelled")}
+                                disabled={isBusy}
+                                className="flex items-center gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-4 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                              >
+                                ✕ Decline
+                              </button>
+                            </>
+                          )}
+                          {order.status === "confirmed" && (
+                            <button
+                              onClick={() => updateStatus("completed")}
+                              disabled={isBusy}
+                              className="flex items-center gap-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-4 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                            >
+                              {isBusy ? <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> : "✓"} Mark completed
+                            </button>
+                          )}
+                          {(order.status === "completed" || order.status === "cancelled") && (
+                            <span className="text-xs text-gray-600 italic">No further actions</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {order.notes && (
+                        <p className="sm:hidden text-xs text-gray-400 italic mt-3 pt-3 border-t border-gray-800">{order.notes}</p>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
