@@ -106,6 +106,20 @@ interface InvoiceData {
   discount?: string;
 }
 
+interface ClientOrder {
+  id: string;
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  price: number;
+  client_name: string;
+  client_email: string;
+  client_phone?: string;
+  notes?: string;
+  status: "pending" | "confirmed" | "completed" | "cancelled";
+  created_at: string;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ITEMS_PER_PAGE = 6;
@@ -920,7 +934,7 @@ export default function Dashboard() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeSection, setActiveSection] = useState<"products" | "social" | "updates" | "settings" | "log" | "invoice">("products");
+  const [activeSection, setActiveSection] = useState<"products" | "social" | "updates" | "settings" | "log" | "invoice" | "orders">("products");
 
   // Invoice state
   const [invoiceData, setInvoiceData] = useState<InvoiceData>(defaultInvoiceData());
@@ -929,6 +943,12 @@ export default function Dashboard() {
   const [isSavingInvoice, setIsSavingInvoice] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
   const [activeEditors, setActiveEditors] = useState<string[]>([]);
+
+  // Orders
+  const [orders, setOrders] = useState<ClientOrder[]>([]);
+  const [unreadOrders, setUnreadOrders] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   const [viewMode, setViewMode] = useState<"card" | "excel">("card");
   // Products
@@ -1045,17 +1065,22 @@ export default function Dashboard() {
     }
   }, []);
 
+  const fetchOrders = useCallback(async () => {
+    const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+    setOrders((data as ClientOrder[]) || []);
+  }, []);
+
   const loadAllData = useCallback(async (showRefreshToast = false, uid?: string) => {
     const targetUid = uid || user?.id;
     if (!targetUid) return;
     showRefreshToast ? setIsRefreshing(true) : setLoading(true);
-    await Promise.all([fetchProducts(), fetchSocialProfiles(), fetchUpdates(), fetchUserProfile(targetUid), fetchInvoices()]);
+    await Promise.all([fetchProducts(), fetchSocialProfiles(), fetchUpdates(), fetchUserProfile(targetUid), fetchInvoices(), fetchOrders()]);
     showRefreshToast ? setIsRefreshing(false) : setLoading(false);
     if (showRefreshToast) {
       showToast("Dashboard refreshed!", "success");
       logActivity("Refreshed dashboard data", "All sections", "info");
     }
-  }, [user?.id, fetchProducts, fetchSocialProfiles, fetchUpdates, fetchUserProfile, fetchInvoices, showToast, logActivity]);
+  }, [user?.id, fetchProducts, fetchSocialProfiles, fetchUpdates, fetchUserProfile, fetchInvoices, fetchOrders, showToast, logActivity]);
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
 
@@ -1118,6 +1143,33 @@ export default function Dashboard() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [loadAllData]);
+
+  // ─── Realtime Orders ───────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("orders-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        (payload) => {
+          const newOrder = payload.new as ClientOrder;
+          setOrders((prev) => [newOrder, ...prev]);
+          setUnreadOrders((n) => n + 1);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders" },
+        (payload) => {
+          setOrders((prev) =>
+            prev.map((o) => (o.id === payload.new.id ? (payload.new as ClientOrder) : o))
+          );
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   // ─── Products ──────────────────────────────────────────────────────────────
 
@@ -1779,6 +1831,7 @@ export default function Dashboard() {
 
   const navSections = [
     { key: "products", label: "Products", count: products.length, icon: "📦" },
+    { key: "orders", label: "Orders", count: orders.length, icon: "🛒" },
     { key: "social", label: "Social", count: socialProfiles.length, icon: "🔗" },
     { key: "updates", label: "Updates", count: updates.length, icon: "📣" },
     { key: "invoice", label: "Invoice", count: invoices.length, icon: "📄" },
@@ -1814,6 +1867,57 @@ export default function Dashboard() {
               {lowStockCount} low stock
             </span>
           )}
+
+          {/* Notification bell */}
+          <div className="relative">
+            <button
+              onClick={() => { setShowNotifications(!showNotifications); setUnreadOrders(0); }}
+              className="relative flex items-center justify-center w-9 h-9 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+              </svg>
+              {unreadOrders > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {unreadOrders > 9 ? "9+" : unreadOrders}
+                </span>
+              )}
+            </button>
+            {showNotifications && (
+              <div className="absolute right-0 top-11 w-80 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-white">Recent Orders</span>
+                  <button onClick={() => { setActiveSection("orders"); setShowNotifications(false); }} className="text-xs text-indigo-400 hover:underline">View all</button>
+                </div>
+                <div className="max-h-72 overflow-y-auto">
+                  {orders.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-8">No orders yet</p>
+                  ) : (
+                    orders.slice(0, 8).map((order) => (
+                      <div key={order.id} className="px-4 py-3 border-b border-gray-800/50 hover:bg-gray-800/50 transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-white truncate">{order.product_name}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">{order.client_name} · qty {order.quantity}</p>
+                          </div>
+                          <div className="flex-shrink-0 text-right">
+                            <p className="text-xs font-semibold text-emerald-400">Rs {order.price.toLocaleString()}</p>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-1 inline-block ${
+                              order.status === "pending" ? "bg-amber-500/20 text-amber-400" :
+                              order.status === "confirmed" ? "bg-indigo-500/20 text-indigo-400" :
+                              order.status === "completed" ? "bg-emerald-500/20 text-emerald-400" :
+                              "bg-red-500/20 text-red-400"
+                            }`}>{order.status}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => loadAllData(true)}
             disabled={isRefreshing}
@@ -1878,6 +1982,10 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <span className="text-gray-500">Updates</span>
               <span className="font-bold text-violet-400">{updates.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">Orders</span>
+              <span className="font-bold text-amber-400">{orders.length}</span>
             </div>
           </div>
         </div>
@@ -2181,6 +2289,104 @@ export default function Dashboard() {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        )}
+
+        {/* ══ ORDERS TAB ══════════════════════════════════════════════════════════ */}
+        {activeSection === "orders" && (
+          <div className="pt-2">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Client Orders</h2>
+                <p className="text-gray-500 text-sm mt-0.5">{orders.length} total · {orders.filter(o => o.status === "pending").length} pending</p>
+              </div>
+              <button
+                onClick={fetchOrders}
+                className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-xl border border-gray-700 transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M2.985 19.644A8.25 8.25 0 013 12a8.25 8.25 0 0115.023-5.455" />
+                </svg>
+                Refresh orders
+              </button>
+            </div>
+
+            {/* Status summary chips */}
+            <div className="flex flex-wrap gap-3 mb-6">
+              {(["pending", "confirmed", "completed", "cancelled"] as const).map((s) => {
+                const cnt = orders.filter(o => o.status === s).length;
+                const colors: Record<string, string> = {
+                  pending: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+                  confirmed: "bg-indigo-500/10 text-indigo-400 border-indigo-500/30",
+                  completed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+                  cancelled: "bg-rose-500/10 text-rose-400 border-rose-500/30",
+                };
+                return (
+                  <div key={s} className={`px-4 py-2 rounded-xl border text-sm font-semibold capitalize ${colors[s]}`}>
+                    {s} <span className="ml-1 opacity-70">{cnt}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {orders.length === 0 ? (
+              <div className="bg-gray-900 rounded-2xl border border-gray-800 p-16 text-center">
+                <p className="text-4xl mb-4">🛒</p>
+                <p className="text-gray-400">No orders yet. They&apos;ll appear here in real time.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {orders.map((order) => (
+                  <div key={order.id} className="bg-gray-900 rounded-2xl border border-gray-800 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className="font-semibold text-white text-sm">{order.product_name}</p>
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border capitalize ${
+                          order.status === "pending" ? "bg-amber-500/10 text-amber-400 border-amber-500/30" :
+                          order.status === "confirmed" ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/30" :
+                          order.status === "completed" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
+                          "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                        }`}>{order.status}</span>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        {order.client_name} · {order.client_email}
+                        {order.client_phone ? ` · ${order.client_phone}` : ""}
+                      </p>
+                      {order.notes && <p className="text-xs text-gray-500 mt-1 italic truncate">{order.notes}</p>}
+                      <p className="text-xs text-gray-600 mt-1">{new Date(order.created_at).toLocaleString()}</p>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-emerald-400">Rs {order.price.toLocaleString()}</p>
+                        <p className="text-xs text-gray-500">qty {order.quantity}</p>
+                      </div>
+                      <select
+                        value={order.status}
+                        disabled={updatingOrderId === order.id}
+                        onChange={async (e) => {
+                          setUpdatingOrderId(order.id);
+                          const newStatus = e.target.value as ClientOrder["status"];
+                          const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", order.id);
+                          if (!error) {
+                            setOrders((prev) => prev.map((o) => o.id === order.id ? { ...o, status: newStatus } : o));
+                            logActivity(`Updated order status to ${newStatus}`, order.product_name, "update");
+                          } else {
+                            showToast("Failed to update status", "error");
+                          }
+                          setUpdatingOrderId(null);
+                        }}
+                        className="bg-gray-800 border border-gray-700 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 cursor-pointer"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}

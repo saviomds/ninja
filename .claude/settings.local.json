@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Dell\\\\ninja\\\\tech-ninja\\\\app\\\\admin\" -Recurse -Include \"*.tsx\",\"*.ts\")",
+      "Bash(Select-Object FullName)",
+      "PowerShell([System.IO.File]::ReadAllText\\(\"c:\\\\Users\\\\Dell\\\\ninja\\\\tech-ninja\\\\app\\\\Clients\\\\Page.tsx\"\\).Length)",
+      "Bash(npm install *)",
+      "Bash(npm run *)"
+    ]
+  }
+}

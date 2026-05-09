@@ -1,11 +1,11 @@
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-server";
 
-export const revalidate = 0; // Tells Next.js to always fetch fresh data for this page
+export const revalidate = 0;
 
 export default async function Explore() {
-  // Fetch categories directly from the new categories table
+  const supabase = await createClient();
   const { data: categoriesData, error } = await supabase
     .from("categories")
     .select("name, description");
