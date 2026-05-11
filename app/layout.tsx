@@ -3,6 +3,7 @@ import Footer from "@/components/Footer";
 import ContactFAB from "@/components/ContactFAB";
 import InstallPrompt from "@/components/InstallPrompt";
 import ServiceWorker from "@/components/ServiceWorker";
+import LoadingScreen from "@/components/LoadingScreen";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import type { Metadata, Viewport } from "next";
 
@@ -83,6 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-white dark:bg-[#030712] text-gray-900 dark:text-gray-50 flex flex-col min-h-screen transition-colors duration-200">
         <ThemeProvider>
+          <LoadingScreen />
           {children}
           <Footer />
           <ContactFAB />

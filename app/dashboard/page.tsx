@@ -1233,7 +1233,6 @@ export default function Dashboard() {
       price: parseFloat(newProduct.price) || 0,
       stock: parseInt(newProduct.stock, 10) || 0,
       category: newProduct.category,
-      is_public: newProduct.is_public,
     };
     let error;
     if (editingProductId) {
@@ -1264,11 +1263,7 @@ export default function Dashboard() {
   };
 
   const handleTogglePublic = async (product: Product) => {
-    const newVal = !(product.is_public ?? true);
-    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_public: newVal } : p));
-    const { error } = await supabase.from("products").update({ is_public: newVal }).eq("id", product.id);
-    if (error) { showToast("Visibility update failed", "error"); fetchProducts(); return; }
-    logActivity(`Set product ${newVal ? "public" : "private"}`, product.name, "update");
+    showToast("Product visibility feature not available", "info");
   };
 
   const sendOrderNotification = (order: ClientOrder) => {

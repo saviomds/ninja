@@ -53,10 +53,10 @@ const SERVICES = [
     desc: "Professional repair for all devices — screens, batteries, charging ports, and water damage recovery.",
     tag: "Most Popular",
     items: ["Screen Replacement", "Battery Swap", "Water Damage Fix", "Software Repair"],
-    cardBg: "bg-gradient-to-br from-blue-50 to-sky-50/60 dark:from-blue-500/[0.08] dark:to-sky-500/[0.04]",
-    border: "border-blue-100 dark:border-blue-500/20 hover:border-blue-300 dark:hover:border-blue-500/45",
-    iconBg: "bg-blue-100 dark:bg-blue-500/15",
-    iconColor: "text-blue-600 dark:text-blue-400",
+    cardBg: "bg-gradient-to-br from-blue-50 to-sky-50/60 dark:from-blue-950/40 dark:to-blue-900/20",
+    border: "border-blue-100 dark:border-blue-500/30 hover:border-blue-300 dark:hover:border-blue-500/60",
+    iconBg: "bg-blue-100 dark:bg-blue-500/20",
+    iconColor: "text-blue-600 dark:text-blue-300",
     tagBg: "bg-blue-600",
     dot: "bg-blue-500",
   },
@@ -66,10 +66,10 @@ const SERVICES = [
     desc: "Brand new smartphones, laptops, accessories, cables and peripherals at competitive prices.",
     tag: "New Arrivals",
     items: ["Smartphones", "Laptops & Tablets", "Accessories", "Cables & Adapters"],
-    cardBg: "bg-gradient-to-br from-emerald-50 to-teal-50/60 dark:from-emerald-500/[0.08] dark:to-teal-500/[0.04]",
-    border: "border-emerald-100 dark:border-emerald-500/20 hover:border-emerald-300 dark:hover:border-emerald-500/45",
-    iconBg: "bg-emerald-100 dark:bg-emerald-500/15",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
+    cardBg: "bg-gradient-to-br from-emerald-50 to-teal-50/60 dark:from-emerald-950/40 dark:to-emerald-900/20",
+    border: "border-emerald-100 dark:border-emerald-500/30 hover:border-emerald-300 dark:hover:border-emerald-500/60",
+    iconBg: "bg-emerald-100 dark:bg-emerald-500/20",
+    iconColor: "text-emerald-600 dark:text-emerald-300",
     tagBg: "bg-emerald-500",
     dot: "bg-emerald-500",
   },
@@ -79,10 +79,10 @@ const SERVICES = [
     desc: "Trade in your old devices for cash or upgrade credit. Fair valuations and instant payment guaranteed.",
     tag: "Best Value",
     items: ["Device Trade-In", "Cash Offers", "Upgrade Credit", "Refurbished Deals"],
-    cardBg: "bg-gradient-to-br from-amber-50 to-orange-50/60 dark:from-amber-500/[0.08] dark:to-orange-500/[0.04]",
-    border: "border-amber-100 dark:border-amber-500/20 hover:border-amber-300 dark:hover:border-amber-500/45",
-    iconBg: "bg-amber-100 dark:bg-amber-500/15",
-    iconColor: "text-amber-600 dark:text-amber-400",
+    cardBg: "bg-gradient-to-br from-amber-50 to-orange-50/60 dark:from-amber-950/40 dark:to-amber-900/20",
+    border: "border-amber-100 dark:border-amber-500/30 hover:border-amber-300 dark:hover:border-amber-500/60",
+    iconBg: "bg-amber-100 dark:bg-amber-500/20",
+    iconColor: "text-amber-600 dark:text-amber-300",
     tagBg: "bg-amber-500",
     dot: "bg-amber-500",
   },
@@ -92,10 +92,10 @@ const SERVICES = [
     desc: "Full IT support — network setup, data recovery, virus removal, software installation and more.",
     tag: "Pro Support",
     items: ["Network Setup", "Data Recovery", "Virus Removal", "IT Consultation"],
-    cardBg: "bg-gradient-to-br from-violet-50 to-purple-50/60 dark:from-violet-500/[0.08] dark:to-purple-500/[0.04]",
-    border: "border-violet-100 dark:border-violet-500/20 hover:border-violet-300 dark:hover:border-violet-500/45",
-    iconBg: "bg-violet-100 dark:bg-violet-500/15",
-    iconColor: "text-violet-600 dark:text-violet-400",
+    cardBg: "bg-gradient-to-br from-violet-50 to-purple-50/60 dark:from-violet-950/40 dark:to-violet-900/20",
+    border: "border-violet-100 dark:border-violet-500/30 hover:border-violet-300 dark:hover:border-violet-500/60",
+    iconBg: "bg-violet-100 dark:bg-violet-500/20",
+    iconColor: "text-violet-600 dark:text-violet-300",
     tagBg: "bg-violet-600",
     dot: "bg-violet-500",
   },
@@ -299,11 +299,11 @@ export default function Home() {
                 </div>
 
                 <h3 className={`text-lg font-bold mb-2 ${svc.iconColor}`}>{svc.title}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-5">{svc.desc}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-5">{svc.desc}</p>
 
                 <ul className="space-y-2">
                   {svc.items.map((item) => (
-                    <li key={item} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 font-medium">
+                    <li key={item} className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 font-medium">
                       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${svc.dot}`} />
                       {item}
                     </li>
@@ -375,10 +375,10 @@ export default function Home() {
               {featuredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="group bg-white dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-black/40 transition-all duration-300 flex flex-col"
+                  className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-black/50 transition-all duration-300 flex flex-col"
                 >
                   <div
-                    className="aspect-[4/3] bg-gray-100 dark:bg-gray-800 relative overflow-hidden cursor-pointer"
+                    className="aspect-[4/3] bg-gray-100 dark:bg-gray-800/80 relative overflow-hidden cursor-pointer"
                     onClick={() => setQuickViewProduct(product)}
                   >
                     {product.image ? (
@@ -408,7 +408,7 @@ export default function Home() {
                       <span className="text-[10px] font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-1">{product.category}</span>
                     )}
                     <h3 className="text-base font-bold text-gray-900 dark:text-white line-clamp-1 mb-1 flex-1">{product.name}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 leading-relaxed">{product.description || "No description provided."}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-4 leading-relaxed">{product.description || "No description provided."}</p>
                     <div className="flex items-center justify-between">
                       <StockBadge stock={product.stock} />
                       <Link
