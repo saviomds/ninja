@@ -21,7 +21,8 @@ const priorityColors: Record<string, string> = {
   low: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
 };
 
-const emptyForm = () => ({ info: "", content: "", link: "", priority: "low" as const, type: "announcement" as const });
+type UpdateForm = { info: string; content: string; link: string; priority: "low" | "medium" | "high"; type: "feature" | "fix" | "announcement" };
+const emptyForm = (): UpdateForm => ({ info: "", content: "", link: "", priority: "low", type: "announcement" });
 
 export default function AdminUpdatesPage() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function AdminUpdatesPage() {
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState(emptyForm());
+  const [form, setForm] = useState<UpdateForm>(emptyForm());
   const [editId, setEditId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);

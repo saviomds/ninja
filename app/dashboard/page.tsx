@@ -1233,6 +1233,7 @@ export default function Dashboard() {
       price: parseFloat(newProduct.price) || 0,
       stock: parseInt(newProduct.stock, 10) || 0,
       category: newProduct.category,
+      is_public: newProduct.is_public,
     };
     let error;
     if (editingProductId) {
@@ -1263,7 +1264,15 @@ export default function Dashboard() {
   };
 
   const handleTogglePublic = async (product: Product) => {
-    showToast("Product visibility feature not available", "success");
+    const next = !(product.is_public ?? true);
+    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_public: next } : p));
+    const { error } = await supabase.from("products").update({ is_public: next }).eq("id", product.id);
+    if (error) {
+      showToast("Failed to update visibility: " + error.message, "error");
+      setProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_public: product.is_public } : p));
+    } else {
+      showToast(next ? "Product is now public" : "Product is now private", "success");
+    }
   };
 
   const sendOrderNotification = (order: ClientOrder) => {
@@ -2157,6 +2166,7 @@ export default function Dashboard() {
                           <th className="px-4 py-3 min-w-[200px]">Description</th>
                           <th className="px-4 py-3 w-24">Price</th>
                           <th className="px-4 py-3 w-24">Stock</th>
+                          <th className="px-4 py-3 w-24">Visibility</th>
                           <th className="px-4 py-3 w-20">Actions</th>
                         </tr>
                       </thead>
@@ -2218,6 +2228,12 @@ export default function Dashboard() {
                                 onBlur={(e) => parseInt(e.target.value, 10) !== product.stock && handleInlineUpdate(product.id, "stock", parseInt(e.target.value, 10) || 0)}
                                 className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all"
                               />
+                            </td>
+                            <td className="px-4 py-3">
+                              <button onClick={() => handleTogglePublic(product)}
+                                className={`relative w-10 h-5 rounded-full transition-colors ${(product.is_public ?? true) ? "bg-emerald-500" : "bg-gray-600"}`}>
+                                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${(product.is_public ?? true) ? "translate-x-5" : "translate-x-0"}`} />
+                              </button>
                             </td>
                             <td className="px-4 py-3 text-center">
                               <button onClick={() => setProductToDelete(product.id)} className="text-rose-400 hover:text-rose-300 p-1">
@@ -2297,6 +2313,10 @@ export default function Dashboard() {
                         </div>
 
                         <div className="flex gap-2 pt-4 border-t border-gray-800/60">
+                          <button onClick={() => handleTogglePublic(product)}
+                            className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${(product.is_public ?? true) ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600"}`}>
+                            {(product.is_public ?? true) ? "Public" : "Private"}
+                          </button>
                           <button onClick={() => handleEditClick(product)} className="flex-1 bg-gray-800/80 hover:bg-gray-700 text-white py-2 rounded-xl text-sm font-medium transition-all border border-gray-700/50">Edit</button>
                           <button onClick={() => setProductToDelete(product.id)} className="flex-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 py-2 rounded-xl text-sm font-medium transition-all border border-rose-500/10">Delete</button>
                         </div>
@@ -2914,6 +2934,17 @@ export default function Dashboard() {
               <div className="flex gap-3">
                 <input type="number" placeholder="Price (Rs)" className="flex-1 border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} />
                 <input type="number" placeholder="Stock qty" className="flex-1 border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })} />
+              </div>
+
+              <div className={`flex items-center justify-between gap-4 p-3.5 rounded-xl border transition-colors ${newProduct.is_public ? "bg-emerald-500/5 border-emerald-500/20" : "bg-gray-800/50 border-gray-700"}`}>
+                <div>
+                  <p className="text-sm font-semibold text-white">{newProduct.is_public ? "Public" : "Private"}</p>
+                  <p className="text-xs text-gray-500">{newProduct.is_public ? "Visible to all clients" : "Hidden from clients"}</p>
+                </div>
+                <button type="button" onClick={() => setNewProduct({ ...newProduct, is_public: !newProduct.is_public })}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${newProduct.is_public ? "bg-emerald-500" : "bg-gray-600"}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${newProduct.is_public ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">

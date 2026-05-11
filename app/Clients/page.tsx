@@ -102,7 +102,7 @@ export default function ClientsPage() {
   useEffect(() => {
     (async () => {
       const [{ data: prods }, authRes] = await Promise.all([
-        supabase.from("products").select("*").order("created_at", { ascending: false }),
+        supabase.from("products").select("*").eq("is_public", true).order("created_at", { ascending: false }),
         supabase.auth.getUser(),
       ]);
       const list: Product[] = prods || [];

@@ -14,6 +14,7 @@ interface Profile {
   phone: string | null;
   location: string | null;
   avatar_url: string | null;
+  is_public: boolean;
 }
 
 export default function ProfilePage() {
@@ -35,6 +36,7 @@ export default function ProfilePage() {
     bio: "",
     phone: "",
     location: "",
+    is_public: false,
   });
 
   const showToast = (msg: string, ok = true) => {
@@ -53,23 +55,37 @@ export default function ProfilePage() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, full_name, bio, phone, location, avatar_url")
+        .select("*")
         .eq("id", u.id)
         .single();
 
-      if (!error && data) {
-        setProfile(data);
+      if (data) {
+        setProfile({
+          id: data.id,
+          username: data.username ?? null,
+          full_name: data.full_name ?? null,
+          bio: data.bio ?? null,
+          phone: data.phone ?? null,
+          location: data.location ?? null,
+          avatar_url: data.avatar_url ?? null,
+          is_public: data.is_public ?? false,
+        });
         setForm({
           username: data.username || "",
           full_name: data.full_name || "",
           bio: data.bio || "",
           phone: data.phone || "",
           location: data.location || "",
+          is_public: data.is_public ?? false,
         });
         if (data.avatar_url) setAvatarPreview(data.avatar_url);
+      } else if (error && error.code !== "PGRST116") {
+        // Real error (not just "no row found") — log it but still show the form
+        console.error("Profile fetch error:", error.message);
+        setProfile({ id: u.id, username: null, full_name: null, bio: null, phone: null, location: null, avatar_url: null, is_public: false });
       } else {
-        // Row may not exist yet — show empty form
-        setProfile({ id: u.id, username: null, full_name: null, bio: null, phone: null, location: null, avatar_url: null });
+        // No profile row yet (new user) — show empty form
+        setProfile({ id: u.id, username: null, full_name: null, bio: null, phone: null, location: null, avatar_url: null, is_public: false });
       }
       setLoading(false);
     };
@@ -123,11 +139,20 @@ export default function ProfilePage() {
       bio: form.bio.trim() || null,
       phone: form.phone.trim() || null,
       location: form.location.trim() || null,
+      is_public: form.is_public,
     };
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from("profiles")
       .upsert(payload, { onConflict: "id" });
+
+    // If is_public column doesn't exist yet, retry without it
+    if (error && error.message.includes("is_public")) {
+      const { is_public: _omit, ...payloadWithout } = payload;
+      ({ error } = await supabase
+        .from("profiles")
+        .upsert(payloadWithout, { onConflict: "id" }));
+    }
 
     setSaving(false);
     if (error) { showToast("Save failed: " + error.message, false); return; }
@@ -220,15 +245,25 @@ export default function ProfilePage() {
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
               </div>
 
-              {/* Role badge */}
-              <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border
-                ${isAdmin
-                  ? "bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-500/30"
-                  : "bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30"
-                }`}>
-                <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isAdmin ? "bg-violet-500" : "bg-blue-500"}`} />
-                {isAdmin ? "Admin" : "Member"}
-              </span>
+              {/* Badges */}
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border
+                  ${form.is_public
+                    ? "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700"
+                  }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${form.is_public ? "bg-emerald-500 animate-pulse" : "bg-gray-400"}`} />
+                  {form.is_public ? "Public" : "Private"}
+                </span>
+                <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border
+                  ${isAdmin
+                    ? "bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-500/30"
+                    : "bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30"
+                  }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isAdmin ? "bg-violet-500" : "bg-blue-500"}`} />
+                  {isAdmin ? "Admin" : "Member"}
+                </span>
+              </div>
             </div>
 
             {/* Display name + email */}
@@ -311,6 +346,32 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* Public / Private toggle */}
+          <div className={`flex items-center justify-between gap-4 p-4 rounded-2xl border transition-colors
+            ${form.is_public
+              ? "bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20"
+              : "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"}`}>
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                {form.is_public ? "Public Profile" : "Private Profile"}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {form.is_public
+                  ? "Clients can see your name, avatar and bio"
+                  : "Only you can see your profile details"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, is_public: !form.is_public })}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 flex-shrink-0
+                ${form.is_public ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200
+                ${form.is_public ? "translate-x-6" : "translate-x-0"}`} />
+            </button>
+          </div>
+
           <button
             onClick={handleSave}
             disabled={saving}
@@ -333,37 +394,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* SQL migration note */}
-        <div className="bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-5">
-          <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-2">Supabase Setup Required</p>
-          <p className="text-xs text-amber-600 dark:text-amber-500 mb-3">
-            Run this SQL in your Supabase dashboard → SQL Editor to enable all profile fields:
-          </p>
-          <pre className="bg-amber-100 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500/20 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-300 font-mono overflow-x-auto whitespace-pre-wrap">{`ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS avatar_url  text,
-  ADD COLUMN IF NOT EXISTS full_name   text,
-  ADD COLUMN IF NOT EXISTS bio         text,
-  ADD COLUMN IF NOT EXISTS phone       text,
-  ADD COLUMN IF NOT EXISTS location    text;
-
--- Create avatars storage bucket (run once)
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('avatars', 'avatars', true)
-ON CONFLICT (id) DO NOTHING;
-
--- Allow authenticated users to upload their own avatar
-CREATE POLICY "Users upload own avatar" ON storage.objects
-  FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY "Avatars are public" ON storage.objects
-  FOR SELECT TO public
-  USING (bucket_id = 'avatars');
-
-CREATE POLICY "Users update own avatar" ON storage.objects
-  FOR UPDATE TO authenticated
-  USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);`}</pre>
-        </div>
 
       </div>
 

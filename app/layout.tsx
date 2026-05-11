@@ -72,9 +72,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <head />
       <body className="bg-white dark:bg-[#030712] text-gray-900 dark:text-gray-50 flex flex-col min-h-screen transition-colors duration-200">
-        {/* beforeInteractive injects the script into <head> via Next.js's HTML
-            pipeline — not through React's virtual DOM — so React 19 never sees
-            a <script> element and does not emit the script-tag warning. */}
         <Script src="/theme-init.js" strategy="beforeInteractive" />
         <ThemeProvider>
           <LoadingScreen />

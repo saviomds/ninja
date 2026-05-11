@@ -92,7 +92,7 @@ export default function ClientDashboard() {
   // ── Load products ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (loadingAuth) return;
-    supabase.from("products").select("*").order("created_at", { ascending: false }).then(({ data }) => {
+    supabase.from("products").select("*").eq("is_public", true).order("created_at", { ascending: false }).then(({ data }) => {
       const list = (data || []) as Product[];
       setProducts(list);
       setCategories(Array.from(new Set(list.map((p) => p.category).filter(Boolean))) as string[]);

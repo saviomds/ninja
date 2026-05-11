@@ -13,11 +13,13 @@ interface Product {
   price: number;
   stock: number;
   category: string;
+  is_public: boolean;
 }
 
 const CATEGORIES = ["Smartphones", "Laptops", "Accessories", "Cables", "Audio", "Gaming", "Tablets", "Other"];
 
-const emptyProduct = () => ({ name: "", description: "", image: "", price: "", stock: "", category: "" });
+type ProductForm = { name: string; description: string; image: string; price: string; stock: string; category: string; is_public: boolean };
+const emptyProduct = (): ProductForm => ({ name: "", description: "", image: "", price: "", stock: "", category: "", is_public: true });
 
 export default function AdminProductsPage() {
   const router = useRouter();
@@ -26,7 +28,7 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyProduct());
+  const [form, setForm] = useState<ProductForm>(emptyProduct());
   const [editId, setEditId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -64,6 +66,7 @@ export default function AdminProductsPage() {
       price: parseFloat(form.price) || 0,
       stock: parseInt(form.stock, 10) || 0,
       category: form.category,
+      is_public: form.is_public,
     };
     const { error } = editId
       ? await supabase.from("products").update(payload).eq("id", editId)
@@ -76,8 +79,20 @@ export default function AdminProductsPage() {
     fetchProducts();
   };
 
+  const handleTogglePublic = async (p: Product) => {
+    const next = !(p.is_public ?? true);
+    setProducts((prev) => prev.map((x) => x.id === p.id ? { ...x, is_public: next } : x));
+    const { error } = await supabase.from("products").update({ is_public: next }).eq("id", p.id);
+    if (error) {
+      showToast("Failed: " + error.message, false);
+      setProducts((prev) => prev.map((x) => x.id === p.id ? { ...x, is_public: p.is_public } : x));
+    } else {
+      showToast(next ? "Product is now public" : "Product is now private");
+    }
+  };
+
   const handleEdit = (p: Product) => {
-    setForm({ name: p.name, description: p.description || "", image: p.image || "", price: String(p.price), stock: String(p.stock), category: p.category || "" });
+    setForm({ name: p.name, description: p.description || "", image: p.image || "", price: String(p.price), stock: String(p.stock), category: p.category || "", is_public: p.is_public ?? true });
     setEditId(p.id);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -124,6 +139,17 @@ export default function AdminProductsPage() {
             <Field label="Stock" value={form.stock} onChange={(v) => setForm({ ...form, stock: v })} type="number" placeholder="0" />
             <Field label="Image URL" value={form.image} onChange={(v) => setForm({ ...form, image: v })} placeholder="https://..." className="sm:col-span-2" />
             <Field label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} as="textarea" placeholder="Product description..." className="sm:col-span-2" />
+
+            <div className={`sm:col-span-2 flex items-center justify-between gap-4 p-4 rounded-xl border transition-colors ${form.is_public ? "bg-emerald-500/5 border-emerald-500/20" : "bg-gray-800/50 border-gray-700"}`}>
+              <div>
+                <p className="text-sm font-semibold text-white">{form.is_public ? "Public" : "Private"}</p>
+                <p className="text-xs text-gray-500">{form.is_public ? "Visible to all clients" : "Hidden from clients"}</p>
+              </div>
+              <button type="button" onClick={() => setForm({ ...form, is_public: !form.is_public })}
+                className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${form.is_public ? "bg-emerald-500" : "bg-gray-600"}`}>
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${form.is_public ? "translate-x-6" : "translate-x-0"}`} />
+              </button>
+            </div>
           </div>
 
           {form.image && (
@@ -177,6 +203,10 @@ export default function AdminProductsPage() {
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${p.stock === 0 ? "bg-red-500/10 text-red-400" : p.stock <= 5 ? "bg-amber-500/10 text-amber-400" : "bg-emerald-500/10 text-emerald-400"}`}>
                         {p.stock === 0 ? "Out of stock" : `${p.stock} in stock`}
                       </span>
+                      <button onClick={() => handleTogglePublic(p)}
+                        className={`text-xs font-medium px-2 py-0.5 rounded-md border transition-colors ${(p.is_public ?? true) ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-gray-800 text-gray-500 border-gray-700 hover:border-gray-500 hover:text-gray-400"}`}>
+                        {(p.is_public ?? true) ? "🌐 Public" : "🔒 Private"}
+                      </button>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

@@ -170,7 +170,7 @@ export default function Home() {
   useEffect(() => {
     const fetchAllData = async () => {
       const [productsRes, socialRes, updatesRes, authRes, usersRes] = await Promise.all([
-        supabase.from("products").select("*").order("created_at", { ascending: false }),
+        supabase.from("products").select("*").eq("is_public", true).order("created_at", { ascending: false }),
         supabase.from("social_profiles").select("id, platform_name, platform_icon, profile_link, username, description, followers, is_active").order("created_at", { ascending: false }),
         supabase.from("updates").select("*").order("created_at", { ascending: false }),
         supabase.auth.getUser(),
