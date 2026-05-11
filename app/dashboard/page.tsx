@@ -1244,7 +1244,7 @@ export default function Dashboard() {
     setIsSaving(false);
     if (error) { showToast("Error: " + error.message, "error"); return; }
     setIsModalOpen(false);
-    setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "" });
+    setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true });
     setEditingProductId(null);
     setImageInputType("link");
     showToast(editingProductId ? "Product updated!" : "Product added!", "success");
@@ -1310,7 +1310,7 @@ export default function Dashboard() {
   };
 
   const handleEditClick = (product: Product) => {
-    setNewProduct({ name: product.name, image: product.image || "", description: product.description || "", price: product.price.toString(), stock: product.stock.toString(), category: product.category || "" });
+    setNewProduct({ name: product.name, image: product.image || "", description: product.description || "", price: product.price.toString(), stock: product.stock.toString(), category: product.category || "", is_public: product.is_public ?? true });
     setEditingProductId(product.id);
     setImageInputType(product.image?.includes('product-images') ? "upload" : "link");
     setIsModalOpen(true);
@@ -2097,7 +2097,7 @@ export default function Dashboard() {
                     🗑 Delete {selectedProducts.size} selected
                   </button>
                 )}
-                <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "" }); setEditingProductId(null); setImageInputType("link"); setIsModalOpen(true); }} className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true }); setEditingProductId(null); setImageInputType("link"); setIsModalOpen(true); }} className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                   + New Product
                 </button>
                 <button onClick={() => setViewMode(v => v === "card" ? "excel" : "card")} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-700 transition-all">

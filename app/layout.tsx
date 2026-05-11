@@ -1,6 +1,7 @@
 import "./globals.css";
 import Footer from "@/components/Footer";
 import ContactFAB from "@/components/ContactFAB";
+import InstallPrompt from "@/components/InstallPrompt";
 import ServiceWorker from "@/components/ServiceWorker";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import type { Metadata, Viewport } from "next";
@@ -85,6 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <Footer />
           <ContactFAB />
+          <InstallPrompt />
           <ServiceWorker />
         </ThemeProvider>
       </body>
