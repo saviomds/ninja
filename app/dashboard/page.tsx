@@ -1263,7 +1263,7 @@ export default function Dashboard() {
   };
 
   const handleTogglePublic = async (product: Product) => {
-    showToast("Product visibility feature not available", "info");
+    showToast("Product visibility feature not available", "success");
   };
 
   const sendOrderNotification = (order: ClientOrder) => {
