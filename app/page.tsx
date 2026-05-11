@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 import { User } from "@supabase/supabase-js";
+import ContactModal from "@/components/ContactModal";
 
 interface Product {
   id: string;
@@ -45,10 +46,65 @@ interface AdminStats {
   lowStockCount: number;
 }
 
+const SERVICES = [
+  {
+    icon: "🔧",
+    title: "Device Repair",
+    desc: "Professional repair for all devices — screens, batteries, charging ports, and water damage recovery.",
+    tag: "Most Popular",
+    items: ["Screen Replacement", "Battery Swap", "Water Damage Fix", "Software Repair"],
+    cardBg: "bg-gradient-to-br from-blue-50 to-sky-50/60 dark:from-blue-500/[0.08] dark:to-sky-500/[0.04]",
+    border: "border-blue-100 dark:border-blue-500/20 hover:border-blue-300 dark:hover:border-blue-500/45",
+    iconBg: "bg-blue-100 dark:bg-blue-500/15",
+    iconColor: "text-blue-600 dark:text-blue-400",
+    tagBg: "bg-blue-600",
+    dot: "bg-blue-500",
+  },
+  {
+    icon: "🛒",
+    title: "Retail Shop",
+    desc: "Brand new smartphones, laptops, accessories, cables and peripherals at competitive prices.",
+    tag: "New Arrivals",
+    items: ["Smartphones", "Laptops & Tablets", "Accessories", "Cables & Adapters"],
+    cardBg: "bg-gradient-to-br from-emerald-50 to-teal-50/60 dark:from-emerald-500/[0.08] dark:to-teal-500/[0.04]",
+    border: "border-emerald-100 dark:border-emerald-500/20 hover:border-emerald-300 dark:hover:border-emerald-500/45",
+    iconBg: "bg-emerald-100 dark:bg-emerald-500/15",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    tagBg: "bg-emerald-500",
+    dot: "bg-emerald-500",
+  },
+  {
+    icon: "💰",
+    title: "Buy & Sell",
+    desc: "Trade in your old devices for cash or upgrade credit. Fair valuations and instant payment guaranteed.",
+    tag: "Best Value",
+    items: ["Device Trade-In", "Cash Offers", "Upgrade Credit", "Refurbished Deals"],
+    cardBg: "bg-gradient-to-br from-amber-50 to-orange-50/60 dark:from-amber-500/[0.08] dark:to-orange-500/[0.04]",
+    border: "border-amber-100 dark:border-amber-500/20 hover:border-amber-300 dark:hover:border-amber-500/45",
+    iconBg: "bg-amber-100 dark:bg-amber-500/15",
+    iconColor: "text-amber-600 dark:text-amber-400",
+    tagBg: "bg-amber-500",
+    dot: "bg-amber-500",
+  },
+  {
+    icon: "🖥️",
+    title: "Tech Services",
+    desc: "Full IT support — network setup, data recovery, virus removal, software installation and more.",
+    tag: "Pro Support",
+    items: ["Network Setup", "Data Recovery", "Virus Removal", "IT Consultation"],
+    cardBg: "bg-gradient-to-br from-violet-50 to-purple-50/60 dark:from-violet-500/[0.08] dark:to-purple-500/[0.04]",
+    border: "border-violet-100 dark:border-violet-500/20 hover:border-violet-300 dark:hover:border-violet-500/45",
+    iconBg: "bg-violet-100 dark:bg-violet-500/15",
+    iconColor: "text-violet-600 dark:text-violet-400",
+    tagBg: "bg-violet-600",
+    dot: "bg-violet-500",
+  },
+];
+
 const priorityColors: Record<string, string> = {
-  high: "text-rose-400 bg-rose-500/10 border-rose-500/30",
-  medium: "text-amber-400 bg-amber-500/10 border-amber-500/30",
-  low: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+  high: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30",
+  medium: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
+  low: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30",
 };
 
 const updateTypeIcons: Record<string, string> = {
@@ -60,8 +116,8 @@ const updateTypeIcons: Record<string, string> = {
 function AdminBadge({ isAdmin }: { isAdmin: boolean }) {
   if (!isAdmin) return null;
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/30">
-      <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-200 dark:border-violet-500/30">
+      <span className="w-1.5 h-1.5 rounded-full bg-violet-500 dark:bg-violet-400 animate-pulse" />
       Admin
     </span>
   );
@@ -70,27 +126,24 @@ function AdminBadge({ isAdmin }: { isAdmin: boolean }) {
 function StockBadge({ stock }: { stock: number }) {
   if (stock === 0)
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 border border-red-500/20">
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20">
         <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Out of stock
       </span>
     );
   if (stock <= 5)
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
         <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Low: {stock} left
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {stock} in stock
     </span>
   );
 }
 
 export default function Home() {
-  const categoryContainerRef = useRef<HTMLDivElement>(null);
-  const [showLeftScroll, setShowLeftScroll] = useState(false);
-  const [showRightScroll, setShowRightScroll] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [socialProfiles, setSocialProfiles] = useState<SocialProfile[]>([]);
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
@@ -98,22 +151,13 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalUsers, setTotalUsers] = useState<number>(0);
-  const [adminStats, setAdminStats] = useState<AdminStats>({
-    totalRevenue: 0,
-    outOfStockCount: 0,
-    lowStockCount: 0,
-  });
-  const [productFilter, setProductFilter] = useState<"all" | "in_stock" | "low" | "out">("all");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [categories, setCategories] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc" | "stock">("newest");
+  const [adminStats, setAdminStats] = useState<AdminStats>({ totalRevenue: 0, outOfStockCount: 0, lowStockCount: 0 });
   const [activeUpdateType, setActiveUpdateType] = useState<string>("all");
-  const [visibleProductsCount, setVisibleProductsCount] = useState(6);
-  
-  // Interactive States
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [activeServiceIdx, setActiveServiceIdx] = useState<number | null>(null);
+  const [showContact, setShowContact] = useState(false);
+
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
@@ -121,854 +165,493 @@ export default function Home() {
 
   useEffect(() => {
     const fetchAllData = async () => {
-      const [productsRes, socialRes, updatesRes, authRes, usersRes, categoriesRes] = await Promise.all([
+      const [productsRes, socialRes, updatesRes, authRes, usersRes] = await Promise.all([
         supabase.from("products").select("*").order("created_at", { ascending: false }),
-        supabase
-          .from("social_profiles")
-          .select("id, platform_name, platform_icon, profile_link, username, description, followers, is_active")
-          .order("created_at", { ascending: false }),
+        supabase.from("social_profiles").select("id, platform_name, platform_icon, profile_link, username, description, followers, is_active").order("created_at", { ascending: false }),
         supabase.from("updates").select("*").order("created_at", { ascending: false }),
         supabase.auth.getUser(),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("categories").select("name"),
       ]);
 
       const fetchedProducts: Product[] = productsRes.data || [];
-      const fetchedUpdates: AppUpdate[] = updatesRes.data || [];
       const fetchedUser = authRes.data?.user || null;
 
       setProducts(fetchedProducts);
       setSocialProfiles(socialRes.data || []);
-      setUpdates(fetchedUpdates);
+      setUpdates(updatesRes.data || []);
       setUser(fetchedUser);
       setTotalUsers(usersRes.count || 0);
 
-      // Merge categories from DB and existing products to ensure completeness
-      const dbCategories = categoriesRes.data?.map((c) => c.name) || [];
-      const productCategories = fetchedProducts.map((p) => p.category).filter(Boolean) as string[];
-      setCategories(Array.from(new Set([...dbCategories, ...productCategories])));
-
-      // Check admin role from user metadata or profiles table
       if (fetchedUser) {
         const role = fetchedUser.user_metadata?.role || fetchedUser.app_metadata?.role;
         setIsAdmin(role === "admin");
       }
 
-      // Compute admin stats
       const outOfStock = fetchedProducts.filter((p) => p.stock === 0).length;
       const lowStock = fetchedProducts.filter((p) => p.stock > 0 && p.stock <= 5).length;
       const revenue = fetchedProducts.reduce((acc, p) => acc + p.price * (p.stock || 0), 0);
       setAdminStats({ totalRevenue: revenue, outOfStockCount: outOfStock, lowStockCount: lowStock });
-
       setLoading(false);
     };
 
     fetchAllData();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user || null));
+    return () => { authListener.subscription.unsubscribe(); };
   }, []);
-
-  // ── Auto-open Quick View from URL ──────────────────────────────────────────
-  useEffect(() => {
-    if (!loading && products.length > 0) {
-      const params = new URLSearchParams(window.location.search);
-      const productId = params.get("product");
-      if (productId) {
-        const productToOpen = products.find((p) => p.id === productId);
-        if (productToOpen) {
-          setQuickViewProduct(productToOpen);
-        }
-      }
-      const categoryParam = params.get("category");
-      if (categoryParam) {
-        setSelectedCategory(categoryParam);
-      }
-    }
-  }, [loading, products]);
 
   const handleCopyLink = (productId: string) => {
     const url = `${window.location.origin}/product/${productId}`;
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(url).then(() => showToast("Product link copied!"));
-    } else {
-      const textArea = document.createElement("textarea");
-      textArea.value = url;
-      document.body.appendChild(textArea);
-      textArea.select();
-      try {
-        document.execCommand("copy");
-        showToast("Product link copied!");
-      } catch (err) {
-        showToast("Failed to copy link", "error");
-      }
-      textArea.remove();
-    }
+    navigator.clipboard?.writeText(url).then(() => showToast("Link copied!")).catch(() => showToast("Could not copy link", "error"));
   };
 
-  const closeQuickView = () => {
-    setQuickViewProduct(null);
-    const url = new URL(window.location.href);
-    if (url.searchParams.has("product")) {
-      url.searchParams.delete("product");
-      window.history.replaceState({}, "", url.toString());
-    }
-  };
+  const closeQuickView = () => setQuickViewProduct(null);
 
-  const handleCategoryScroll = () => {
-    if (!categoryContainerRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = categoryContainerRef.current;
-    setShowLeftScroll(scrollLeft > 0);
-    setShowRightScroll(scrollLeft < scrollWidth - clientWidth - 1);
-  };
-
-  useEffect(() => {
-    handleCategoryScroll();
-    window.addEventListener("resize", handleCategoryScroll);
-    return () => window.removeEventListener("resize", handleCategoryScroll);
-  }, [categories]);
-
-  const scrollCategories = (direction: "left" | "right") => {
-    if (categoryContainerRef.current) {
-      const scrollAmount = 250;
-      categoryContainerRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  useEffect(() => {
-    setVisibleProductsCount(6);
-  }, [searchQuery, productFilter, selectedCategory, sortBy]);
-
-  // ── Derived filtered + sorted products ──────────────────────────────────────
-  const filteredProducts = products
-    .filter((p) => {
-      const matchesSearch =
-        searchQuery.trim() === "" ||
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.description || "").toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesFilter =
-        productFilter === "all" ||
-        (productFilter === "in_stock" && p.stock > 5) ||
-        (productFilter === "low" && p.stock > 0 && p.stock <= 5) ||
-        (productFilter === "out" && p.stock === 0);
-
-      const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
-
-      return matchesSearch && matchesFilter && matchesCategory;
-    })
-    .sort((a, b) => {
-      if (sortBy === "price_asc") return a.price - b.price;
-      if (sortBy === "price_desc") return b.price - a.price;
-      if (sortBy === "stock") return b.stock - a.stock;
-      // newest: rely on existing sort from DB
-      return 0;
-    });
-
-  const visibleProducts = filteredProducts.slice(0, visibleProductsCount);
-  const hasMoreProducts = visibleProductsCount < filteredProducts.length;
-
-  // ── Derived filtered updates ─────────────────────────────────────────────────
-  const filteredUpdates =
-    activeUpdateType === "all"
-      ? updates
-      : updates.filter((u) => (u.type || "announcement") === activeUpdateType);
-
+  const filteredUpdates = activeUpdateType === "all" ? updates : updates.filter((u) => (u.type || "announcement") === activeUpdateType);
   const updateTypes = ["all", ...Array.from(new Set(updates.map((u) => u.type || "announcement")))];
+  const featuredProducts = products.filter((p) => p.stock > 0).slice(0, 3);
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
+    <main className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
       <Navbar />
 
-      {/* ── Hero ────────────────────────────────────────────────────────────── */}
-      <section className="relative py-24 flex flex-col items-center justify-center text-center px-4 overflow-hidden border-b border-gray-800/50">
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none" />
-        {/* subtle grid overlay */}
+      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
+      <section className="relative py-20 md:py-28 flex flex-col items-center justify-center text-center px-4 overflow-hidden border-b border-gray-100 dark:border-gray-800/50">
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/80 dark:from-blue-500/[0.06] via-transparent to-transparent pointer-events-none" />
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.04]"
           style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)",
+            backgroundImage: "linear-gradient(rgba(0,0,0,1) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,1) 1px,transparent 1px)",
             backgroundSize: "40px 40px",
           }}
         />
-
-        <div className="relative z-10 flex flex-col items-center gap-4">
+        <div className="relative z-10 flex flex-col items-center gap-4 max-w-3xl">
           {user && (
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm text-gray-400">
-                Welcome back,{" "}
-                <span className="text-white font-semibold">
-                  {user.user_metadata?.full_name || user.email?.split("@")[0] || "User"}
-                </span>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Welcome back, <span className="font-semibold text-gray-900 dark:text-white">{user.user_metadata?.full_name || user.email?.split("@")[0]}</span>
               </span>
               <AdminBadge isAdmin={isAdmin} />
             </div>
           )}
 
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-tight">
-            Join. Connect. Earn.
+          <div className="inline-flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-400/10 border border-blue-200 dark:border-blue-400/20 px-4 py-1.5 rounded-full uppercase tracking-widest">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse" />
+            Your Local Tech Experts — Mauritius
+          </div>
+
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-700 to-gray-500 dark:from-white dark:via-gray-200 dark:to-gray-400 tracking-tight leading-tight">
+            Repair. Buy. Sell.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600 dark:from-blue-400 dark:to-violet-400">
+              Tech Services.
+            </span>
           </h1>
-          <p className="text-lg text-gray-400 mb-6 max-w-2xl">
-            A simple platform to manage projects, share work, and stay updated with the latest announcements.
+
+          <p className="text-lg text-gray-500 dark:text-gray-400 max-w-xl leading-relaxed">
+            From device repairs to retail shopping — your one-stop tech hub for everything digital.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href={user ? "/dashboard" : "/login"}
-              className="bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-200 hover:scale-105 transition-all duration-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-            >
-              {user ? "Jump In" : "Get Started"}
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+            <a href="#services" className="bg-gray-900 dark:bg-white text-white dark:text-black px-7 py-3 rounded-full font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 hover:scale-105 transition-all duration-200 shadow-lg shadow-gray-900/10">
+              Our Services
+            </a>
+            <Link href="/Clients" className="border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-7 py-3 rounded-full font-semibold hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/5 transition-all duration-200">
+              Browse Shop →
             </Link>
+          </div>
+
+          {/* Trust badges */}
+          <div className="flex flex-wrap justify-center gap-6 mt-6 text-xs font-medium text-gray-400 dark:text-gray-500">
+            {["⭐ 500+ Repairs Done", "📦 Fast Delivery", "🔒 Warranty Included", "💬 24/7 Support"].map((b) => (
+              <span key={b}>{b}</span>
+            ))}
           </div>
         </div>
       </section>
 
-      {loading ? (
-        <div className="max-w-6xl mx-auto px-6 py-16 space-y-24">
-          {/* Stats Skeleton */}
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 -mt-8 relative z-20">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-gray-900/60 border border-gray-800 rounded-2xl h-[124px] animate-pulse" />
-            ))}
-          </section>
+      <div className="max-w-6xl mx-auto px-6 py-16 space-y-24">
 
-          {/* Products Skeleton */}
-          <section>
-            <div className="mb-6 border-b border-gray-800 pb-4">
-              <div className="h-8 w-64 bg-gray-800 rounded-lg animate-pulse mb-3" />
-              <div className="h-4 w-48 bg-gray-800 rounded-md animate-pulse" />
+        {/* ── Services ───────────────────────────────────────────────────────── */}
+        <section id="services">
+          <div className="text-center mb-12">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4 block">What we offer</span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">Everything Tech, Under One Roof</h2>
+            <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+              Professional services for individuals and businesses. Trusted by hundreds of customers across Mauritius.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {SERVICES.map((svc, i) => (
+              <div
+                key={svc.title}
+                className={`relative rounded-2xl p-6 border transition-all duration-300 cursor-default group ${svc.cardBg} ${svc.border} hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-black/40`}
+                onMouseEnter={() => setActiveServiceIdx(i)}
+                onMouseLeave={() => setActiveServiceIdx(null)}
+              >
+                {/* Tag */}
+                <div className={`absolute top-4 right-4 text-[10px] font-bold uppercase tracking-widest text-white px-2.5 py-1 rounded-full ${svc.tagBg}`}>
+                  {svc.tag}
+                </div>
+
+                {/* Icon */}
+                <div className={`w-12 h-12 rounded-xl ${svc.iconBg} flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                  {svc.icon}
+                </div>
+
+                <h3 className={`text-lg font-bold mb-2 ${svc.iconColor}`}>{svc.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mb-5">{svc.desc}</p>
+
+                <ul className="space-y-2">
+                  {svc.items.map((item) => (
+                    <li key={item} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 font-medium">
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${svc.dot}`} />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA row */}
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800">
+            <div className="text-center sm:text-left">
+              <p className="font-semibold text-gray-900 dark:text-white">Need a repair or service?</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Visit us or get in touch — we&apos;re ready to help.</p>
             </div>
-            
+            <div className="flex gap-3 flex-shrink-0">
+              <Link href="/Clients" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm shadow-blue-600/20">
+                Shop Now
+              </Link>
+              <button
+                onClick={() => setShowContact(true)}
+                className="border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/5 hover:text-blue-600 dark:hover:text-blue-400 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+              >
+                Contact Us
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Featured Products ──────────────────────────────────────────────── */}
+        {loading ? (
+          <section>
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <div className="h-8 w-56 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse mb-2" />
+                <div className="h-4 w-40 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden flex flex-col animate-pulse">
-                  <div className="aspect-[4/3] w-full bg-gray-800/80" />
-                  <div className="p-5 flex flex-col gap-3">
-                    <div className="h-5 w-3/4 bg-gray-800 rounded-md" />
-                    <div className="h-3 w-1/4 bg-gray-800 rounded-sm mb-2" />
-                    <div className="h-3 w-full bg-gray-800 rounded-sm" />
-                    <div className="h-3 w-5/6 bg-gray-800 rounded-sm" />
-                    <div className="h-6 w-24 bg-gray-800 rounded-md mt-2" />
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden animate-pulse">
+                  <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-800/80" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-5 w-3/4 bg-gray-100 dark:bg-gray-800 rounded" />
+                    <div className="h-4 w-1/2 bg-gray-100 dark:bg-gray-800 rounded" />
+                    <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded-xl" />
                   </div>
                 </div>
               ))}
             </div>
           </section>
-        </div>
-      ) : (
-        <div className="max-w-6xl mx-auto px-6 py-16 space-y-24">
+        ) : featuredProducts.length > 0 ? (
+          <section>
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 block mb-1">Our catalog</span>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Featured Products</h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-1">Handpicked items from our latest stock</p>
+              </div>
+              <Link href="/Clients" className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+                View all
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
 
-          {/* ── Stats Overview ──────────────────────────────────────────────── */}
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 -mt-8 relative z-20">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="group bg-white dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-lg dark:hover:shadow-2xl dark:hover:shadow-black/40 transition-all duration-300 flex flex-col"
+                >
+                  <div
+                    className="aspect-[4/3] bg-gray-100 dark:bg-gray-800 relative overflow-hidden cursor-pointer"
+                    onClick={() => setQuickViewProduct(product)}
+                  >
+                    {product.image ? (
+                      <Image
+                        src={product.image.replace("/object/public/", "/render/image/public/")}
+                        alt={product.name}
+                        fill
+                        unoptimized
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x300/f3f4f6/9ca3af?text=No+Image"; }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>
+                    )}
+                    <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/70 backdrop-blur-sm text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-bold border border-gray-200 dark:border-gray-700 shadow-sm">
+                      Rs {product.price.toLocaleString()}
+                    </div>
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <span className="text-white text-xs font-semibold bg-white/15 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 translate-y-3 group-hover:translate-y-0 transition-transform duration-300">
+                        Quick View
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-5 flex flex-col flex-1">
+                    {product.category && (
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-1">{product.category}</span>
+                    )}
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white line-clamp-1 mb-1 flex-1">{product.name}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 leading-relaxed">{product.description || "No description provided."}</p>
+                    <div className="flex items-center justify-between">
+                      <StockBadge stock={product.stock} />
+                      <Link
+                        href="/Clients"
+                        className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                      >
+                        Order →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {products.length > 3 && (
+              <div className="mt-8 text-center">
+                <Link href="/Clients" className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500/50 hover:bg-blue-50 dark:hover:bg-blue-500/5 text-gray-700 dark:text-white rounded-xl font-semibold text-sm transition-all shadow-sm">
+                  See all {products.length} products in shop
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                </Link>
+              </div>
+            )}
+          </section>
+        ) : null}
+
+        {/* ── Quick Access ───────────────────────────────────────────────────── */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Link href="/Clients" className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-2xl p-6 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/25">
+            <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full" />
+            <div className="absolute -right-2 -bottom-8 w-24 h-24 bg-white/5 rounded-full" />
+            <div className="relative z-10 flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+              </div>
+              <h3 className="text-base font-bold text-white">Shop Products →</h3>
+            </div>
+            <p className="relative z-10 text-sm text-blue-100">Browse our full catalog and place orders directly.</p>
+          </Link>
+          <Link href="/client-dashboard" className="group relative overflow-hidden bg-gradient-to-br from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 rounded-2xl p-6 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/25">
+            <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full" />
+            <div className="absolute -right-2 -bottom-8 w-24 h-24 bg-white/5 rounded-full" />
+            <div className="relative z-10 flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <h3 className="text-base font-bold text-white">My Dashboard →</h3>
+            </div>
+            <p className="relative z-10 text-sm text-indigo-100">View your orders, track status, and manage your account.</p>
+          </Link>
+        </section>
+
+        {/* ── Stats Overview ─────────────────────────────────────────────────── */}
+        {!loading && (
+          <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              {
-                value: products.length,
-                label: "Total Products",
-                color: "text-indigo-400",
-                border: "hover:border-indigo-500/50",
-                icon: (
-                  <svg className="w-5 h-5 text-indigo-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
-                ),
-              },
-              {
-                value: updates.length,
-                label: "Platform Updates",
-                color: "text-emerald-400",
-                border: "hover:border-emerald-500/50",
-                icon: (
-                  <svg className="w-5 h-5 text-emerald-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                ),
-              },
-              {
-                value: socialProfiles.length,
-                label: "Connected Profiles",
-                color: "text-amber-400",
-                border: "hover:border-amber-500/50",
-                icon: (
-                  <svg className="w-5 h-5 text-amber-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" />
-                  </svg>
-                ),
-              },
-              {
-                value: totalUsers,
-                label: "Registered Users",
-                color: "text-rose-400",
-                border: "hover:border-rose-500/50",
-                icon: (
-                  <svg className="w-5 h-5 text-rose-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                ),
-              },
-            ].map(({ value, label, color, border, icon }) => (
-              <div key={label} className={`bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 text-center shadow-lg ${border} transition-colors duration-300 relative overflow-hidden group`}>
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">{icon}</div>
-                <h3 className={`text-4xl font-extrabold ${color} mb-2`}>{value}</h3>
-                <p className="text-gray-400 font-medium tracking-wide text-sm">{label}</p>
+              { value: products.length, label: "Products", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-500/10", icon: "📦" },
+              { value: updates.length, label: "Updates", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10", icon: "📢" },
+              { value: socialProfiles.length, label: "Platforms", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10", icon: "🌐" },
+              { value: totalUsers, label: "Members", color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10", icon: "👥" },
+            ].map(({ value, label, color, bg, icon }) => (
+              <div key={label} className="bg-white dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm dark:shadow-none text-center hover:shadow-md transition-shadow">
+                <div className={`w-10 h-10 rounded-xl ${bg} text-xl flex items-center justify-center mx-auto mb-3`}>{icon}</div>
+                <h3 className={`text-3xl font-extrabold ${color} mb-1`}>{value}</h3>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
               </div>
             ))}
           </section>
-
-          {/* ── Admin Quick Stats (admin only) ──────────────────────────────── */}
-          {isAdmin && (
-            <section>
-              <div className="mb-6 flex items-center gap-3">
-                <h2 className="text-2xl font-bold text-white">Admin Overview</h2>
-                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20">
-                  Only visible to admins
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="bg-gray-900/60 border border-violet-800/30 rounded-2xl p-6 flex items-center gap-5 hover:border-violet-500/50 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Est. Inventory Value</p>
-                    <p className="text-2xl font-extrabold text-violet-300">Rs {adminStats.totalRevenue.toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <div className="bg-gray-900/60 border border-amber-800/30 rounded-2xl p-6 flex items-center gap-5 hover:border-amber-500/50 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Low Stock Alerts</p>
-                    <p className="text-2xl font-extrabold text-amber-300">{adminStats.lowStockCount} Products</p>
-                  </div>
-                </div>
-
-                <div className="bg-gray-900/60 border border-red-800/30 rounded-2xl p-6 flex items-center gap-5 hover:border-red-500/50 transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Out of Stock</p>
-                    <p className="text-2xl font-extrabold text-red-300">{adminStats.outOfStockCount} Products</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Admin Quick Actions */}
-              <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: "Add Product", href: "/admin/products/new", icon: "➕" },
-                  { label: "Post Update", href: "/admin/updates/new", icon: "📝" },
-                  { label: "Manage Users", href: "/admin/users", icon: "👥" },
-                  { label: "Social Links", href: "/admin/social", icon: "🔗" },
-                ].map((action) => (
-                  <Link
-                    key={action.label}
-                    href={action.href}
-                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gray-900/60 border border-gray-800 hover:border-violet-500/40 hover:bg-violet-500/5 text-sm font-medium text-gray-300 hover:text-white transition-all duration-200"
-                  >
-                    <span>{action.icon}</span> {action.label}
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* ── Updates Section ─────────────────────────────────────────────── */}
-          {updates.length > 0 && (
-            <section>
-              <div className="mb-8 border-b border-gray-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                  <h2 className="text-3xl font-bold text-white">Latest Updates</h2>
-                  <p className="text-gray-400 mt-2">Platform announcements and snippets</p>
-                </div>
-                {/* Update type filter tabs */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  {updateTypes.map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setActiveUpdateType(type)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all border ${
-                        activeUpdateType === type
-                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                          : "bg-gray-900/60 text-gray-400 border-gray-800 hover:border-gray-600"
-                      }`}
-                    >
-                      {type === "all" ? `All (${updates.length})` : `${updateTypeIcons[type] || ""} ${type}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredUpdates.map((update) => {
-                  const priority = update.priority || "low";
-                  const type = update.type || "announcement";
-                  return (
-                    <div key={update.id} className="bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl p-6 hover:border-emerald-500/50 transition-colors relative overflow-hidden group">
-                      {/* Priority ribbon */}
-                      {update.priority && (
-                        <div className={`absolute top-0 right-0 text-[10px] font-bold uppercase px-2.5 py-1 rounded-bl-xl border-l border-b ${priorityColors[priority]}`}>
-                          {priority}
-                        </div>
-                      )}
-
-                      <div className="flex items-start justify-between mb-3 pr-16">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{updateTypeIcons[type] || "📣"}</span>
-                          <h3 className="text-xl font-bold text-white leading-tight">{update.info}</h3>
-                        </div>
-                      </div>
-
-                      {update.created_at && (
-                        <p className="text-xs text-gray-600 mb-3">
-                          {new Date(update.created_at).toLocaleDateString("en-US", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </p>
-                      )}
-
-                      <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap mb-4">{update.content}</p>
-
-                      <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-800/60">
-                        {update.link ? (
-                          <a
-                            href={update.link.startsWith("http") ? update.link : `https://${update.link}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-emerald-400 hover:text-emerald-300 text-sm font-medium inline-flex items-center gap-1 transition-colors"
-                          >
-                            Read more ↗
-                          </a>
-                        ) : (
-                          <span />
-                        )}
-                        {isAdmin && (
-                          <Link href={`/admin/updates/${update.id}/edit`} className="text-xs text-gray-600 hover:text-violet-400 transition-colors flex items-center gap-1">
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* ── Social Profiles Section ─────────────────────────────────────── */}
-          {socialProfiles.length > 0 && (
-            <section>
-              <div className="mb-8 border-b border-gray-800 pb-4">
-                <h2 className="text-3xl font-bold text-white">Connect With Us</h2>
-                <p className="text-gray-400 mt-2">Find us across different platforms</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {socialProfiles.map((profile) => (
-                  <div key={profile.id} className="group bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl p-5 hover:border-indigo-500/50 transition-all duration-300 flex flex-col relative">
-                    {/* Active/Inactive badge */}
-                    {profile.is_active !== undefined && (
-                      <span
-                        className={`absolute top-4 right-4 w-2.5 h-2.5 rounded-full ${
-                          profile.is_active ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "bg-gray-600"
-                        }`}
-                        title={profile.is_active ? "Active" : "Inactive"}
-                      />
-                    )}
-
-                    <div className="flex items-center gap-4 mb-4">
-                      {profile.platform_icon ? (
-                        <Image
-                          src={profile.platform_icon}
-                          alt={profile.platform_name}
-                          width={48}
-                          height={48}
-                          unoptimized
-                          className="w-12 h-12 rounded-xl object-cover bg-gray-800 border border-gray-700"
-                          onError={(e) => {
-                            console.error('Social icon failed to load:', profile.platform_icon);
-                            (e.target as HTMLImageElement).src = `https://placehold.co/48x48/1f2937/9ca3af?text=${profile.platform_name.charAt(0).toUpperCase()}`;
-                          }}
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600 flex items-center justify-center text-xl font-bold text-gray-300">
-                          {profile.platform_name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="overflow-hidden">
-                        <h3 className="text-lg font-bold text-white truncate">{profile.platform_name}</h3>
-                        {profile.username && <p className="text-sm text-gray-400 truncate">@{profile.username}</p>}
-                      </div>
-                    </div>
-
-                    {profile.description && (
-                      <p className="text-sm text-gray-400 mb-4 line-clamp-3 flex-1">{profile.description}</p>
-                    )}
-
-                    {/* Followers count if available */}
-                    {profile.followers !== undefined && profile.followers > 0 && (
-                      <p className="text-xs text-gray-500 mb-4">
-                        <span className="font-semibold text-gray-300">{profile.followers.toLocaleString()}</span> followers
-                      </p>
-                    )}
-
-                    <div className="mt-auto flex gap-2">
-                      <a
-                        href={profile.profile_link.startsWith("http") ? profile.profile_link : `https://${profile.profile_link}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 text-center bg-gray-800 hover:bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium transition-all border border-gray-700 hover:border-indigo-500"
-                      >
-                        Visit Profile
-                      </a>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(profile.profile_link);
-                          showToast("Profile link copied!");
-                        }}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-800 border border-gray-700 hover:border-indigo-500/50 hover:bg-indigo-500/10 text-gray-400 hover:text-indigo-400 transition-all"
-                        title="Copy Profile Link"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                      {isAdmin && (
-                        <Link
-                          href={`/admin/social/${profile.id}/edit`}
-                          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-800 border border-gray-700 hover:border-violet-500/50 hover:bg-violet-500/10 text-gray-400 hover:text-violet-400 transition-all"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* ── Products Section ────────────────────────────────────────────── */}
-          {products.length > 0 && (
-            <section>
-              <div className="mb-6 border-b border-gray-800 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                  <h2 className="text-3xl font-bold text-white">Featured Products</h2>
-                  <p className="text-gray-400 mt-2">Explore our latest available items</p>
-                </div>
-                <div className="text-sm font-medium bg-indigo-500/10 text-indigo-400 px-4 py-2 rounded-full border border-indigo-500/20 w-fit flex items-center shadow-inner">
-                  <span className="w-2 h-2 rounded-full bg-indigo-400 mr-2 animate-pulse" />
-                  {products.length} Total Items Available
-                </div>
-              </div>
-
-              {/* Category Filter Buttons */}
-              {categories.length > 0 && (
-                <div className="relative mb-2 group">
-                  {/* Left fade + arrow */}
-                  {showLeftScroll && (
-                    <div className="absolute left-0 top-0 bottom-4 w-16 bg-gradient-to-r from-gray-950 to-transparent pointer-events-none flex items-center z-10">
-                      <button
-                        onClick={() => scrollCategories("left")}
-                        className="hidden md:flex pointer-events-auto w-8 h-8 rounded-full bg-gray-800 border border-gray-700 text-white items-center justify-center hover:bg-gray-700 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity ml-1"
-                        title="Scroll Left"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-
-                  <div
-                    ref={categoryContainerRef}
-                    onScroll={handleCategoryScroll}
-                    className="flex gap-2 overflow-x-auto snap-x pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                  >
-                    <button
-                      onClick={() => setSelectedCategory("all")}
-                      className={`shrink-0 snap-start whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                        selectedCategory === "all"
-                          ? "bg-violet-500/20 text-violet-300 border border-violet-500/50"
-                          : "bg-gray-900/60 text-gray-400 border border-gray-800 hover:border-gray-600"
-                      }`}
-                    >
-                      All Categories
-                    </button>
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`shrink-0 snap-start whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                          selectedCategory === cat
-                            ? "bg-violet-500/20 text-violet-300 border border-violet-500/50"
-                            : "bg-gray-900/60 text-gray-400 border border-gray-800 hover:border-gray-600"
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Right fade + arrow */}
-                  {showRightScroll && (
-                    <div className="absolute right-0 top-0 bottom-4 w-16 bg-gradient-to-l from-gray-950 to-transparent pointer-events-none flex items-center justify-end z-10">
-                      <button
-                        onClick={() => scrollCategories("right")}
-                        className="hidden md:flex pointer-events-auto w-8 h-8 rounded-full bg-gray-800 border border-gray-700 text-white items-center justify-center hover:bg-gray-700 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity mr-1"
-                        title="Scroll Right"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Search + Filter + Sort bar */}
-              <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                {/* Search */}
-                <div className="relative flex-1">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-gray-900/60 border border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500/50 transition-colors"
-                  />
-                </div>
-
-                {/* Stock filter */}
-                <div className="flex gap-2 flex-wrap">
-                  {[
-                    { key: "all", label: "All" },
-                    { key: "in_stock", label: "In Stock" },
-                    { key: "low", label: "Low" },
-                    { key: "out", label: "Out" },
-                  ].map((f) => (
-                    <button
-                      key={f.key}
-                      onClick={() => setProductFilter(f.key as typeof productFilter)}
-                      className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                        productFilter === f.key
-                          ? "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
-                          : "bg-gray-900/60 text-gray-500 border-gray-800 hover:border-gray-600"
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Sort */}
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                  className="bg-gray-900/60 border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-gray-400 focus:outline-none focus:border-indigo-500/50 transition-colors cursor-pointer"
-                >
-                  <option value="newest">Newest</option>
-                  <option value="price_asc">Price: Low → High</option>
-                  <option value="price_desc">Price: High → Low</option>
-                  <option value="stock">Most Stock</option>
-                </select>
-              </div>
-
-              {filteredProducts.length === 0 ? (
-                <div className="text-center py-16 text-gray-600">
-                  <p className="text-4xl mb-3">🔍</p>
-                  <p className="font-medium">No products match your filters.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {visibleProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      className="group bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 flex flex-col"
-                    >
-                      <div className="aspect-[4/3] w-full bg-gray-800 relative overflow-hidden">
-                        {product.image ? (
-                          <Image
-                            key={product.image}
-                            src={product.image.replace('/object/public/', '/render/image/public/')}
-                            alt={product.name}
-                            fill
-                            unoptimized
-                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-                            onError={(e) => {
-                              console.error('Image failed to load:', product.image);
-                              (e.target as HTMLImageElement).src = "https://placehold.co/400x300/1f2937/9ca3af?text=Image+Not+Found";
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">No Image</div>
-                        )}
-                        <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-full text-sm font-bold border border-gray-700 shadow-lg">
-                          Rs {product.price.toLocaleString()}
-                        </div>
-                        {product.stock === 0 && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
-                              Out of Stock
-                            </span>
-                          </div>
-                        )}
-                        {/* Interactive Hover Overlay */}
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3 z-20">
-                          <button onClick={() => setQuickViewProduct(product)} className="bg-white/90 hover:bg-white text-black px-4 py-2 rounded-full text-sm font-bold shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
-                            Quick View
-                          </button>
-                          <button onClick={() => handleCopyLink(product.id)} className="bg-gray-800/90 hover:bg-gray-700 text-white w-9 h-9 flex items-center justify-center rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 delay-75" title="Copy Link">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="p-5 flex flex-col flex-1">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="text-lg font-bold text-white line-clamp-1 flex-1">{product.name}</h3>
-                          {isAdmin && (
-                            <Link
-                              href={`/admin/products/${product.id}/edit`}
-                              className="flex-shrink-0 text-gray-600 hover:text-violet-400 transition-colors"
-                              title="Edit product"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </Link>
-                          )}
-                        </div>
-
-                        {product.category && (
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-indigo-400/70 mb-2">
-                            {product.category}
-                          </span>
-                        )}
-
-                        <p className="text-sm text-gray-400 line-clamp-2 mb-4 flex-1">
-                          {product.description || "No description provided."}
-                        </p>
-
-                        <div className="flex items-center justify-between">
-                          <StockBadge stock={product.stock} />
-                          {product.created_at && (
-                            <span className="text-xs text-gray-600">
-                              {new Date(product.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  </div>
-                  {hasMoreProducts && (
-                    <div className="mt-10 flex justify-center">
-                      <button
-                        onClick={() => setVisibleProductsCount((prev) => prev + 6)}
-                        className="px-6 py-3 bg-gray-900/80 border border-gray-700 hover:border-indigo-500/50 hover:bg-indigo-500/10 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg flex items-center gap-2"
-                      >
-                        Load More Products
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </section>
-          )}
-
-        </div>
-      )}
-
-      {/* ── Footer ──────────────────────────────────────────────────────────── */}
-      <footer className="border-t border-gray-800/60 mt-24 py-10 text-center text-gray-600 text-sm">
-        <p>
-          &copy; {new Date().getFullYear()} Platform. Built with{" "}
-          <span className="text-rose-500">♥</span>{" "}
-          using Next.js &amp; Supabase.
-        </p>
-        {isAdmin && (
-          <p className="mt-2 text-violet-700 text-xs">
-            Admin mode active — edit controls are visible.
-          </p>
         )}
-      </footer>
 
-      {/* ── Modals & Toasts ─────────────────────────────────────────────────── */}
-      {quickViewProduct && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 backdrop-blur-sm bg-black/70 transition-all animate-in fade-in duration-200" onClick={closeQuickView}>
-          <div className="bg-gray-900 border border-gray-700 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row relative" onClick={e => e.stopPropagation()}>
-            <button onClick={closeQuickView} className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 hover:bg-rose-500 text-white backdrop-blur-md transition-colors border border-gray-600 hover:border-rose-400">✕</button>
-            
-            <div className="w-full md:w-1/2 aspect-square md:aspect-auto relative bg-gray-800">
-              {quickViewProduct.image ? (
-                <Image src={quickViewProduct.image.replace('/object/public/', '/render/image/public/')} alt={quickViewProduct.name} fill unoptimized className="object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-500">No Image Available</div>
-              )}
-              <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-sm font-bold border border-gray-700 shadow-lg">
-                Rs {quickViewProduct.price.toLocaleString()}
+        {/* ── Admin Quick Stats ──────────────────────────────────────────────── */}
+        {isAdmin && !loading && (
+          <section>
+            <div className="mb-5 flex items-center gap-3">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Admin Overview</h2>
+              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-violet-100 dark:bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-violet-200 dark:border-violet-500/20">Admins only</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+              {[
+                { label: "Est. Inventory Value", value: `Rs ${adminStats.totalRevenue.toLocaleString()}`, icon: "💵", color: "text-violet-600 dark:text-violet-300", border: "border-violet-100 dark:border-violet-800/30 hover:border-violet-300 dark:hover:border-violet-500/50" },
+                { label: "Low Stock Alerts", value: `${adminStats.lowStockCount} Products`, icon: "⚠️", color: "text-amber-600 dark:text-amber-300", border: "border-amber-100 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-500/50" },
+                { label: "Out of Stock", value: `${adminStats.outOfStockCount} Products`, icon: "❌", color: "text-red-600 dark:text-red-300", border: "border-red-100 dark:border-red-800/30 hover:border-red-300 dark:hover:border-red-500/50" },
+              ].map((stat) => (
+                <div key={stat.label} className={`bg-white dark:bg-gray-900/60 border rounded-2xl p-5 flex items-center gap-4 transition-colors ${stat.border}`}>
+                  <span className="text-3xl">{stat.icon}</span>
+                  <div>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest font-semibold mb-0.5">{stat.label}</p>
+                    <p className={`text-xl font-extrabold ${stat.color}`}>{stat.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "Add Product", href: "/admin/products/new", icon: "➕" },
+                { label: "Post Update", href: "/admin/updates/new", icon: "📝" },
+                { label: "Manage Users", href: "/admin/users", icon: "👥" },
+                { label: "Social Links", href: "/admin/social", icon: "🔗" },
+              ].map((action) => (
+                <Link key={action.label} href={action.href} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 hover:border-violet-300 dark:hover:border-violet-500/40 hover:bg-violet-50 dark:hover:bg-violet-500/5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-violet-700 dark:hover:text-white transition-all">
+                  <span>{action.icon}</span> {action.label}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Updates ────────────────────────────────────────────────────────── */}
+        {updates.length > 0 && (
+          <section>
+            <div className="mb-8 border-b border-gray-200 dark:border-gray-800 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Latest Updates</h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Platform announcements and news</p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {updateTypes.map((type) => (
+                  <button key={type} onClick={() => setActiveUpdateType(type)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all border ${activeUpdateType === type ? "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30" : "bg-white dark:bg-gray-900/60 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600"}`}>
+                    {type === "all" ? `All (${updates.length})` : `${updateTypeIcons[type] || ""} ${type}`}
+                  </button>
+                ))}
               </div>
             </div>
-            
-            <div className="p-6 md:p-8 flex flex-col flex-1 max-h-full overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {filteredUpdates.slice(0, 4).map((update) => {
+                const priority = update.priority || "low";
+                const type = update.type || "announcement";
+                return (
+                  <div key={update.id} className="bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 hover:border-emerald-200 dark:hover:border-emerald-500/40 transition-colors relative overflow-hidden">
+                    {update.priority && (
+                      <div className={`absolute top-0 right-0 text-[10px] font-bold uppercase px-2.5 py-1 rounded-bl-xl border-l border-b ${priorityColors[priority]}`}>
+                        {priority}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mb-3 pr-14">
+                      <span className="text-lg">{updateTypeIcons[type] || "📣"}</span>
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight">{update.info}</h3>
+                    </div>
+                    {update.created_at && (
+                      <p className="text-xs text-gray-400 dark:text-gray-600 mb-2">
+                        {new Date(update.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    )}
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3">{update.content}</p>
+                    {update.link && (
+                      <a href={update.link.startsWith("http") ? update.link : `https://${update.link}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-3 text-emerald-600 dark:text-emerald-400 text-xs font-semibold hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
+                        Read more ↗
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ── Social Profiles ─────────────────────────────────────────────────── */}
+        {socialProfiles.length > 0 && (
+          <section>
+            <div className="mb-8 border-b border-gray-200 dark:border-gray-800 pb-4">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Connect With Us</h2>
+              <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Find us across different platforms</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {socialProfiles.map((profile) => (
+                <div key={profile.id} className="bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 hover:border-indigo-200 dark:hover:border-indigo-500/40 transition-all flex flex-col shadow-sm dark:shadow-none relative">
+                  {profile.is_active !== undefined && (
+                    <span className={`absolute top-4 right-4 w-2 h-2 rounded-full ${profile.is_active ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]" : "bg-gray-300 dark:bg-gray-600"}`} />
+                  )}
+                  <div className="flex items-center gap-3 mb-3">
+                    {profile.platform_icon ? (
+                      <Image src={profile.platform_icon} alt={profile.platform_name} width={40} height={40} unoptimized className="w-10 h-10 rounded-xl object-cover bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                        onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/40x40/f3f4f6/9ca3af?text=${profile.platform_name.charAt(0)}`; }} />
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-base font-bold text-gray-500 dark:text-gray-300">
+                        {profile.platform_name.charAt(0)}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-sm truncate">{profile.platform_name}</h3>
+                      {profile.username && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{profile.username}</p>}
+                    </div>
+                  </div>
+                  {profile.description && <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-2 flex-1">{profile.description}</p>}
+                  {profile.followers && profile.followers > 0 && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
+                      <span className="font-semibold text-gray-700 dark:text-gray-300">{profile.followers.toLocaleString()}</span> followers
+                    </p>
+                  )}
+                  <a href={profile.profile_link.startsWith("http") ? profile.profile_link : `https://${profile.profile_link}`} target="_blank" rel="noopener noreferrer"
+                    className="mt-auto text-center bg-gray-100 dark:bg-gray-800 hover:bg-indigo-600 dark:hover:bg-indigo-600 text-gray-700 dark:text-white hover:text-white py-2 rounded-xl text-xs font-semibold transition-all border border-gray-200 dark:border-gray-700 hover:border-indigo-500">
+                    Visit Profile
+                  </a>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+      </div>
+
+      {/* ── Quick View Modal ───────────────────────────────────────────────────── */}
+      {quickViewProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={closeQuickView}>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[88vh] overflow-hidden flex flex-col md:flex-row relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={closeQuickView} className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-red-500 text-gray-600 dark:text-gray-300 hover:text-white transition-colors border border-gray-200 dark:border-gray-700">✕</button>
+            <div className="w-full md:w-2/5 aspect-square md:aspect-auto bg-gray-100 dark:bg-gray-800 relative flex-shrink-0">
+              {quickViewProduct.image ? (
+                <Image src={quickViewProduct.image.replace("/object/public/", "/render/image/public/")} alt={quickViewProduct.name} fill unoptimized className="object-cover" />
+              ) : <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>}
+            </div>
+            <div className="p-6 md:p-8 flex flex-col flex-1 overflow-y-auto">
               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                {quickViewProduct.category && <span className="text-xs font-semibold uppercase tracking-widest text-indigo-400 bg-indigo-400/10 border border-indigo-400/20 px-3 py-1 rounded-lg">{quickViewProduct.category}</span>}
+                {quickViewProduct.category && <span className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-400/10 border border-blue-200 dark:border-blue-400/20 px-3 py-1 rounded-lg">{quickViewProduct.category}</span>}
                 <StockBadge stock={quickViewProduct.stock} />
               </div>
-              
-              <h2 className="text-3xl font-extrabold text-white mb-6 leading-tight">{quickViewProduct.name}</h2>
-              
-              <div className="flex-1 mb-8">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Product Description</h4>
-                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-sm">{quickViewProduct.description || "No description provided."}</p>
-              </div>
-              
-              <div className="flex gap-3 mt-auto">
-                <button onClick={() => handleCopyLink(quickViewProduct.id)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-all border border-gray-700 hover:border-gray-500 flex justify-center items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                  Copy Direct Link
+              <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">{quickViewProduct.name}</h2>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Rs {quickViewProduct.price.toLocaleString()}</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed flex-1 mb-6">{quickViewProduct.description || "No description provided."}</p>
+              <div className="flex gap-3">
+                <button onClick={() => handleCopyLink(quickViewProduct.id)} className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-semibold py-2.5 rounded-xl text-sm transition-all border border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2">
+                  Copy Link
                 </button>
+                <Link href="/Clients" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-all text-center">
+                  Order in Shop →
+                </Link>
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* ── Contact Modal ──────────────────────────────────────────────────────── */}
+      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+
+      {/* ── Toast ─────────────────────────────────────────────────────────────── */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${toast.type === "success" ? "bg-emerald-500/20 text-emerald-200 border border-emerald-500/30" : "bg-rose-500/20 text-rose-200 border border-rose-500/30"}`}>
-          <span className="text-xl">{toast.type === "success" ? "✅" : "❌"}</span>
+        <div className={`fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl transition-all ${toast.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-500/30" : "bg-red-50 dark:bg-rose-500/20 text-red-600 dark:text-rose-200 border border-red-200 dark:border-rose-500/30"}`}>
+          <span>{toast.type === "success" ? "✅" : "❌"}</span>
           <span className="text-sm font-semibold">{toast.message}</span>
         </div>
       )}
