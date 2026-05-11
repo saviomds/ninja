@@ -19,6 +19,7 @@ interface Product {
   stock: number;
   category?: string;
   created_at?: string;
+  is_public?: boolean;
 }
 
 interface Profile {
@@ -949,6 +950,12 @@ export default function Dashboard() {
   const [unreadOrders, setUnreadOrders] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const [isDeletingOrder, setIsDeletingOrder] = useState(false);
+  const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "pending" | "confirmed" | "completed" | "cancelled">("all");
+
+  // Notifications
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
 
   const [viewMode, setViewMode] = useState<"card" | "excel">("card");
   // Products
@@ -970,7 +977,7 @@ export default function Dashboard() {
   const [imageInputType, setImageInputType] = useState<"link" | "upload">("link");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newProduct, setNewProduct] = useState({
-    name: "", image: "", description: "", price: "", stock: "", category: "",
+    name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true,
   });
 
   // Social
@@ -1226,6 +1233,7 @@ export default function Dashboard() {
       price: parseFloat(newProduct.price) || 0,
       stock: parseInt(newProduct.stock, 10) || 0,
       category: newProduct.category,
+      is_public: newProduct.is_public,
     };
     let error;
     if (editingProductId) {
@@ -1253,6 +1261,52 @@ export default function Dashboard() {
     } else {
       logActivity(`Updated ${field}`, id, "update");
     }
+  };
+
+  const handleTogglePublic = async (product: Product) => {
+    const newVal = !(product.is_public ?? true);
+    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_public: newVal } : p));
+    const { error } = await supabase.from("products").update({ is_public: newVal }).eq("id", product.id);
+    if (error) { showToast("Visibility update failed", "error"); fetchProducts(); return; }
+    logActivity(`Set product ${newVal ? "public" : "private"}`, product.name, "update");
+  };
+
+  const sendOrderNotification = (order: ClientOrder) => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: "SHOW_NOTIFICATION",
+        title: "New Order Received!",
+        body: `${order.client_name} ordered ${order.product_name} (qty ${order.quantity}) · Rs ${order.price.toLocaleString()}`,
+      });
+    } else {
+      new Notification("New Order Received!", {
+        body: `${order.client_name} ordered ${order.product_name} (qty ${order.quantity}) · Rs ${order.price.toLocaleString()}`,
+        icon: "/android-chrome-192x192.png",
+      });
+    }
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    setIsDeletingOrder(true);
+    const ord = orders.find(o => o.id === orderToDelete);
+    const { error } = await supabase.from("orders").delete().eq("id", orderToDelete);
+    setIsDeletingOrder(false);
+    setOrderToDelete(null);
+    if (error) { showToast("Failed to delete order: " + error.message, "error"); return; }
+    setOrders(prev => prev.filter(o => o.id !== orderToDelete));
+    showToast("Order deleted", "success");
+    logActivity("Deleted order", ord?.product_name || "Unknown", "delete");
+  };
+
+  const requestNotifPermission = async () => {
+    if (!("Notification" in window)) { showToast("Notifications not supported", "error"); return; }
+    const perm = await Notification.requestPermission();
+    setNotifPermission(perm);
+    if (perm === "granted") showToast("Notifications enabled!", "success");
+    else showToast("Notification permission denied", "error");
   };
 
   const handleEditClick = (product: Product) => {
