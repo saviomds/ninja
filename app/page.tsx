@@ -157,6 +157,10 @@ export default function Home() {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [activeServiceIdx, setActiveServiceIdx] = useState<number | null>(null);
   const [showContact, setShowContact] = useState(false);
+  const [profileUsername, setProfileUsername] = useState<string | null>(null);
+  const [comments, setComments] = useState<{ id: string; name: string; message: string; created_at: string }[]>([]);
+  const [commentForm, setCommentForm] = useState({ name: "", message: "" });
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
@@ -185,6 +189,12 @@ export default function Home() {
       if (fetchedUser) {
         const role = fetchedUser.user_metadata?.role || fetchedUser.app_metadata?.role;
         setIsAdmin(role === "admin");
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", fetchedUser.id)
+          .single();
+        setProfileUsername(prof?.username || null);
       }
 
       const outOfStock = fetchedProducts.filter((p) => p.stock === 0).length;
@@ -195,9 +205,28 @@ export default function Home() {
     };
 
     fetchAllData();
+    fetchComments();
     const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => setUser(session?.user || null));
     return () => { authListener.subscription.unsubscribe(); };
   }, []);
+
+  const fetchComments = async () => {
+    const { data } = await supabase.from("comments").select("id, name, message, created_at").order("created_at", { ascending: false }).limit(6);
+    setComments(data || []);
+  };
+
+  const handleSubmitComment = async () => {
+    if (!commentForm.name.trim() || !commentForm.message.trim()) {
+      showToast("Please fill in your name and message", "error"); return;
+    }
+    setSubmittingComment(true);
+    const { error } = await supabase.from("comments").insert([{ name: commentForm.name.trim(), message: commentForm.message.trim() }]);
+    setSubmittingComment(false);
+    if (error) { showToast("Failed to send comment", "error"); return; }
+    showToast("Comment sent! Thank you.");
+    setCommentForm({ name: "", message: "" });
+    fetchComments();
+  };
 
   const handleCopyLink = (productId: string) => {
     const url = `${window.location.origin}/product/${productId}`;
@@ -228,7 +257,7 @@ export default function Home() {
           {user && (
             <div className="flex items-center gap-2 mb-1">
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                Welcome back, <span className="font-semibold text-gray-900 dark:text-white">{user.user_metadata?.full_name || user.email?.split("@")[0]}</span>
+                Welcome back, <span className="font-semibold text-gray-900 dark:text-white">{profileUsername || user.email?.split("@")[0]}</span>
               </span>
               <AdminBadge isAdmin={isAdmin} />
             </div>
@@ -611,6 +640,51 @@ export default function Home() {
             </div>
           </section>
         )}
+
+        {/* ── Comments ───────────────────────────────────────────────────────── */}
+        <section>
+          <div className="mb-8 border-b border-gray-200 dark:border-gray-800 pb-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Leave a Comment</h2>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Share your feedback or experience with us</p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Submit form */}
+            <div className="bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1.5">Your Name</label>
+                <input value={commentForm.name} onChange={(e) => setCommentForm({ ...commentForm, name: e.target.value })} placeholder="John Doe"
+                  className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500 dark:focus:border-cyan-500 focus:ring-1 focus:ring-blue-500/30 dark:focus:ring-cyan-500/30 transition-all" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1.5">Message</label>
+                <textarea value={commentForm.message} onChange={(e) => setCommentForm({ ...commentForm, message: e.target.value })} rows={4}
+                  placeholder="Share your experience, feedback or question…"
+                  className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-500 dark:focus:border-cyan-500 focus:ring-1 focus:ring-blue-500/30 dark:focus:ring-cyan-500/30 transition-all resize-none" />
+              </div>
+              <button onClick={handleSubmitComment} disabled={submittingComment}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors">
+                {submittingComment ? "Sending…" : "Send Comment"}
+              </button>
+            </div>
+
+            {/* Recent comments */}
+            <div className="space-y-3">
+              {comments.length === 0 ? (
+                <div className="text-center text-gray-400 dark:text-gray-600 text-sm pt-8">No comments yet. Be the first!</div>
+              ) : (
+                comments.map((c) => (
+                  <div key={c.id} className="bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 rounded-2xl px-5 py-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-semibold text-gray-900 dark:text-white text-sm">{c.name}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-600">{new Date(c.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short" })}</span>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{c.message}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </section>
 
       </div>
 

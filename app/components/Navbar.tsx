@@ -10,6 +10,8 @@ import { useTheme } from "./ThemeProvider";
 
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -18,11 +20,28 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const fetchProfile = async (uid: string, email: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("avatar_url, username")
+      .eq("id", uid)
+      .single();
+    if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+    setDisplayName(data?.username || email.split("@")[0]);
+  };
+
   useEffect(() => {
     setMounted(true);
-    supabase.auth.getUser().then(({ data }) => setUser(data?.user || null));
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data?.user || null;
+      setUser(u);
+      if (u) fetchProfile(u.id, u.email || "");
+    });
     const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user || null);
+      const u = session?.user || null;
+      setUser(u);
+      if (u) fetchProfile(u.id, u.email || "");
+      else { setAvatarUrl(null); setDisplayName(null); }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -136,17 +155,28 @@ export default function Navbar() {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center transition-colors shadow-sm"
+                className="w-9 h-9 rounded-full overflow-hidden border-2 border-blue-600 hover:border-blue-400 transition-colors shadow-sm flex-shrink-0"
               >
-                {user.email?.charAt(0).toUpperCase() || "U"}
+                {avatarUrl ? (
+                  <Image src={avatarUrl} alt="avatar" width={36} height={36} unoptimized className="object-cover w-full h-full" />
+                ) : (
+                  <span className="w-full h-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center transition-colors">
+                    {(displayName || user.email || "U").charAt(0).toUpperCase()}
+                  </span>
+                )}
               </button>
 
               {/* Dropdown */}
               <div className={`absolute right-0 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-150 origin-top-right z-50 ${dropdownOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}>
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                   <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">Signed in as</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate mt-0.5">{user.email}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate mt-0.5">{displayName || user.email?.split("@")[0]}</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{user.email}</p>
                 </div>
+                <Link href="/profile" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  My Profile
+                </Link>
                 {!isAdmin && (
                   <Link href="/client-dashboard" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
@@ -228,24 +258,43 @@ export default function Navbar() {
           {/* User section */}
           <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/[0.06]">
             {user ? (
-              <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.04]">
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-sm">
-                  {user.email?.charAt(0).toUpperCase() || "U"}
+              <>
+                <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.04]">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-blue-600 flex-shrink-0 shadow-sm">
+                    {avatarUrl ? (
+                      <Image src={avatarUrl} alt="avatar" width={32} height={32} unoptimized className="object-cover w-full h-full" />
+                    ) : (
+                      <span className="w-full h-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center">
+                        {(displayName || user.email || "U").charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Signed in as</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{displayName || user.email?.split("@")[0]}</p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center gap-1 text-xs text-red-500 font-medium hover:text-red-600 transition-colors flex-shrink-0"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign out
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Signed in as</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user.email}</p>
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-1 text-xs text-red-500 font-medium hover:text-red-600 transition-colors flex-shrink-0"
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all mt-1"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  Sign out
-                </button>
-              </div>
+                  My Profile
+                </Link>
+              </>
             ) : (
               <Link
                 href="/login"

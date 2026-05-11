@@ -1906,7 +1906,7 @@ export default function Dashboard() {
             Clients
           </Link>
           <span className="hidden md:block text-gray-700">|</span>
-          <span className="hidden md:block text-sm text-gray-500 font-mono">{user?.email}</span>
+          <span className="hidden md:block text-sm text-gray-400 font-medium">{profile?.username || user?.email?.split("@")[0]}</span>
         </div>
 
         <div className="hidden md:flex items-center gap-3">
@@ -1998,7 +1998,8 @@ export default function Dashboard() {
 
         {isMobileMenuOpen && (
           <div className="absolute top-full left-0 w-full bg-gray-900 border-b border-gray-800 p-4 flex flex-col gap-3 md:hidden shadow-2xl z-40">
-            <p className="text-sm text-gray-400 break-all">{user?.email}</p>
+            <p className="text-sm font-medium text-white">{profile?.username || user?.email?.split("@")[0]}</p>
+            <p className="text-xs text-gray-500 break-all">{user?.email}</p>
             <button onClick={() => { loadAllData(true); setIsMobileMenuOpen(false); }} disabled={isRefreshing} className="flex items-center gap-2 text-sm bg-gray-800 text-white px-4 py-2 rounded-lg border border-gray-700 w-full disabled:opacity-50">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M2.985 19.644A8.25 8.25 0 013 12a8.25 8.25 0 0115.023-5.455" /></svg>
               {isRefreshing ? "Refreshing…" : "Refresh"}

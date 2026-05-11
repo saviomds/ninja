@@ -69,14 +69,17 @@ export default function ClientDashboard() {
   const [placing, setPlacing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
 
+  const [profileUsername, setProfileUsername] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   // ── Auth guard ────────────────────────────────────────────────────────────
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push("/login"); return; }
       setUser(data.user);
+      const { data: prof } = await supabase.from("profiles").select("username").eq("id", data.user.id).single();
+      if (prof?.username) setProfileUsername(prof.username);
       setLoadingAuth(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
@@ -189,7 +192,7 @@ export default function ClientDashboard() {
     );
   }
 
-  const username = user?.user_metadata?.username || user?.email?.split("@")[0] || "there";
+  const username = profileUsername || user?.email?.split("@")[0] || "there";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white">
