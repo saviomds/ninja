@@ -12,12 +12,14 @@ export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { dark, toggle } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    setMounted(true);
     supabase.auth.getUser().then(({ data }) => setUser(data?.user || null));
     const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user || null);
@@ -51,10 +53,22 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/Clients", label: "Shop" },
-    ...(!isAdmin && user ? [{ href: "/client-dashboard", label: "My Dashboard" }] : []),
-    ...(isAdmin ? [{ href: "/dashboard", label: "Admin" }] : []),
+    {
+      href: "/", label: "Home",
+      icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9 22V12h6v10" /></svg>,
+    },
+    {
+      href: "/Clients", label: "Shop",
+      icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
+    },
+    ...(!isAdmin && user ? [{
+      href: "/client-dashboard", label: "My Dashboard",
+      icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>,
+    }] : []),
+    ...(isAdmin ? [{
+      href: "/dashboard", label: "Admin",
+      icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+    }] : []),
   ];
 
   const isActive = (href: string) => pathname === href;
@@ -95,6 +109,7 @@ export default function Navbar() {
             </Link>
           ))}
         </div>
+
 
         {/* Right side: theme toggle + auth */}
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -176,37 +191,76 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-gray-200 dark:border-white/[0.06] bg-white dark:bg-[#030712] px-5 py-4 flex flex-col gap-1">
-          {navLinks.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileOpen(false)}
-              className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                isActive(href)
-                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                  : "text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-white/[0.04]"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-          <div className="border-t border-gray-100 dark:border-white/[0.06] mt-2 pt-3 flex items-center justify-between">
+      {/* Mobile menu — client-only to avoid SSR/hydration mismatch with SVG icons */}
+      {mounted && <div
+        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+          mobileOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="border-t border-gray-200 dark:border-white/[0.06] bg-white dark:bg-[#0a0f1a] px-4 pt-3 pb-4">
+
+          {/* Nav links */}
+          <div className="flex flex-col gap-0.5">
+            {navLinks.map(({ href, label, icon }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-3 py-3.5 rounded-xl text-sm font-medium transition-all active:scale-[0.98] ${
+                  isActive(href)
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/[0.06]"
+                }`}
+              >
+                <span className={isActive(href) ? "text-blue-500 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}>
+                  {icon}
+                </span>
+                {label}
+                {isActive(href) && (
+                  <svg className="w-3.5 h-3.5 ml-auto text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                )}
+              </Link>
+            ))}
+          </div>
+
+          {/* User section */}
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/[0.06]">
             {user ? (
-              <>
-                <p className="text-xs text-gray-400 truncate max-w-[180px]">{user.email}</p>
-                <button onClick={handleSignOut} className="text-xs text-red-500 font-medium hover:text-red-600">Sign out</button>
-              </>
+              <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-white/[0.04]">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-sm">
+                  {user.email?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Signed in as</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user.email}</p>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-1 text-xs text-red-500 font-medium hover:text-red-600 transition-colors flex-shrink-0"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Sign out
+                </button>
+              </div>
             ) : (
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="w-full text-center bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-blue-700 transition-colors">
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-center gap-2 w-full bg-blue-600 text-white text-sm font-semibold py-3.5 rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-sm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
                 Sign in
               </Link>
             )}
           </div>
         </div>
-      )}
+      </div>}
     </nav>
   );
 }

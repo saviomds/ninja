@@ -1,4 +1,5 @@
 import "./globals.css";
+import Script from "next/script";
 import Footer from "@/components/Footer";
 import ContactFAB from "@/components/ContactFAB";
 import InstallPrompt from "@/components/InstallPrompt";
@@ -31,7 +32,6 @@ export const metadata: Metadata = {
     startupImage: "/apple-touch-icon.png",
   },
   icons: {
-    // Browser tab — smallest to largest, browser picks best fit
     icon: [
       { url: "/favicon.ico",               sizes: "any",    type: "image/x-icon" },
       { url: "/favicon-16x16.png",         sizes: "16x16",  type: "image/png"   },
@@ -39,11 +39,9 @@ export const metadata: Metadata = {
       { url: "/android-chrome-192x192.png",sizes: "192x192",type: "image/png"   },
       { url: "/android-chrome-512x512.png",sizes: "512x512",type: "image/png"   },
     ],
-    // iOS — Safari "Add to Home Screen"
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
-    // Legacy shortcut icon (IE, old browsers)
     shortcut: [{ url: "/favicon.ico", type: "image/x-icon" }],
   },
   openGraph: {
@@ -59,9 +57,7 @@ export const metadata: Metadata = {
     address: true,
   },
   other: {
-    // Android Chrome — installable PWA
     "mobile-web-app-capable": "yes",
-    // Windows tile
     "msapplication-TileColor":        "#0b1f3a",
     "msapplication-TileImage":        "/android-chrome-192x192.png",
     "msapplication-square70x70logo":  "/favicon-32x32.png",
@@ -74,15 +70,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Anti-FOUC: set dark class before first paint */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){var s=localStorage.getItem('tn-theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');})();`,
-          }}
-        />
-      </head>
+      <head />
       <body className="bg-white dark:bg-[#030712] text-gray-900 dark:text-gray-50 flex flex-col min-h-screen transition-colors duration-200">
+        {/* beforeInteractive injects the script into <head> via Next.js's HTML
+            pipeline — not through React's virtual DOM — so React 19 never sees
+            a <script> element and does not emit the script-tag warning. */}
+        <Script src="/theme-init.js" strategy="beforeInteractive" />
         <ThemeProvider>
           <LoadingScreen />
           {children}
