@@ -114,7 +114,9 @@ export default function LoginPage() {
         <div className="absolute bottom-0 right-0 w-80 h-80 bg-violet-600/15 rounded-full blur-3xl pointer-events-none" />
 
         <Link href="/Clients" className="relative z-10">
-          <Image src="/logo.png" alt="Tech Ninja" width={64} height={64} unoptimized className="object-contain" />
+          <div className="logo-float inline-flex rounded-2xl border border-white/20 shadow-2xl shadow-black/10">
+            <img src="/logo.png" alt="Tech Ninja" width={128} height={128} className="block object-contain rounded-2xl" />
+          </div>
         </Link>
 
         <div className="relative z-10 space-y-6">
@@ -151,8 +153,8 @@ export default function LoginPage() {
 
       {/* ── Right form panel ──────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 bg-white">
-        <div className="lg:hidden mb-8 p-3 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl">
-          <Image src="/logo.png" alt="Tech Ninja" width={56} height={56} unoptimized className="object-contain" />
+        <div className="lg:hidden mb-8 p-4 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl shadow-2xl shadow-violet-500/20 logo-float">
+          <img src="/logo.png" alt="Tech Ninja" width={120} height={120} className="block object-contain" />
         </div>
 
         <div className="w-full max-w-sm">
