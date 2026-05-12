@@ -16,6 +16,7 @@ export default function Footer() {
             <li><Link href="/" className="hover:text-gray-900 dark:hover:text-white transition-colors">Home</Link></li>
             <li><Link href="/Clients" className="hover:text-gray-900 dark:hover:text-white transition-colors">Shop</Link></li>
             <li><Link href="/client-dashboard" className="hover:text-gray-900 dark:hover:text-white transition-colors">My Dashboard</Link></li>
+            <li><Link href="/chat" className="hover:text-gray-900 dark:hover:text-white transition-colors">Messages</Link></li>
             <li><Link href="/login" className="hover:text-gray-900 dark:hover:text-white transition-colors">Sign in</Link></li>
           </ul>
         </div>
