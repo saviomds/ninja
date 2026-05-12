@@ -101,6 +101,15 @@ const SERVICES = [
   },
 ];
 
+const WHY_CHOOSE_US = [
+  { icon: "⚡", title: "Fast Turnaround", desc: "Most repairs completed same-day or within 24–48 hours, no long waits." },
+  { icon: "🛡️", title: "Warranty Included", desc: "Every repair and product comes with a warranty for full peace of mind." },
+  { icon: "🏆", title: "Certified Technicians", desc: "Years of experience handling all major brands — Apple, Samsung, and more." },
+  { icon: "💰", title: "Best Price Guarantee", desc: "Transparent, competitive pricing with zero hidden fees — always." },
+  { icon: "🔍", title: "Free Diagnosis", desc: "Bring in any device and we diagnose the issue at no cost before proceeding." },
+  { icon: "❤️", title: "Customer First", desc: "500+ happy customers across Mauritius trust us for all their tech needs." },
+];
+
 const priorityColors: Record<string, string> = {
   high: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30",
   medium: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30",
@@ -161,6 +170,10 @@ export default function Home() {
   const [comments, setComments] = useState<{ id: string; name: string; message: string; created_at: string }[]>([]);
   const [commentForm, setCommentForm] = useState({ name: "", message: "" });
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [promoBannerDismissed, setPromoBannerDismissed] = useState(false);
+  const [animatedStats, setAnimatedStats] = useState({ products: 0, updates: 0, platforms: 0, members: 0 });
+  const statsRef = useRef<HTMLElement>(null);
+  const statsAnimated = useRef(false);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
@@ -210,6 +223,35 @@ export default function Home() {
     return () => { authListener.subscription.unsubscribe(); };
   }, []);
 
+  useEffect(() => {
+    if (loading || !statsRef.current) return;
+    const targets = { products: products.length, updates: updates.length, platforms: socialProfiles.length, members: totalUsers };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !statsAnimated.current) {
+          statsAnimated.current = true;
+          const steps = 60;
+          const interval = 1500 / steps;
+          let step = 0;
+          const timer = setInterval(() => {
+            step++;
+            const eased = 1 - Math.pow(1 - step / steps, 3);
+            setAnimatedStats({
+              products: Math.round(targets.products * eased),
+              updates: Math.round(targets.updates * eased),
+              platforms: Math.round(targets.platforms * eased),
+              members: Math.round(targets.members * eased),
+            });
+            if (step >= steps) clearInterval(timer);
+          }, interval);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(statsRef.current);
+    return () => observer.disconnect();
+  }, [loading, products, updates, socialProfiles, totalUsers]);
+
   const fetchComments = async () => {
     const { data } = await supabase.from("comments").select("id, name, message, created_at").order("created_at", { ascending: false }).limit(6);
     setComments(data || []);
@@ -242,6 +284,25 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
       <Navbar />
+
+      {/* ── Promo Banner ─────────────────────────────────────────────────────── */}
+      {!promoBannerDismissed && (
+        <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white text-center py-2.5 px-10">
+          <p className="text-sm font-medium">
+            🔥 <span className="font-bold">Free Diagnosis</span> on any device — walk in today, no appointment needed!
+            <a href="#services" className="ml-2 underline underline-offset-2 font-semibold hover:text-blue-100 transition-colors">See our services →</a>
+          </p>
+          <button
+            onClick={() => setPromoBannerDismissed(true)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+            aria-label="Dismiss"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <section className="relative py-20 md:py-28 flex flex-col items-center justify-center text-center px-4 overflow-hidden border-b border-gray-100 dark:border-gray-800/50">
@@ -358,6 +419,29 @@ export default function Home() {
               >
                 Contact Us
               </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Why Choose Us ─────────────────────────────────────────────────── */}
+        <section className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-50/60 via-indigo-50/40 to-violet-50/60 dark:from-blue-500/[0.04] dark:via-indigo-500/[0.03] dark:to-violet-500/[0.04] rounded-3xl pointer-events-none" />
+          <div className="relative z-10 px-6 py-12 rounded-3xl border border-blue-100/60 dark:border-blue-500/10">
+            <div className="text-center mb-10">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-3 block">Why us</span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">Why Customers Choose Tech Ninja</h2>
+              <p className="text-gray-500 dark:text-gray-400 max-w-xl mx-auto text-sm">We&apos;ve built our reputation on trust, speed, and quality — here&apos;s what sets us apart.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {WHY_CHOOSE_US.map((item) => (
+                <div key={item.title} className="flex items-start gap-4 bg-white/70 dark:bg-gray-900/50 border border-white dark:border-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md dark:hover:shadow-black/30 hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="text-3xl flex-shrink-0 mt-0.5">{item.icon}</div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-1">{item.title}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -495,12 +579,12 @@ export default function Home() {
 
         {/* ── Stats Overview ─────────────────────────────────────────────────── */}
         {!loading && (
-          <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <section ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { value: products.length, label: "Products", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-500/10", icon: "📦" },
-              { value: updates.length, label: "Updates", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10", icon: "📢" },
-              { value: socialProfiles.length, label: "Platforms", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10", icon: "🌐" },
-              { value: totalUsers, label: "Members", color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10", icon: "👥" },
+              { value: animatedStats.products, label: "Products", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-500/10", icon: "📦" },
+              { value: animatedStats.updates, label: "Updates", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10", icon: "📢" },
+              { value: animatedStats.platforms, label: "Platforms", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10", icon: "🌐" },
+              { value: animatedStats.members, label: "Members", color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10", icon: "👥" },
             ].map(({ value, label, color, bg, icon }) => (
               <div key={label} className="bg-white dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm dark:shadow-none text-center hover:shadow-md transition-shadow">
                 <div className={`w-10 h-10 rounded-xl ${bg} text-xl flex items-center justify-center mx-auto mb-3`}>{icon}</div>
