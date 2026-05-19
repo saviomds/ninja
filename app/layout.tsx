@@ -69,10 +69,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Inline theme init to avoid flash of wrong theme — must be synchronous */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){var s=localStorage.getItem('tn-theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')})();` }} />
-      </head>
       <body className="bg-white dark:bg-[#030712] text-gray-900 dark:text-gray-50 flex flex-col min-h-screen transition-colors duration-200">
         <ThemeProvider>
           <LoadingScreen />
