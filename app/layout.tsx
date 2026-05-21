@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import ContactFAB from "@/components/ContactFAB";
 import InstallPrompt from "@/components/InstallPrompt";
 import ServiceWorker from "@/components/ServiceWorker";
-import LoadingScreen from "@/components/LoadingScreen";
+import LoadingScreen from "@/components/ClientLoadingScreen";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import type { Metadata, Viewport } from "next";
 

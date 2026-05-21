@@ -17,8 +17,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [magicSent, setMagicSent] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [alreadyExists, setAlreadyExists] = useState(false);
 
-  const go = (m: Mode) => { setMode(m); setError(""); setMagicSent(false); };
+  const go = (m: Mode) => { setMode(m); setError(""); setMagicSent(false); setSignupSuccess(false); setAlreadyExists(false); };
 
   // ── Send magic link email ────────────────────────────────────────────────
   const handleMagicLink = async (e: React.FormEvent) => {
@@ -65,12 +67,18 @@ export default function LoginPage() {
     const text = await res.text();
     let result: { error?: string } = {};
     try { result = JSON.parse(text); } catch { /* ignore */ }
-    if (!res.ok) { setLoading(false); setError(result.error || "Registration failed."); return; }
-    const { data, error: signInErr } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    if (!res.ok) {
+      setLoading(false);
+      const msg = result.error || "Registration failed.";
+      if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("registered") || msg.toLowerCase().includes("exists")) {
+        setAlreadyExists(true);
+      } else {
+        setError(msg);
+      }
+      return;
+    }
     setLoading(false);
-    if (signInErr) { setError(signInErr.message); return; }
-    const role = data.user?.app_metadata?.role || data.user?.user_metadata?.role;
-    router.push(role === "admin" ? "/dashboard" : "/client-dashboard");
+    setSignupSuccess(true);
   };
 
   // ── Forgot password ──────────────────────────────────────────────────────
@@ -342,49 +350,106 @@ export default function LoginPage() {
               {/* ── SIGN UP ── */}
               {mode === "signup" && (
                 <>
-                  <div className="mb-8">
-                    <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight">Create account</h2>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm">Get started in seconds.</p>
-                  </div>
-
-                  <form onSubmit={handleSignUp} className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Username</label>
-                      <input
-                        type="text" required value={username} onChange={(e) => setUsername(e.target.value)}
-                        placeholder="johndoe"
-                        className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Email address</label>
-                      <input
-                        type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                        className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Password</label>
-                      <div className="relative">
-                        <input
-                          type={showPass ? "text" : "password"} required value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="At least 6 characters"
-                          className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 pr-16 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                        />
-                        <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors text-xs font-medium">
-                          {showPass ? "Hide" : "Show"}
-                        </button>
+                  {/* ── Account created success screen ── */}
+                  {signupSuccess ? (
+                    <div className="text-center space-y-6">
+                      <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 flex items-center justify-center mx-auto">
+                        <svg className="w-9 h-9 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                       </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-black dark:text-white tracking-tight">Account created!</h2>
+                        <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">
+                          Welcome aboard. Your account for
+                        </p>
+                        <p className="text-black dark:text-white font-semibold text-sm mt-1">{email}</p>
+                        <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">
+                          is ready. Sign in to access your dashboard.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => go("magic")}
+                        className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2.5 shadow-lg shadow-blue-600/20"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                        </svg>
+                        Sign in with magic link
+                      </button>
+                      <button onClick={() => go("password")} className="text-sm text-zinc-400 hover:text-black dark:hover:text-white transition-colors">
+                        Sign in with password instead
+                      </button>
                     </div>
+                  ) : (
+                    <>
+                      <div className="mb-8">
+                        <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight">Create account</h2>
+                        <p className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm">Get started in seconds.</p>
+                      </div>
 
-                    {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+                      {/* Already exists banner */}
+                      {alreadyExists && (
+                        <div className="mb-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
+                          <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                          </svg>
+                          <div>
+                            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Account already exists</p>
+                            <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">An account with this email is already registered.</p>
+                            <div className="flex gap-3 mt-3">
+                              <button onClick={() => go("magic")} className="text-xs font-bold text-amber-700 dark:text-amber-400 underline hover:no-underline">
+                                Sign in with magic link
+                              </button>
+                              <span className="text-amber-300 dark:text-amber-700">·</span>
+                              <button onClick={() => go("password")} className="text-xs font-bold text-amber-700 dark:text-amber-400 underline hover:no-underline">
+                                Sign in with password
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
-                    <button type="submit" disabled={loading} className="w-full bg-black dark:bg-white text-white dark:text-black py-3.5 rounded-xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-40">
-                      {loading ? <><Spinner />Creating account…</> : "Create account"}
-                    </button>
-                  </form>
+                      <form onSubmit={handleSignUp} className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Username</label>
+                          <input
+                            type="text" required value={username} onChange={(e) => { setUsername(e.target.value); setAlreadyExists(false); }}
+                            placeholder="johndoe"
+                            className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Email address</label>
+                          <input
+                            type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setAlreadyExists(false); }}
+                            placeholder="you@example.com"
+                            className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Password</label>
+                          <div className="relative">
+                            <input
+                              type={showPass ? "text" : "password"} required value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              placeholder="At least 6 characters"
+                              className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 pr-16 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                            />
+                            <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors text-xs font-medium">
+                              {showPass ? "Hide" : "Show"}
+                            </button>
+                          </div>
+                        </div>
+
+                        {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+
+                        <button type="submit" disabled={loading} className="w-full bg-black dark:bg-white text-white dark:text-black py-3.5 rounded-xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-40">
+                          {loading ? <><Spinner />Creating account…</> : "Create account"}
+                        </button>
+                      </form>
+                    </>
+                  )}
                 </>
               )}
 

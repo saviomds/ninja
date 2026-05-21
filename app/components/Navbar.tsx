@@ -44,9 +44,8 @@ export default function Navbar() {
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
         setDropdownOpen(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -77,75 +76,108 @@ export default function Navbar() {
 
   const isActive = (href: string) => pathname === href;
 
-
-  const navBg = "bg-black border-b border-white/[0.08]";
-
-  const textColor = "text-white";
-  const mutedColor = "text-zinc-400";
-  const hoverBg = "hover:bg-white/[0.08]";
-
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navBg}`}>
-      <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between gap-4">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-2xl border-b border-white/[0.06]">
+      <style>{`
+        @keyframes rgb-sweep {
+          0%   { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+        @keyframes rgb-glow {
+          0%   { box-shadow: 0 0 8px 2px rgba(255,0,80,.55),  0 0 20px 4px rgba(255,0,80,.18); }
+          25%  { box-shadow: 0 0 8px 2px rgba(0,255,160,.55), 0 0 20px 4px rgba(0,255,160,.18); }
+          50%  { box-shadow: 0 0 8px 2px rgba(0,160,255,.55), 0 0 20px 4px rgba(0,160,255,.18); }
+          75%  { box-shadow: 0 0 8px 2px rgba(200,0,255,.55), 0 0 20px 4px rgba(200,0,255,.18); }
+          100% { box-shadow: 0 0 8px 2px rgba(255,0,80,.55),  0 0 20px 4px rgba(255,0,80,.18); }
+        }
+      `}</style>
 
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-white/10 group-hover:bg-white/15 transition-colors">
+      {/* RGB sweep line at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden">
+        <div
+          className="h-full w-full"
+          style={{
+            background: "linear-gradient(90deg,#ff0050,#ff8800,#ffe600,#00ff9d,#00b4ff,#a855f7,#ff0050)",
+            backgroundSize: "200% 100%",
+            animation: "rgb-sweep 3s linear infinite",
+          }}
+        />
+      </div>
+
+      <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
+
+        {/* ── Logo ── */}
+        <Link href="/" className="flex items-center gap-3 flex-shrink-0 group">
+          {/* Logo tile with RGB glow */}
+          <div
+            className="w-11 h-11 rounded-[13px] overflow-hidden bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0 transition-all duration-300"
+            style={{ animation: "rgb-glow 4s ease-in-out infinite" }}
+          >
             <Image
               src="/logo.png"
               alt="Tech Ninja"
-              width={24}
-              height={24}
+              width={34}
+              height={34}
               unoptimized
-              className="object-contain"
+              className="object-contain scale-90"
             />
           </div>
-          <span className={`text-sm font-semibold tracking-tight ${textColor}`}>Tech Ninja</span>
+
+          {/* Wordmark */}
+          <div className="flex flex-col leading-none">
+            <span className="text-[15px] font-extrabold tracking-tight text-white">
+              Tech <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">Ninja</span>
+            </span>
+            <span className="text-[9px] font-semibold tracking-[0.2em] uppercase text-zinc-600 mt-0.5">Mauritius</span>
+          </div>
         </Link>
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
+        {/* ── Desktop nav ── */}
+        <div className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
           {navLinks.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`relative px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                 isActive(href)
-                  ? "bg-white/10 text-white"
-                  : `${mutedColor} ${hoverBg} hover:text-white`
+                  ? "text-blue-400 bg-blue-500/10"
+                  : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
               }`}
             >
               {label}
+              {isActive(href) && (
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-3 h-[2px] rounded-full bg-blue-400" />
+              )}
             </Link>
           ))}
         </div>
 
-        {/* Right: theme + auth */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        {/* ── Right side ── */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
 
-          {/* Dark mode toggle */}
+          {/* Theme toggle */}
           <button
             onClick={toggle}
-            title={dark ? "Switch to light mode" : "Switch to dark mode"}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${mutedColor} ${hoverBg} hover:text-white`}
+            title={dark ? "Light mode" : "Dark mode"}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/[0.08] transition-all"
           >
             {dark ? (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-[15px] h-[15px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             ) : (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-[15px] h-[15px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
               </svg>
             )}
           </button>
 
-          {/* Auth */}
+          {/* ── Auth ── */}
           {user ? (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/20 hover:ring-white/40 transition-all flex-shrink-0"
+                className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/15 hover:ring-blue-500/50 transition-all flex-shrink-0"
               >
                 {avatarUrl ? (
                   <Image src={avatarUrl} alt="avatar" width={32} height={32} unoptimized className="object-cover w-full h-full" />
@@ -157,33 +189,63 @@ export default function Navbar() {
               </button>
 
               {/* Dropdown */}
-              <div className={`absolute right-0 mt-3 w-52 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden transition-all duration-150 origin-top-right z-50 ${dropdownOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}>
-                <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
-                  <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wide">Signed in as</p>
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate mt-0.5">{displayName || user.email?.split("@")[0]}</p>
-                  <p className="text-[11px] text-zinc-400 truncate">{user.email}</p>
+              <div className={`absolute right-0 mt-2.5 w-56 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden transition-all duration-150 origin-top-right z-50 ${
+                dropdownOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"
+              }`}>
+                {/* Header */}
+                <div className="px-4 py-3.5 border-b border-white/[0.07]">
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 flex-shrink-0">
+                      {avatarUrl ? (
+                        <Image src={avatarUrl} alt="avatar" width={28} height={28} unoptimized className="object-cover w-full h-full" />
+                      ) : (
+                        <span className="w-full h-full bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center">
+                          {(displayName || user.email || "U").charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold text-white truncate">{displayName || user.email?.split("@")[0]}</p>
+                      <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  {isAdmin && (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-violet-400 border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 rounded-full">
+                      Admin
+                    </span>
+                  )}
                 </div>
-                {[
-                  { href: "/profile", label: "My Profile" },
-                  ...(!isAdmin ? [{ href: "/client-dashboard", label: "My Dashboard" }] : []),
-                  { href: "/Clients", label: "Shop" },
-                  { href: "/chat", label: "Messages" },
-                  ...(isAdmin ? [{ href: "/dashboard", label: "Admin Dashboard" }] : []),
-                ].map(({ href, label }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setDropdownOpen(false)}
-                    className="flex items-center px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                  >
-                    {label}
-                  </Link>
-                ))}
-                <div className="border-t border-zinc-100 dark:border-zinc-800">
+
+                <div className="py-1.5">
+                  {[
+                    { href: "/profile", label: "My Profile", icon: "M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" },
+                    ...(!isAdmin ? [{ href: "/client-dashboard", label: "Dashboard", icon: "M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" }] : []),
+                    { href: "/Clients", label: "Shop", icon: "M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" },
+                    { href: "/chat", label: "Messages", icon: "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" },
+                    ...(isAdmin ? [{ href: "/dashboard", label: "Admin Dashboard", icon: "M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3" }] : []),
+                  ].map(({ href, label, icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2 text-[13px] text-zinc-400 hover:text-white hover:bg-white/[0.05] transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+                      </svg>
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="border-t border-white/[0.07] py-1.5">
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center w-full px-4 py-2.5 text-sm text-red-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                    className="flex items-center gap-3 w-full px-4 py-2 text-[13px] text-red-400 hover:text-red-300 hover:bg-white/[0.04] transition-colors"
                   >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                    </svg>
                     Sign out
                   </button>
                 </div>
@@ -192,7 +254,7 @@ export default function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="text-xs font-semibold text-black bg-white px-4 py-2 rounded-full hover:bg-zinc-100 transition-colors"
+              className="text-[12px] font-semibold text-white bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl transition-colors active:scale-95"
             >
               Sign in
             </Link>
@@ -200,10 +262,10 @@ export default function Navbar() {
 
           {/* Mobile hamburger */}
           <button
-            className={`md:hidden w-8 h-8 rounded-full flex items-center justify-center transition-all ${mutedColor} ${hoverBg}`}
+            className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-all"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               {mobileOpen
                 ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 : <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />}
@@ -212,35 +274,42 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* ── Mobile menu ── */}
       {mounted && (
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
-          <div className="bg-black/95 backdrop-blur-xl border-t border-white/[0.06] px-4 pt-3 pb-5">
-            <div className="flex flex-col gap-0.5 mb-4">
+        <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileOpen ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"}`}>
+          <div className="bg-zinc-950/95 backdrop-blur-2xl border-t border-white/[0.06] px-4 pt-4 pb-6">
+
+            {/* Emerald accent top bar */}
+            <div className="h-[1px] w-12 bg-gradient-to-r from-blue-400 to-violet-400 rounded-full mb-5 mx-auto" />
+
+            <div className="flex flex-col gap-0.5 mb-5">
               {navLinks.map(({ href, label }) => (
                 <Link
                   key={href}
                   href={href}
                   onClick={() => setMobileOpen(false)}
-                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     isActive(href)
-                      ? "bg-white/10 text-white"
+                      ? "bg-blue-500/10 text-blue-400"
                       : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
                   }`}
                 >
                   {label}
+                  {isActive(href) && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                  )}
                 </Link>
               ))}
             </div>
 
             <div className="border-t border-white/[0.06] pt-4">
               {user ? (
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04]">
-                  <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/20 flex-shrink-0">
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                  <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-blue-500/30 flex-shrink-0">
                     {avatarUrl ? (
-                      <Image src={avatarUrl} alt="avatar" width={32} height={32} unoptimized className="object-cover w-full h-full" />
+                      <Image src={avatarUrl} alt="avatar" width={36} height={36} unoptimized className="object-cover w-full h-full" />
                     ) : (
-                      <span className="w-full h-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                      <span className="w-full h-full bg-emerald-600 text-white font-bold text-sm flex items-center justify-center">
                         {(displayName || user.email || "U").charAt(0).toUpperCase()}
                       </span>
                     )}
@@ -249,7 +318,7 @@ export default function Navbar() {
                     <p className="text-sm font-semibold text-white truncate">{displayName || user.email?.split("@")[0]}</p>
                     <p className="text-[11px] text-zinc-500 truncate">{user.email}</p>
                   </div>
-                  <button onClick={handleSignOut} className="text-xs text-red-400 font-medium hover:text-red-300 transition-colors flex-shrink-0">
+                  <button onClick={handleSignOut} className="text-[11px] text-red-400 font-semibold hover:text-red-300 transition-colors flex-shrink-0">
                     Sign out
                   </button>
                 </div>
@@ -257,7 +326,7 @@ export default function Navbar() {
                 <Link
                   href="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center justify-center w-full bg-white text-black text-sm font-semibold py-3.5 rounded-xl hover:bg-zinc-100 transition-colors"
+                  className="flex items-center justify-center w-full bg-blue-600 text-white text-sm font-semibold py-3.5 rounded-xl hover:bg-blue-500 transition-colors active:scale-95"
                 >
                   Sign in
                 </Link>

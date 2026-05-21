@@ -61,30 +61,44 @@ export default function InstallPrompt() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 max-w-xs rounded-[26px] border border-white/10 bg-slate-950/95 p-4 text-white shadow-2xl backdrop-blur-xl md:right-8">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-400 text-slate-950 flex-shrink-0">
-          📲
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold">Install Tech Ninja</p>
-          <p className="mt-1 text-xs text-slate-400">Add the app to your home screen for faster access.</p>
+    <div className="fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 sm:max-w-xs">
+      <div className="relative overflow-hidden rounded-xl border border-emerald-500/20 bg-black/60 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        {/* emerald left accent bar */}
+        <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-emerald-400 to-emerald-600" />
+
+        <div className="flex items-center gap-3 px-4 py-3 pl-5">
+          {/* icon */}
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400 text-lg border border-emerald-500/25">
+            ⚡
+          </div>
+
+          {/* text */}
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-white leading-tight">Install Tech Ninja</p>
+            <p className="text-[11px] text-slate-400 leading-snug mt-0.5 truncate">
+              Add to home screen for faster access.
+            </p>
+          </div>
+
+          {/* action */}
           <button
             onClick={handleInstallClick}
-            className="mt-3 w-full rounded-2xl bg-white px-3.5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
+            className="flex-shrink-0 rounded-md bg-emerald-500/20 border border-emerald-500/30 px-3 py-1.5 text-[12px] font-semibold text-emerald-300 transition hover:bg-emerald-500/35 hover:text-emerald-200 active:scale-95"
           >
-            Add to Home Screen
+            Install
+          </button>
+
+          {/* dismiss */}
+          <button
+            onClick={handleDismiss}
+            className="flex-shrink-0 text-slate-600 hover:text-slate-300 transition-colors ml-1"
+            aria-label="Close"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
-        <button
-          onClick={handleDismiss}
-          className="flex-shrink-0 text-slate-400 hover:text-white transition-colors"
-          aria-label="Close"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
       </div>
     </div>
   );

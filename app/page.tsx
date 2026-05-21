@@ -115,6 +115,8 @@ export default function Home() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [showContact, setShowContact] = useState(false);
+  const [heroSlide, setHeroSlide] = useState(0);
+  const [heroSlides, setHeroSlides] = useState<string[]>(["/images/1.jpg", "/images/2.jpg", "/images/3.jpg"]);
   const [profileUsername, setProfileUsername] = useState<string | null>(null);
   const [comments, setComments] = useState<{ id: string; name: string; message: string; created_at: string }[]>([]);
   const [commentForm, setCommentForm] = useState({ name: "", message: "" });
@@ -196,6 +198,19 @@ export default function Home() {
     return () => observer.disconnect();
   }, [loading, products, updates, socialProfiles, totalUsers]);
 
+  useEffect(() => {
+    fetch("/api/hero-images")
+      .then((r) => r.json())
+      .then((imgs: string[]) => { if (imgs.length > 0) setHeroSlides(imgs); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (heroSlides.length < 2) return;
+    const t = setInterval(() => setHeroSlide((s) => (s + 1) % heroSlides.length), 4500);
+    return () => clearInterval(t);
+  }, [heroSlides.length]);
+
   const fetchComments = async () => {
     const { data } = await supabase.from("comments").select("id, name, message, created_at").order("created_at", { ascending: false }).limit(6);
     setComments(data || []);
@@ -227,150 +242,210 @@ export default function Home() {
   const h2 = "text-5xl md:text-6xl font-bold tracking-tight leading-[1.05] text-black dark:text-white";
 
   return (
-    <main className="min-h-screen bg-white dark:bg-black text-black dark:text-white pt-14 overflow-x-hidden">
+    <main className="min-h-screen bg-white dark:bg-black text-black dark:text-white pt-16 overflow-x-hidden">
       <Navbar />
 
       {/* ══════════════════ HERO ══════════════════ */}
-      <section className="bg-white dark:bg-zinc-950 py-16 px-6 sm:px-10 lg:px-16">
-        <div className="max-w-7xl mx-auto">
+      <section
+        className="relative overflow-hidden flex items-center min-h-[calc(100vh-56px)] py-16 px-6 sm:px-10 lg:px-16"
+        style={{
+          backgroundColor: "#f9fafb",
+          backgroundImage: "radial-gradient(circle, rgba(59,130,246,.09) 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+        }}
+      >
+        {/* ambient glows */}
+        <div className="pointer-events-none absolute -top-40 left-1/4 w-[640px] h-[520px] rounded-full bg-blue-500/15 blur-[130px]" />
+        <div className="pointer-events-none absolute top-20 right-0 w-[400px] h-[400px] rounded-full bg-violet-500/10 blur-[100px]" />
+        <div className="pointer-events-none absolute bottom-0 left-0 w-[280px] h-[280px] rounded-full bg-violet-400/10 blur-[80px]" />
 
-          {/* Eyebrow + welcome */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-            <p className="text-[11px] font-semibold tracking-[0.25em] uppercase text-blue-500">
-              Tech Ninja · Mauritius
-            </p>
-            {user && (
-              <span className="inline-flex items-center gap-2 text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-full px-3 py-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-                Welcome back, {profileUsername || user.email?.split("@")[0]}
-              </span>
-            )}
-          </div>
+        <div className="relative max-w-7xl mx-auto w-full">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-6 items-center">
 
-          {/* Trust cards with product images */}
-          {(() => {
-            const TRUST = [
-              { stat: "500+", label: "Repairs Done" },
-              { stat: "24h", label: "Same-Day Service" },
-              { stat: "2yr", label: "Warranty Included" },
-              { stat: "Free", label: "Diagnosis" },
-            ];
-            return (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                {TRUST.map((t, i) => (
-                  <div key={t.label} className="relative rounded-3xl overflow-hidden aspect-[3/4] sm:aspect-[3/4] cursor-pointer group">
-                    {loading ? (
-                      <div className="w-full h-full bg-zinc-100 dark:bg-zinc-900 animate-pulse" />
-                    ) : products[i]?.image ? (
-                      <Image
-                        src={products[i].image.replace("/object/public/", "/render/image/public/")}
-                        alt={t.label}
-                        fill
-                        unoptimized
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
-                        onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x533/18181b/3f3f46?text="; }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-zinc-200 dark:bg-zinc-800" />
-                    )}
-                    {/* Dark gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                    {/* Stat text */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
-                      <p className="text-3xl sm:text-4xl font-bold text-white tracking-tight leading-none mb-1">{t.stat}</p>
-                      <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-widest">{t.label}</p>
-                    </div>
+            {/* ── LEFT: Content ── */}
+            <div className="flex flex-col gap-7">
+
+              {/* Eyebrow row */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.2em] uppercase text-blue-600">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/15 border border-blue-500/30 flex-shrink-0">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2L9 9H2L7.5 13.5L5 21L12 16.5L19 21L16.5 13.5L22 9H15L12 2Z" />
+                    </svg>
                   </div>
-                ))}
-              </div>
-            );
-          })()}
-
-          {/* Apple-style product mosaic grid */}
-          {(loading || products.length > 0) && (
-            <div className="grid grid-cols-3 gap-3 mb-8" style={{ height: "clamp(320px, 45vw, 520px)" }}>
-              {/* Large hero product — col-span-2 */}
-              <div
-                className="col-span-2 relative rounded-3xl overflow-hidden cursor-pointer group bg-zinc-100 dark:bg-zinc-900"
-                onClick={() => products[4] && setQuickViewProduct(products[4])}
-              >
-                {loading ? (
-                  <div className="w-full h-full animate-pulse bg-zinc-100 dark:bg-zinc-900" />
-                ) : products[4]?.image ? (
-                  <Image
-                    src={products[4].image.replace("/object/public/", "/render/image/public/")}
-                    alt={products[4]?.name || ""}
-                    fill
-                    unoptimized
-                    className="object-cover group-hover:scale-105 transition-transform duration-700"
-                    onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/800x600/18181b/3f3f46?text="; }}
-                  />
-                ) : null}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                {products[4] && (
-                  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                    {products[4].category && (
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">{products[4].category}</p>
-                    )}
-                    <p className="text-white text-xl sm:text-2xl font-bold leading-tight mb-1">{products[4].name}</p>
-                    <p className="text-zinc-300 text-sm font-semibold">Rs {products[4].price.toLocaleString()}</p>
-                    <span className="inline-block mt-3 text-[11px] font-semibold text-zinc-400 group-hover:text-white transition-colors">View product →</span>
-                  </div>
+                  Tech Ninja · Mauritius
+                </div>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2.5 py-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  Open Now
+                </span>
+                {user && (
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-zinc-600 bg-zinc-100 border border-zinc-200 rounded-full px-2.5 py-1">
+                    👋 {profileUsername || user.email?.split("@")[0]}
+                  </span>
                 )}
               </div>
 
-              {/* Two stacked small products */}
-              <div className="flex flex-col gap-3">
-                {[5, 6].map((idx) => (
-                  <div
-                    key={idx}
-                    className="flex-1 relative rounded-3xl overflow-hidden cursor-pointer group bg-zinc-100 dark:bg-zinc-900"
-                    onClick={() => products[idx] && setQuickViewProduct(products[idx])}
-                  >
-                    {loading ? (
-                      <div className="w-full h-full animate-pulse bg-zinc-100 dark:bg-zinc-900" />
-                    ) : products[idx]?.image ? (
-                      <Image
-                        src={products[idx].image.replace("/object/public/", "/render/image/public/")}
-                        alt={products[idx]?.name || ""}
-                        fill
-                        unoptimized
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
-                        onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x300/18181b/3f3f46?text="; }}
-                      />
-                    ) : null}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                    {products[idx] && (
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <p className="text-white text-sm font-bold leading-tight line-clamp-1">{products[idx].name}</p>
-                        <p className="text-zinc-400 text-xs">Rs {products[idx].price.toLocaleString()}</p>
-                      </div>
-                    )}
-                  </div>
+              {/* Headline */}
+              <div>
+                <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.05] text-zinc-900">
+                  Welcome back to your<br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-violet-500">
+                    tech command centre.
+                  </span>
+                </h1>
+                <p className="mt-4 text-zinc-500 text-[15px] max-w-md leading-relaxed">
+                  Mauritius&apos; go-to hub for device repairs, retail, trade-ins &amp; IT support — all under one roof.
+                </p>
+              </div>
+
+              {/* Quick-action grid */}
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 mb-3">Quick actions</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { icon: "🔧", label: "Repair", sub: "Same-day fix", href: "#services" },
+                    { icon: "🛒", label: "Buy", sub: "New & used", href: "/Clients" },
+                    { icon: "💰", label: "Sell / Trade", sub: "Best rates", href: "#services" },
+                    { icon: "💻", label: "IT Support", sub: "Pro help", href: "#services" },
+                  ].map((s) => (
+                    <a
+                      key={s.label}
+                      href={s.href}
+                      className="group flex flex-col gap-1 p-3 rounded-xl bg-white border border-zinc-200 hover:border-blue-400/60 hover:bg-blue-50/60 shadow-sm transition-all duration-200 cursor-pointer"
+                    >
+                      <span className="text-xl leading-none">{s.icon}</span>
+                      <span className="text-[12px] font-semibold text-zinc-900 mt-1 leading-tight">{s.label}</span>
+                      <span className="text-[10px] text-zinc-500 group-hover:text-blue-600 transition-colors">{s.sub}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTAs */}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => setShowContact(true)}
+                  className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-bold px-6 py-3 rounded-xl hover:bg-blue-500 active:scale-95 transition-all shadow-lg shadow-blue-600/20"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" />
+                  </svg>
+                  Book a Repair
+                </button>
+                <Link
+                  href="/Clients"
+                  className="inline-flex items-center gap-2 text-zinc-700 hover:text-zinc-900 border border-zinc-300 hover:border-zinc-500 bg-white text-sm font-semibold px-6 py-3 rounded-xl transition-all shadow-sm"
+                >
+                  Browse Shop
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
+              </div>
+
+              {/* Trust micro-badges */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
+                {["✓ Same-day repairs", "✓ 2yr warranty", "✓ Free diagnosis", "✓ 500+ happy clients"].map((b) => (
+                  <span key={b} className="text-[11px] font-medium text-zinc-500">{b}</span>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Headline + CTAs */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-black dark:text-white tracking-tight leading-[1.0]">
-              Repair. Buy. Sell.<br />
-              <span className="text-zinc-400 dark:text-zinc-600">Your way.</span>
-            </h1>
-            <div className="flex flex-wrap gap-3 flex-shrink-0">
-              <a
-                href="#services"
-                className="inline-flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black text-sm font-semibold px-6 py-3 rounded-full hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+            {/* ── RIGHT: Hero image slideshow + floating badges ── */}
+            <div className="relative flex items-center justify-center lg:justify-end min-h-[360px] lg:min-h-[500px]">
+
+              {/* Glow blobs */}
+              <div
+                className="absolute w-80 h-64 rounded-full bg-blue-500/15 blur-[90px] pointer-events-none"
+                style={{ animation: "tn-glow 4.5s ease-in-out infinite" }}
+              />
+              <div className="pointer-events-none absolute w-52 h-52 rounded-full bg-violet-400/10 blur-[70px] top-0 right-10" />
+
+              {/* Badge — ⚡ 24h top-left */}
+              <div
+                className="absolute left-2 top-10 z-20 flex items-center gap-2.5 bg-white/95 backdrop-blur-md border border-zinc-200 rounded-2xl px-3.5 py-2.5 shadow-lg"
+                style={{ animation: "tn-badge 3.5s ease-in-out infinite" }}
               >
-                Explore services
-              </a>
-              <Link
-                href="/Clients"
-                className="inline-flex items-center gap-2 text-zinc-500 hover:text-black dark:hover:text-white border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 text-sm font-semibold px-6 py-3 rounded-full transition-all"
+                <span className="text-xl">⚡</span>
+                <div>
+                  <p className="text-[12px] font-bold text-zinc-900 leading-tight">24h Repair</p>
+                  <p className="text-[10px] text-zinc-500">Guaranteed</p>
+                </div>
+              </div>
+
+              {/* Badge — 🏆 rating bottom-right */}
+              <div
+                className="absolute right-2 bottom-14 z-20 flex items-center gap-2.5 bg-white/95 backdrop-blur-md border border-zinc-200 rounded-2xl px-3.5 py-2.5 shadow-lg"
+                style={{ animation: "tn-badge 4s ease-in-out infinite", animationDelay: "1s" }}
               >
-                Shop now
-              </Link>
+                <span className="text-xl">🏆</span>
+                <div>
+                  <p className="text-[12px] font-bold text-zinc-900 leading-tight">Top Rated</p>
+                  <p className="text-[10px] text-zinc-500">★ 4.9 · 500+ clients</p>
+                </div>
+              </div>
+
+              {/* Badge — 🛡️ warranty top-right */}
+              <div
+                className="absolute right-0 top-2 z-20 flex items-center gap-2 bg-blue-50 backdrop-blur-md border border-blue-200 rounded-xl px-3 py-2 shadow-md"
+                style={{ animation: "tn-badge 5s ease-in-out infinite", animationDelay: "0.5s" }}
+              >
+                <span className="text-base">🛡️</span>
+                <p className="text-[11px] font-semibold text-blue-700">2yr Warranty</p>
+              </div>
+
+              {/* Badge — 🔬 free diagnosis bottom-left */}
+              <div
+                className="absolute left-0 bottom-6 z-20 flex items-center gap-2 bg-violet-50 backdrop-blur-md border border-violet-200 rounded-xl px-3 py-2 shadow-md"
+                style={{ animation: "tn-badge 4.5s ease-in-out infinite", animationDelay: "1.5s" }}
+              >
+                <span className="text-base">🔬</span>
+                <p className="text-[11px] font-semibold text-violet-700">Free Diagnosis</p>
+              </div>
+
+              {/* Image slideshow */}
+              <div
+                className="relative z-10 w-[280px] sm:w-[360px] lg:w-[460px]"
+                style={{ animation: "tn-float 6s ease-in-out infinite" }}
+              >
+                {/* Card frame */}
+                <div className="relative rounded-3xl overflow-hidden shadow-xl border border-zinc-100 bg-white" style={{ aspectRatio: "4/3" }}>
+                  {heroSlides.map((src, i) => (
+                    <Image
+                      key={src}
+                      src={src}
+                      alt={`Tech Ninja showcase ${i + 1}`}
+                      fill
+                      unoptimized
+                      priority={i === 0}
+                      className="object-contain"
+                      style={{
+                        opacity: heroSlide === i ? 1 : 0,
+                        transition: "opacity 0.9s ease-in-out",
+                        mixBlendMode: "multiply",
+                        padding: "1rem",
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Dot indicators */}
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  {heroSlides.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setHeroSlide(i)}
+                      className="transition-all duration-300 rounded-full focus:outline-none"
+                      style={{
+                        width: heroSlide === i ? "20px" : "7px",
+                        height: "7px",
+                        background: heroSlide === i ? "#2563eb" : "#d1d5db",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -395,7 +470,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-2.5 mb-3">
                   <h3 className="text-base font-semibold text-black dark:text-white">{svc.title}</h3>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-blue-500 border border-blue-400/30 bg-blue-500/5 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-blue-600 border border-blue-400/30 bg-blue-500/5 px-2 py-0.5 rounded-full whitespace-nowrap">
                     {svc.tag}
                   </span>
                 </div>
@@ -677,7 +752,7 @@ export default function Home() {
                       <h3 className="font-semibold text-black dark:text-white text-sm truncate">{profile.platform_name}</h3>
                       {profile.username && <p className="text-xs text-zinc-500 truncate">@{profile.username}</p>}
                     </div>
-                    {profile.is_active && <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />}
+                    {profile.is_active && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
                   </div>
                   {profile.description && (
                     <p className="text-xs text-zinc-500 mb-4 line-clamp-2">{profile.description}</p>
@@ -875,7 +950,7 @@ export default function Home() {
                   ? <span className="text-xs font-semibold text-red-500">Out of stock</span>
                   : quickViewProduct.stock <= 5
                   ? <span className="text-xs font-semibold text-amber-500">Only {quickViewProduct.stock} left</span>
-                  : <span className="text-xs font-semibold text-emerald-600">In stock</span>
+                  : <span className="text-xs font-semibold text-blue-600">In stock</span>
                 }
               </div>
               <p className="text-sm text-zinc-500 leading-relaxed flex-1 mb-7">

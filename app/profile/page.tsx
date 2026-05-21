@@ -29,6 +29,7 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [usernameTaken, setUsernameTaken] = useState(false);
 
   const [form, setForm] = useState({
     username: "",
@@ -155,7 +156,16 @@ export default function ProfilePage() {
     }
 
     setSaving(false);
-    if (error) { showToast("Save failed: " + error.message, false); return; }
+    if (error) {
+      if (error.message.includes("profiles_username_key") || error.message.includes("unique constraint")) {
+        setUsernameTaken(true);
+        showToast("That username is already taken — try another one.", false);
+      } else {
+        showToast("Save failed: " + error.message, false);
+      }
+      return;
+    }
+    setUsernameTaken(false);
     showToast("Profile saved!");
   };
 
@@ -305,9 +315,10 @@ export default function ProfilePage() {
             <FormField
               label="Username *"
               value={form.username}
-              onChange={(v) => setForm({ ...form, username: v })}
+              onChange={(v) => { setForm({ ...form, username: v }); setUsernameTaken(false); }}
               placeholder="tech_ninja"
               isAdmin={isAdmin}
+              error={usernameTaken ? "Username already taken" : undefined}
             />
             <FormField
               label="Full Name"
@@ -410,9 +421,9 @@ export default function ProfilePage() {
   );
 }
 
-function FormField({ label, value, onChange, placeholder = "", type = "text", isAdmin }: {
+function FormField({ label, value, onChange, placeholder = "", type = "text", isAdmin, error }: {
   label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; type?: string; isAdmin: boolean;
+  placeholder?: string; type?: string; isAdmin: boolean; error?: string;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -422,11 +433,14 @@ function FormField({ label, value, onChange, placeholder = "", type = "text", is
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition-all
-          ${isAdmin
-            ? "focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
-            : "focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"}`}
+        className={`w-full bg-gray-50 dark:bg-gray-800 border rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition-all
+          ${error
+            ? "border-red-400 dark:border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500/30"
+            : isAdmin
+              ? "border-gray-200 dark:border-gray-700 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30"
+              : "border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"}`}
       />
+      {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
     </div>
   );
 }
