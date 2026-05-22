@@ -62,7 +62,7 @@ export default function InstallPrompt() {
 
   return (
     <div className="fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 sm:max-w-xs">
-      <div className="relative overflow-hidden rounded-xl border border-emerald-500/20 bg-black/60 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+      <div className="relative overflow-hidden rounded-xl border border-emerald-500/20 bg-white/70 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.15)]">
         {/* emerald left accent bar */}
         <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-emerald-400 to-emerald-600" />
 
@@ -74,8 +74,8 @@ export default function InstallPrompt() {
 
           {/* text */}
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-white leading-tight">Install Tech Ninja</p>
-            <p className="text-[11px] text-slate-400 leading-snug mt-0.5 truncate">
+            <p className="text-[13px] font-semibold text-gray-900 leading-tight">Install Tech Ninja</p>
+            <p className="text-[11px] text-gray-500 leading-snug mt-0.5 truncate">
               Add to home screen for faster access.
             </p>
           </div>
@@ -91,7 +91,7 @@ export default function InstallPrompt() {
           {/* dismiss */}
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 text-slate-600 hover:text-slate-300 transition-colors ml-1"
+            className="flex-shrink-0 text-gray-400 hover:text-gray-700 transition-colors ml-1"
             aria-label="Close"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

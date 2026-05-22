@@ -77,32 +77,7 @@ export default function Navbar() {
   const isActive = (href: string) => pathname === href;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-2xl border-b border-white/[0.06]">
-      <style>{`
-        @keyframes rgb-sweep {
-          0%   { background-position: 0% 50%; }
-          100% { background-position: 200% 50%; }
-        }
-        @keyframes rgb-glow {
-          0%   { box-shadow: 0 0 8px 2px rgba(255,0,80,.55),  0 0 20px 4px rgba(255,0,80,.18); }
-          25%  { box-shadow: 0 0 8px 2px rgba(0,255,160,.55), 0 0 20px 4px rgba(0,255,160,.18); }
-          50%  { box-shadow: 0 0 8px 2px rgba(0,160,255,.55), 0 0 20px 4px rgba(0,160,255,.18); }
-          75%  { box-shadow: 0 0 8px 2px rgba(200,0,255,.55), 0 0 20px 4px rgba(200,0,255,.18); }
-          100% { box-shadow: 0 0 8px 2px rgba(255,0,80,.55),  0 0 20px 4px rgba(255,0,80,.18); }
-        }
-      `}</style>
-
-      {/* RGB sweep line at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden">
-        <div
-          className="h-full w-full"
-          style={{
-            background: "linear-gradient(90deg,#ff0050,#ff8800,#ffe600,#00ff9d,#00b4ff,#a855f7,#ff0050)",
-            backgroundSize: "200% 100%",
-            animation: "rgb-sweep 3s linear infinite",
-          }}
-        />
-      </div>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-2xl border-b border-gray-200/70">
 
       <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
 
@@ -110,8 +85,7 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-3 flex-shrink-0 group">
           {/* Logo tile with RGB glow */}
           <div
-            className="w-11 h-11 rounded-[13px] overflow-hidden bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0 transition-all duration-300"
-            style={{ animation: "rgb-glow 4s ease-in-out infinite" }}
+            className="w-11 h-11 rounded-[13px] overflow-hidden bg-zinc-900 border border-zinc-700 flex items-center justify-center flex-shrink-0 transition-all duration-300"
           >
             <Image
               src="/logo.png"
@@ -125,10 +99,10 @@ export default function Navbar() {
 
           {/* Wordmark */}
           <div className="flex flex-col leading-none">
-            <span className="text-[15px] font-extrabold tracking-tight text-white">
-              Tech <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">Ninja</span>
+            <span className="text-[15px] font-extrabold tracking-tight text-gray-900">
+              Tech <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-violet-500">Ninja</span>
             </span>
-            <span className="text-[9px] font-semibold tracking-[0.2em] uppercase text-zinc-600 mt-0.5">Mauritius</span>
+            <span className="text-[9px] font-semibold tracking-[0.2em] uppercase text-gray-400 mt-0.5">Mauritius</span>
           </div>
         </Link>
 
@@ -140,13 +114,13 @@ export default function Navbar() {
               href={href}
               className={`relative px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                 isActive(href)
-                  ? "text-blue-400 bg-blue-500/10"
-                  : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
+                  ? "text-blue-600 bg-blue-50"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
               {label}
               {isActive(href) && (
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-3 h-[2px] rounded-full bg-blue-400" />
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-3 h-[2px] rounded-full bg-blue-600" />
               )}
             </Link>
           ))}
@@ -159,7 +133,7 @@ export default function Navbar() {
           <button
             onClick={toggle}
             title={dark ? "Light mode" : "Dark mode"}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/[0.08] transition-all"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all"
           >
             {dark ? (
               <svg className="w-[15px] h-[15px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -189,11 +163,11 @@ export default function Navbar() {
               </button>
 
               {/* Dropdown */}
-              <div className={`absolute right-0 mt-2.5 w-56 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden transition-all duration-150 origin-top-right z-50 ${
+              <div className={`absolute right-0 mt-2.5 w-56 bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-black/20 overflow-hidden transition-all duration-150 origin-top-right z-50 ${
                 dropdownOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"
               }`}>
                 {/* Header */}
-                <div className="px-4 py-3.5 border-b border-white/[0.07]">
+                <div className="px-4 py-3.5 border-b border-gray-100">
                   <div className="flex items-center gap-2.5 mb-2">
                     <div className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/20 flex-shrink-0">
                       {avatarUrl ? (
@@ -205,8 +179,8 @@ export default function Navbar() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[13px] font-semibold text-white truncate">{displayName || user.email?.split("@")[0]}</p>
-                      <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
+                      <p className="text-[13px] font-semibold text-gray-900 truncate">{displayName || user.email?.split("@")[0]}</p>
+                      <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
                     </div>
                   </div>
                   {isAdmin && (
@@ -228,7 +202,7 @@ export default function Navbar() {
                       key={href}
                       href={href}
                       onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2 text-[13px] text-zinc-400 hover:text-white hover:bg-white/[0.05] transition-colors"
+                      className="flex items-center gap-3 px-4 py-2 text-[13px] text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                     >
                       <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
@@ -238,10 +212,10 @@ export default function Navbar() {
                   ))}
                 </div>
 
-                <div className="border-t border-white/[0.07] py-1.5">
+                <div className="border-t border-gray-100 py-1.5">
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center gap-3 w-full px-4 py-2 text-[13px] text-red-400 hover:text-red-300 hover:bg-white/[0.04] transition-colors"
+                    className="flex items-center gap-3 w-full px-4 py-2 text-[13px] text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
@@ -262,7 +236,7 @@ export default function Navbar() {
 
           {/* Mobile hamburger */}
           <button
-            className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-all"
+            className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
             <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -277,7 +251,7 @@ export default function Navbar() {
       {/* ── Mobile menu ── */}
       {mounted && (
         <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileOpen ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"}`}>
-          <div className="bg-zinc-950/95 backdrop-blur-2xl border-t border-white/[0.06] px-4 pt-4 pb-6">
+          <div className="bg-white/95 backdrop-blur-2xl border-t border-gray-200 px-4 pt-4 pb-6">
 
             {/* Emerald accent top bar */}
             <div className="h-[1px] w-12 bg-gradient-to-r from-blue-400 to-violet-400 rounded-full mb-5 mx-auto" />
@@ -290,21 +264,21 @@ export default function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     isActive(href)
-                      ? "bg-blue-500/10 text-blue-400"
-                      : "text-zinc-400 hover:text-white hover:bg-white/[0.06]"
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   }`}
                 >
                   {label}
                   {isActive(href) && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600 flex-shrink-0" />
                   )}
                 </Link>
               ))}
             </div>
 
-            <div className="border-t border-white/[0.06] pt-4">
+            <div className="border-t border-gray-200 pt-4">
               {user ? (
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200">
                   <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-blue-500/30 flex-shrink-0">
                     {avatarUrl ? (
                       <Image src={avatarUrl} alt="avatar" width={36} height={36} unoptimized className="object-cover w-full h-full" />
@@ -315,10 +289,10 @@ export default function Navbar() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{displayName || user.email?.split("@")[0]}</p>
-                    <p className="text-[11px] text-zinc-500 truncate">{user.email}</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">{displayName || user.email?.split("@")[0]}</p>
+                    <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
                   </div>
-                  <button onClick={handleSignOut} className="text-[11px] text-red-400 font-semibold hover:text-red-300 transition-colors flex-shrink-0">
+                  <button onClick={handleSignOut} className="text-[11px] text-red-500 font-semibold hover:text-red-600 transition-colors flex-shrink-0">
                     Sign out
                   </button>
                 </div>
