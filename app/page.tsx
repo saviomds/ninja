@@ -370,9 +370,8 @@ export default function Home() {
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 {featuredProducts.map((product) => (
-                  <div key={product.id}
-                    className={`group rounded-3xl overflow-hidden cursor-pointer ${cardOnWhite} hover:border-[#d2d2d7] dark:hover:border-[#3a3a3c] hover:shadow-[0_4px_20px_rgba(0,0,0,0.07)] dark:hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300`}
-                    onClick={() => setQuickViewProduct(product)}>
+                  <Link key={product.id} href={`/product/${product.id}`}
+                    className={`group rounded-3xl overflow-hidden cursor-pointer block ${cardOnWhite} hover:border-[#d2d2d7] dark:hover:border-[#3a3a3c] hover:shadow-[0_4px_20px_rgba(0,0,0,0.07)] dark:hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300`}>
                     <div className="aspect-[3/4] bg-[#e8e8ed] dark:bg-[#2c2c2e] relative overflow-hidden">
                       {product.image ? (
                         <Image src={product.image.replace("/object/public/", "/render/image/public/")} alt={product.name}
@@ -401,7 +400,7 @@ export default function Home() {
                       {product.category && <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6e6e73] dark:text-[#98989d] mb-1.5">{product.category}</p>}
                       <h3 className="text-[14px] font-semibold text-[#1d1d1f] dark:text-[#f5f5f7] leading-snug">{product.name}</h3>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

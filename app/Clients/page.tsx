@@ -146,7 +146,7 @@ export default function ClientsPage() {
 
   const openLightbox = (product: Product) => { setLightbox({ product, rotation: 0, zoom: 1 }); trackView(product); };
   const copyShare = (product: Product) => {
-    const url = `${window.location.origin}/Clients?q=${encodeURIComponent(product.name)}`;
+    const url = `${window.location.origin}/product/${product.id}`;
     navigator.clipboard.writeText(url).then(() => showToast("Link copied!")).catch(() => showToast("Could not copy link", "error"));
   };
 
@@ -396,15 +396,15 @@ export default function ClientsPage() {
               </p>
               <div className="flex gap-2.5">
                 {recentlyViewed.map((p) => (
-                  <button key={p.id} onClick={() => openLightbox(p)} title={p.name}
-                    className="flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-[#f5f5f7] dark:bg-[#1c1c1e] border border-[#e8e8ed] dark:border-[#3a3a3c] hover:border-[#0071e3] dark:hover:border-[#0a84ff] transition-all hover:scale-110 relative">
+                  <Link key={p.id} href={`/product/${p.id}`} title={p.name}
+                    className="flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-[#f5f5f7] dark:bg-[#1c1c1e] border border-[#e8e8ed] dark:border-[#3a3a3c] hover:border-[#0071e3] dark:hover:border-[#0a84ff] transition-all hover:scale-110 relative block">
                     {p.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={imgSrc(p.image)} alt={p.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[#6e6e73] text-xs">?</div>
                     )}
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -443,10 +443,9 @@ export default function ClientsPage() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {visible.map((product, index) => (
-                  <article key={product.id}
-                    className={`group relative rounded-3xl overflow-hidden hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300 cursor-pointer animate-fade-in-up ${cardOnWhite}`}
-                    style={{ animationDelay: `${Math.min(index * 0.06, 0.5)}s` }}
-                    onClick={() => openLightbox(product)}>
+                  <Link key={product.id} href={`/product/${product.id}`}
+                    className={`group relative rounded-3xl overflow-hidden hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300 cursor-pointer animate-fade-in-up block ${cardOnWhite}`}
+                    style={{ animationDelay: `${Math.min(index * 0.06, 0.5)}s` }}>
                     <div className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
                       {product.image ? (
                         <Image src={imgSrc(product.image)} alt={product.name} fill unoptimized
@@ -466,7 +465,7 @@ export default function ClientsPage() {
                           <span className="text-[11px] font-semibold bg-[#0071e3] dark:bg-[#0a84ff] text-white px-2.5 py-1 rounded-full">New</span>
                         </div>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); }}
+                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(product.id); }}
                         className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all backdrop-blur-sm ${wishlist.has(product.id) ? "bg-red-500/20 border border-red-500/30 text-red-400" : "bg-black/20 border border-white/10 text-white/50 hover:text-red-400"}`}>
                         <svg className="w-4 h-4" fill={wishlist.has(product.id) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -481,13 +480,13 @@ export default function ClientsPage() {
                         </div>
                       </div>
                       <div className="absolute inset-x-4 bottom-[4.5rem] translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                        <button onClick={(e) => { e.stopPropagation(); openOrder(product); }} disabled={product.stock === 0}
+                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); openOrder(product); }} disabled={product.stock === 0}
                           className="w-full bg-white dark:bg-[#f5f5f7] text-[#1d1d1f] font-semibold py-2.5 rounded-2xl text-[14px] hover:bg-[#f5f5f7] disabled:opacity-40 disabled:cursor-not-allowed shadow-xl transition-all">
                           {product.stock === 0 ? "Sold out" : "Order now"}
                         </button>
                       </div>
                     </div>
-                  </article>
+                  </Link>
                 ))}
               </div>
               {visibleCount < sorted.length && (
