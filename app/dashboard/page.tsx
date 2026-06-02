@@ -935,7 +935,8 @@ export default function Dashboard() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeSection, setActiveSection] = useState<"products" | "social" | "updates" | "settings" | "log" | "invoice" | "orders" | "tools">("products");
+  const [activeSection, setActiveSection] = useState<"home" | "products" | "social" | "updates" | "settings" | "log" | "invoice" | "orders" | "tools">("home");
+  const [repairStats, setRepairStats] = useState({ active: 0, urgent: 0, ready: 0, total: 0 });
 
   // Invoice state
   const [invoiceData, setInvoiceData] = useState<InvoiceData>(defaultInvoiceData());
@@ -1077,17 +1078,32 @@ export default function Dashboard() {
     setOrders((data as ClientOrder[]) || []);
   }, []);
 
+  const fetchRepairStats = useCallback(async () => {
+    const { data } = await supabase
+      .from("repair_tickets")
+      .select("status, priority")
+      .not("status", "in", '("delivered","cancelled")');
+    if (data) {
+      setRepairStats({
+        active: data.length,
+        urgent: data.filter(t => t.priority === "urgent").length,
+        ready: data.filter(t => t.status === "ready").length,
+        total: data.length,
+      });
+    }
+  }, []);
+
   const loadAllData = useCallback(async (showRefreshToast = false, uid?: string) => {
     const targetUid = uid || user?.id;
     if (!targetUid) return;
     showRefreshToast ? setIsRefreshing(true) : setLoading(true);
-    await Promise.all([fetchProducts(), fetchSocialProfiles(), fetchUpdates(), fetchUserProfile(targetUid), fetchInvoices(), fetchOrders()]);
+    await Promise.all([fetchProducts(), fetchSocialProfiles(), fetchUpdates(), fetchUserProfile(targetUid), fetchInvoices(), fetchOrders(), fetchRepairStats()]);
     showRefreshToast ? setIsRefreshing(false) : setLoading(false);
     if (showRefreshToast) {
       showToast("Dashboard refreshed!", "success");
       logActivity("Refreshed dashboard data", "All sections", "info");
     }
-  }, [user?.id, fetchProducts, fetchSocialProfiles, fetchUpdates, fetchUserProfile, fetchInvoices, fetchOrders, showToast, logActivity]);
+  }, [user?.id, fetchProducts, fetchSocialProfiles, fetchUpdates, fetchUserProfile, fetchInvoices, fetchOrders, fetchRepairStats, showToast, logActivity]);
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
 
@@ -1888,14 +1904,15 @@ export default function Dashboard() {
   // ─── Nav sections ─────────────────────────────────────────────────────────
 
   const navSections = [
-    { key: "products", label: "Products", count: products.length, icon: "📦" },
-    { key: "orders", label: "Orders", count: orders.length, icon: "🛒" },
-    { key: "social", label: "Social", count: socialProfiles.length, icon: "🔗" },
-    { key: "updates", label: "Updates", count: updates.length, icon: "📣" },
-    { key: "invoice", label: "Invoice", count: invoices.length, icon: "📄" },
-    { key: "tools", label: "Tools", count: null, icon: "🛠️" },
-    { key: "settings", label: "Settings", count: null, icon: "⚙️" },
-    { key: "log", label: "Activity", count: activityLog.length || null, icon: "🕐" },
+    { key: "home",     label: "Overview",  count: null,                       icon: "⊞" },
+    { key: "products", label: "Products",  count: products.length,            icon: "📦" },
+    { key: "orders",   label: "Orders",    count: orders.filter(o => o.status === "pending").length || null, icon: "🛒" },
+    { key: "invoice",  label: "Invoices",  count: invoices.length || null,    icon: "📄" },
+    { key: "tools",    label: "Tools",     count: null,                       icon: "🛠️" },
+    { key: "social",   label: "Social",    count: socialProfiles.length || null, icon: "🔗" },
+    { key: "updates",  label: "Updates",   count: updates.length || null,     icon: "📣" },
+    { key: "settings", label: "Settings",  count: null,                       icon: "⚙️" },
+    { key: "log",      label: "Activity",  count: activityLog.length || null, icon: "🕐" },
   ] as const;
 
   const invoiceCounter = invoices.length + 1;
@@ -1903,7 +1920,7 @@ export default function Dashboard() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
 
       {/* ── Top Bar ──────────────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 px-4 md:px-6 py-3 flex justify-between items-center">
@@ -2019,69 +2036,301 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* ── Dashboard Stats Banner ────────────────────────────────────────────── */}
-      {!loading && (
-        <div className="bg-gray-900/40 border-b border-gray-800/60 px-4 md:px-8 py-3">
-          <div className="max-w-5xl mx-auto flex flex-wrap gap-4 md:gap-8 items-center text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Products</span>
-              <span className="font-bold text-white">{products.length}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Inventory Value</span>
-              <span className="font-bold text-emerald-400">Rs {inventoryValue.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Out of Stock</span>
-              <span className={`font-bold ${outOfStockCount > 0 ? "text-rose-400" : "text-gray-400"}`}>{outOfStockCount}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Low Stock</span>
-              <span className={`font-bold ${lowStockCount > 0 ? "text-amber-400" : "text-gray-400"}`}>{lowStockCount}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Social Profiles</span>
-              <span className="font-bold text-indigo-400">{socialProfiles.length}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Updates</span>
-              <span className="font-bold text-violet-400">{updates.length}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Orders</span>
-              <span className="font-bold text-amber-400">{orders.length}</span>
+      {/* ── Body: Sidebar + Content ──────────────────────────────────────────── */}
+      <div className="flex flex-1 min-h-0">
+
+        {/* ── Left Sidebar ─────────────────────────────────────────────────── */}
+        <aside className="hidden md:flex flex-col w-52 flex-shrink-0 bg-gray-900/60 border-r border-gray-800 sticky top-[57px] self-start h-[calc(100vh-57px)] overflow-y-auto">
+          {/* Brand */}
+          <div className="px-4 py-4 border-b border-gray-800/80">
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">TN</div>
+              <div>
+                <p className="text-xs font-bold text-white leading-none">TechNinja</p>
+                <p className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[120px]">{profile?.username || user?.email?.split("@")[0]}</p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* ── Section Nav Tabs ──────────────────────────────────────────────────── */}
-      <div className="sticky top-[57px] z-20 bg-gray-950/95 backdrop-blur-md border-b border-gray-800 px-4 md:px-8">
-        <div className="max-w-5xl mx-auto flex gap-1 overflow-x-auto">
-          {navSections.map(s => (
+          {/* Nav items */}
+          <nav className="flex-1 p-2 space-y-0.5">
+            {navSections.map(s => (
+              <button
+                key={s.key}
+                onClick={() => setActiveSection(s.key)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left group ${
+                  activeSection === s.key
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-gray-400 hover:bg-gray-800/80 hover:text-white"
+                }`}
+              >
+                <span className="text-base flex-shrink-0">{s.icon}</span>
+                <span className="flex-1 truncate">{s.label}</span>
+                {s.count != null && s.count > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
+                    activeSection === s.key ? "bg-white/25 text-white" : "bg-gray-800 text-gray-400 group-hover:bg-gray-700"
+                  }`}>
+                    {s.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+
+          {/* Sidebar footer stats */}
+          {!loading && (
+            <div className="p-3 border-t border-gray-800/80">
+              <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest px-1 mb-2">Quick Stats</p>
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center px-1 text-xs">
+                  <span className="text-gray-500">Inventory</span>
+                  <span className="text-emerald-400 font-semibold">Rs {inventoryValue.toLocaleString()}</span>
+                </div>
+                {outOfStockCount > 0 && (
+                  <div className="flex justify-between items-center px-1 text-xs">
+                    <span className="text-gray-500">Out of stock</span>
+                    <span className="text-rose-400 font-semibold">{outOfStockCount}</span>
+                  </div>
+                )}
+                {lowStockCount > 0 && (
+                  <div className="flex justify-between items-center px-1 text-xs">
+                    <span className="text-gray-500">Low stock</span>
+                    <span className="text-amber-400 font-semibold">{lowStockCount}</span>
+                  </div>
+                )}
+                {repairStats.active > 0 && (
+                  <div className="flex justify-between items-center px-1 text-xs">
+                    <span className="text-gray-500">Open repairs</span>
+                    <span className="text-cyan-400 font-semibold">{repairStats.active}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </aside>
+
+        {/* ── Mobile Top Tabs ──────────────────────────────────────────────── */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-gray-900/97 backdrop-blur-md border-t border-gray-800 px-1 py-1 flex justify-around">
+          {[
+            { key: "home",     icon: "⊞", label: "Home" },
+            { key: "products", icon: "📦", label: "Products" },
+            { key: "orders",   icon: "🛒", label: "Orders" },
+            { key: "invoice",  icon: "📄", label: "Invoices" },
+            { key: "tools",    icon: "🛠️", label: "Tools" },
+          ].map(s => (
             <button
               key={s.key}
-              onClick={() => setActiveSection(s.key)}
-              className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
-                activeSection === s.key
-                  ? "border-white text-white"
-                  : "border-transparent text-gray-500 hover:text-gray-300"
+              onClick={() => setActiveSection(s.key as typeof activeSection)}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all min-w-0 ${
+                activeSection === s.key ? "text-indigo-400" : "text-gray-500 hover:text-gray-300"
               }`}
             >
-              <span>{s.icon}</span>
+              <span className="text-lg leading-none">{s.icon}</span>
               {s.label}
-              {s.count != null && s.count > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeSection === s.key ? "bg-white/15 text-white" : "bg-gray-800 text-gray-400"}`}>
-                  {s.count}
-                </span>
-              )}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* ── Main Content ──────────────────────────────────────────────────────── */}
-      <div className="max-w-5xl mx-auto p-4 md:p-6 pb-20">
+        {/* ── Main Content ─────────────────────────────────────────────────── */}
+        <main className="flex-1 min-w-0">
+          <div className="p-4 md:p-6 pb-24 md:pb-8 max-w-6xl">
+
+        {/* ══ HOME / OVERVIEW TAB ════════════════════════════════════════════════ */}
+        {activeSection === "home" && (
+          <div className="pt-2 space-y-8">
+            {/* Welcome */}
+            <div>
+              <h1 className="text-2xl font-bold text-white">Good day, {profile?.username || user?.email?.split("@")[0]} 👋</h1>
+              <p className="text-gray-500 text-sm mt-1">Here is your TechNinja business overview</p>
+            </div>
+
+            {/* ─ Big Stats Cards ──────────────────────────────────────────── */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-indigo-500/30 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Products</span>
+                  <span className="text-2xl">📦</span>
+                </div>
+                <p className="text-3xl font-bold text-white">{products.length}</p>
+                <p className="text-xs text-gray-500 mt-1">{outOfStockCount > 0 ? <span className="text-rose-400">{outOfStockCount} out of stock</span> : "All in stock"}</p>
+              </div>
+
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-amber-500/30 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Orders</span>
+                  <span className="text-2xl">🛒</span>
+                </div>
+                <p className="text-3xl font-bold text-white">{orders.length}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {orders.filter(o => o.status === "pending").length > 0
+                    ? <span className="text-amber-400">{orders.filter(o => o.status === "pending").length} pending</span>
+                    : "No pending orders"}
+                </p>
+              </div>
+
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-cyan-500/30 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Open Repairs</span>
+                  <span className="text-2xl">🔧</span>
+                </div>
+                <p className="text-3xl font-bold text-white">{repairStats.active}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {repairStats.urgent > 0 ? <span className="text-rose-400">{repairStats.urgent} urgent</span> : repairStats.ready > 0 ? <span className="text-emerald-400">{repairStats.ready} ready to collect</span> : "All on track"}
+                </p>
+              </div>
+
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-emerald-500/30 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock Value</span>
+                  <span className="text-2xl">💰</span>
+                </div>
+                <p className="text-2xl font-bold text-emerald-400">Rs {inventoryValue.toLocaleString()}</p>
+                <p className="text-xs text-gray-500 mt-1">{lowStockCount > 0 ? <span className="text-amber-400">{lowStockCount} low stock items</span> : "Healthy inventory"}</p>
+              </div>
+            </div>
+
+            {/* ─ Alerts ───────────────────────────────────────────────────── */}
+            {(outOfStockCount > 0 || lowStockCount > 0 || repairStats.urgent > 0) && (
+              <div className="flex flex-wrap gap-3">
+                {outOfStockCount > 0 && (
+                  <div className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/25 rounded-xl px-4 py-2.5 text-sm text-rose-400">
+                    <span>⚠</span>
+                    <span><b>{outOfStockCount}</b> product{outOfStockCount > 1 ? "s" : ""} out of stock</span>
+                    <button onClick={() => setActiveSection("products")} className="ml-1 underline text-xs hover:no-underline">View</button>
+                  </div>
+                )}
+                {lowStockCount > 0 && (
+                  <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-2.5 text-sm text-amber-400">
+                    <span>📉</span>
+                    <span><b>{lowStockCount}</b> item{lowStockCount > 1 ? "s" : ""} running low</span>
+                    <button onClick={() => setActiveSection("products")} className="ml-1 underline text-xs hover:no-underline">View</button>
+                  </div>
+                )}
+                {repairStats.urgent > 0 && (
+                  <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-2.5 text-sm text-red-400">
+                    <span>🚨</span>
+                    <span><b>{repairStats.urgent}</b> urgent repair ticket{repairStats.urgent > 1 ? "s" : ""}</span>
+                    <Link href="/dashboard/repairs" className="ml-1 underline text-xs hover:no-underline">Open</Link>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ─ Quick Actions ────────────────────────────────────────────── */}
+            <div>
+              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</h2>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true }); setEditingProductId(null); setImageInputType("link"); setIsModalOpen(true); setActiveSection("products"); }}
+                  className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+                  <span>📦</span> New Product
+                </button>
+                <button onClick={() => { setInvoiceData(defaultInvoiceData()); setIsInvoiceModalOpen(true); setActiveSection("invoice"); }}
+                  className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+                  <span>📄</span> New Invoice
+                </button>
+                <Link href="/dashboard/repairs"
+                  className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+                  <span>🔧</span> Repair Ticket
+                </Link>
+                <Link href="/dashboard/grading"
+                  className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+                  <span>📱</span> Grade Phone
+                </Link>
+                <Link href="/dashboard/loyalty"
+                  className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+                  <span>🏆</span> Loyalty
+                </Link>
+              </div>
+            </div>
+
+            {/* ─ Recent Orders + Repair pipeline ──────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Orders */}
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+                  <h3 className="text-sm font-semibold text-white">Recent Orders</h3>
+                  <button onClick={() => setActiveSection("orders")} className="text-xs text-indigo-400 hover:underline">View all</button>
+                </div>
+                <div className="divide-y divide-gray-800/60">
+                  {orders.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-8">No orders yet</p>
+                  ) : orders.slice(0, 5).map(order => (
+                    <div key={order.id} className="flex items-center justify-between px-5 py-3 hover:bg-gray-800/40 transition-colors">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{order.product_name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{order.client_name} · qty {order.quantity}</p>
+                      </div>
+                      <div className="flex-shrink-0 text-right ml-4">
+                        <p className="text-sm font-semibold text-emerald-400">Rs {order.price.toLocaleString()}</p>
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 inline-block ${
+                          order.status === "pending" ? "bg-amber-500/20 text-amber-400" :
+                          order.status === "confirmed" ? "bg-indigo-500/20 text-indigo-400" :
+                          order.status === "completed" ? "bg-emerald-500/20 text-emerald-400" :
+                          "bg-red-500/20 text-red-400"
+                        }`}>{order.status}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Repair Status Widget */}
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+                  <h3 className="text-sm font-semibold text-white">Repair Tickets</h3>
+                  <Link href="/dashboard/repairs" className="text-xs text-indigo-400 hover:underline">Manage</Link>
+                </div>
+                <div className="p-5 space-y-3">
+                  {[
+                    { label: "Active Jobs", value: repairStats.active, color: "text-cyan-400", bar: "bg-cyan-500" },
+                    { label: "Urgent",      value: repairStats.urgent, color: "text-rose-400", bar: "bg-rose-500" },
+                    { label: "Ready to Collect", value: repairStats.ready, color: "text-emerald-400", bar: "bg-emerald-500" },
+                  ].map(row => (
+                    <div key={row.label} className="flex items-center gap-3">
+                      <div className="w-32 flex-shrink-0">
+                        <p className="text-xs text-gray-500">{row.label}</p>
+                      </div>
+                      <div className="flex-1 bg-gray-800 rounded-full h-2">
+                        <div className={`h-2 rounded-full ${row.bar} transition-all`}
+                          style={{ width: repairStats.active > 0 ? `${Math.min((row.value / Math.max(repairStats.active, 1)) * 100, 100)}%` : "0%" }} />
+                      </div>
+                      <span className={`text-sm font-bold w-6 text-right flex-shrink-0 ${row.color}`}>{row.value}</span>
+                    </div>
+                  ))}
+                  {repairStats.active === 0 && (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-500">No open repair tickets</p>
+                      <Link href="/dashboard/repairs" className="text-xs text-indigo-400 hover:underline mt-1 inline-block">Create first ticket →</Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ─ Tools / Modules ──────────────────────────────────────────── */}
+            <div>
+              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Modules</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { href: "/dashboard/repairs",   icon: "🔧", label: "Repairs",   sub: "Ticket pipeline",   color: "border-cyan-500/20 hover:border-cyan-500/50",   badge: repairStats.active > 0 ? `${repairStats.active} open` : null, badgeColor: "bg-cyan-500/10 text-cyan-400" },
+                  { href: "/dashboard/grading",   icon: "📱", label: "Grading",   sub: "Trade-in scoring",  color: "border-emerald-500/20 hover:border-emerald-500/50", badge: null, badgeColor: "" },
+                  { href: "/dashboard/loyalty",   icon: "🏆", label: "Loyalty",   sub: "Points & tiers",    color: "border-yellow-500/20 hover:border-yellow-500/50",  badge: null, badgeColor: "" },
+                  { href: "/dashboard/inventory", icon: "🗃️", label: "Inventory", sub: "Stock management",  color: "border-purple-500/20 hover:border-purple-500/50",  badge: outOfStockCount > 0 ? `${outOfStockCount} OOS` : null, badgeColor: "bg-rose-500/10 text-rose-400" },
+                ].map(m => (
+                  <Link key={m.href} href={m.href}
+                    className={`bg-gray-900 border ${m.color} rounded-xl p-4 transition-all hover:bg-gray-800/60 block group`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-2xl">{m.icon}</span>
+                      {m.badge && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.badgeColor}`}>{m.badge}</span>}
+                    </div>
+                    <p className="text-sm font-semibold text-white group-hover:text-white">{m.label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{m.sub}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ══ PRODUCTS TAB ═══════════════════════════════════════════════════════ */}
         {activeSection === "products" && (
@@ -2961,6 +3210,8 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+          </div>
+        </main>
       </div>
 
       {/* ══ MODALS ══════════════════════════════════════════════════════════════ */}
