@@ -935,7 +935,7 @@ export default function Dashboard() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeSection, setActiveSection] = useState<"products" | "social" | "updates" | "settings" | "log" | "invoice" | "orders">("products");
+  const [activeSection, setActiveSection] = useState<"products" | "social" | "updates" | "settings" | "log" | "invoice" | "orders" | "tools">("products");
 
   // Invoice state
   const [invoiceData, setInvoiceData] = useState<InvoiceData>(defaultInvoiceData());
@@ -1893,6 +1893,7 @@ export default function Dashboard() {
     { key: "social", label: "Social", count: socialProfiles.length, icon: "🔗" },
     { key: "updates", label: "Updates", count: updates.length, icon: "📣" },
     { key: "invoice", label: "Invoice", count: invoices.length, icon: "📄" },
+    { key: "tools", label: "Tools", count: null, icon: "🛠️" },
     { key: "settings", label: "Settings", count: null, icon: "⚙️" },
     { key: "log", label: "Activity", count: activityLog.length || null, icon: "🕐" },
   ] as const;
@@ -2874,6 +2875,90 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ══ TOOLS TAB ══════════════════════════════════════════════════════════ */}
+        {activeSection === "tools" && (
+          <div className="pt-2">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-white">Tools & Modules</h2>
+              <p className="text-gray-500 text-sm mt-0.5">Specialist systems connected to TechNinja</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* Repair Tickets */}
+              <Link href="/dashboard/repairs"
+                className="group bg-gray-900 border border-gray-800 hover:border-cyan-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(6,182,212,0.08)] cursor-pointer block">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-2xl">🔧</div>
+                  <svg className="w-4 h-4 text-gray-600 group-hover:text-cyan-500 transition-colors mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">Repair Tickets</h3>
+                <p className="text-sm text-gray-400 mb-4">Create and manage device repair jobs with a full Kanban pipeline tracker — Received → Diagnosed → In Repair → Ready → Delivered.</p>
+                <div className="flex flex-wrap gap-2">
+                  {["Pipeline view", "Status history", "Priority flags", "Cost tracking"].map(f => (
+                    <span key={f} className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{f}</span>
+                  ))}
+                </div>
+              </Link>
+
+              {/* Phone Grading */}
+              <Link href="/dashboard/grading"
+                className="group bg-gray-900 border border-gray-800 hover:border-emerald-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(16,185,129,0.08)] cursor-pointer block">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl">📱</div>
+                  <svg className="w-4 h-4 text-gray-600 group-hover:text-emerald-500 transition-colors mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">Phone Grading</h3>
+                <p className="text-sm text-gray-400 mb-4">Grade trade-in phones with a structured checklist covering cosmetics, battery health and all functional tests. Auto-calculates A+ to F grade.</p>
+                <div className="flex flex-wrap gap-2">
+                  {["Auto-grade score", "Battery health", "Functional checks", "Trade-in value"].map(f => (
+                    <span key={f} className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{f}</span>
+                  ))}
+                </div>
+              </Link>
+
+              {/* Loyalty Program */}
+              <Link href="/dashboard/loyalty"
+                className="group bg-gray-900 border border-gray-800 hover:border-yellow-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(234,179,8,0.08)] cursor-pointer block">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-2xl">🏆</div>
+                  <svg className="w-4 h-4 text-gray-600 group-hover:text-yellow-500 transition-colors mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">Loyalty Program</h3>
+                <p className="text-sm text-gray-400 mb-4">Reward repeat customers with points. Bronze → Silver → Gold → Platinum tiers with full transaction history and point management.</p>
+                <div className="flex flex-wrap gap-2">
+                  {["4 tier levels", "Earn & redeem", "Transaction log", "Member cards"].map(f => (
+                    <span key={f} className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">{f}</span>
+                  ))}
+                </div>
+              </Link>
+
+              {/* Inventory */}
+              <Link href="/dashboard/inventory"
+                className="group bg-gray-900 border border-gray-800 hover:border-purple-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(168,85,247,0.08)] cursor-pointer block">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-2xl">🗃️</div>
+                  <svg className="w-4 h-4 text-gray-600 group-hover:text-purple-500 transition-colors mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">Inventory Management</h3>
+                <p className="text-sm text-gray-400 mb-4">Full inventory control with stock level alerts, category filtering, quick adjustments, grid and table views, and total stock value reporting.</p>
+                <div className="flex flex-wrap gap-2">
+                  {["Stock alerts", "Quick adjust", "Category filter", "Value tracking"].map(f => (
+                    <span key={f} className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">{f}</span>
+                  ))}
+                </div>
+              </Link>
+            </div>
           </div>
         )}
       </div>
