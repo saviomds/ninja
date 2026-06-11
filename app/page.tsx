@@ -217,7 +217,7 @@ export default function Home() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6e6e73] dark:text-[#98989d] mb-3">Quick access</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
-                    { icon: "🔧", label: "Repair",      sub: "Same-day",  href: "#services" },
+                    { icon: "🔧", label: "Repair",      sub: "Same-day",  href: "/repair" },
                     { icon: "🛒", label: "Buy",         sub: "New & used", href: "/Clients"  },
                     { icon: "💰", label: "Sell / Trade",sub: "Best rates", href: "#services" },
                     { icon: "💻", label: "IT Support",  sub: "Pro help",  href: "#services" },

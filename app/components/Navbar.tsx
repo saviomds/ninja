@@ -68,6 +68,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home" },
+    { href: "/repair", label: "Repair" },
     { href: "/Clients", label: "Shop" },
     ...(!isAdmin && user ? [{ href: "/client-dashboard", label: "Dashboard" }] : []),
     ...(user ? [{ href: "/chat", label: "Chat" }] : []),
