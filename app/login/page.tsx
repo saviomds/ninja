@@ -34,7 +34,7 @@ export default function LoginPage() {
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { setError("Enter your email address."); return; }
-    if (magicCooldown > 0) { setError(`Please wait ${magicCooldown}s before requesting another link.`); return; }
+    if (magicCooldown > 0) return;
     setLoading(true);
     setError("");
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
@@ -45,8 +45,8 @@ export default function LoginPage() {
     setLoading(false);
     if (err) {
       if (err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("too many")) {
-        setError("Too many requests — please wait 60 seconds before trying again.");
         startCooldown(setMagicCooldown, 60);
+        setMagicSent(true);
       } else {
         setError(err.message);
       }
@@ -104,7 +104,7 @@ export default function LoginPage() {
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { setError("Enter your email address."); return; }
-    if (resetCooldown > 0) { setError(`Please wait ${resetCooldown}s before requesting another link.`); return; }
+    if (resetCooldown > 0) return;
     setLoading(true);
     setError("");
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
@@ -114,7 +114,6 @@ export default function LoginPage() {
     setLoading(false);
     if (err) {
       if (err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("too many")) {
-        setError("Too many requests — please wait 60 seconds before trying again.");
         startCooldown(setResetCooldown, 60);
       } else {
         setError(err.message);
@@ -288,8 +287,8 @@ export default function LoginPage() {
                       />
                     </div>
                     {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
-                    <button type="submit" disabled={loading} className="w-full bg-black dark:bg-white text-white dark:text-black py-3 rounded-xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-40">
-                      {loading ? <><Spinner />Sending…</> : "Send reset link"}
+                    <button type="submit" disabled={loading || resetCooldown > 0} className="w-full bg-black dark:bg-white text-white dark:text-black py-3 rounded-xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+                      {loading ? <><Spinner />Sending…</> : resetCooldown > 0 ? `Resend in ${resetCooldown}s` : "Send reset link"}
                     </button>
                   </form>
                 </>
@@ -341,11 +340,13 @@ export default function LoginPage() {
                     {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
 
                     <button
-                      type="submit" disabled={loading}
-                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2.5 disabled:opacity-40 shadow-lg shadow-blue-600/20"
+                      type="submit" disabled={loading || magicCooldown > 0}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2.5 disabled:opacity-60 shadow-lg shadow-blue-600/20"
                     >
                       {loading ? (
                         <><Spinner />Sending link…</>
+                      ) : magicCooldown > 0 ? (
+                        `Resend available in ${magicCooldown}s`
                       ) : (
                         <>
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

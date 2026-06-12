@@ -76,8 +76,8 @@ export default function Home() {
   const [heroSlide, setHeroSlide] = useState(0);
   const [heroSlides, setHeroSlides] = useState<string[]>(["/images/1.jpg", "/images/2.jpg", "/images/3.jpg"]);
   const [profileUsername, setProfileUsername] = useState<string | null>(null);
-  const [comments, setComments] = useState<{ id: string; name: string; message: string; created_at: string }[]>([]);
-  const [commentForm, setCommentForm] = useState({ name: "", message: "", category: "product" });
+  const [comments, setComments] = useState<{ id: string; name: string; message: string; created_at: string; rating?: number }[]>([]);
+  const [commentForm, setCommentForm] = useState({ name: "", message: "", category: "product", rating: 5 });
   const [submittingComment, setSubmittingComment] = useState(false);
   const [animatedStats, setAnimatedStats] = useState({ products: 0, updates: 0, platforms: 0, members: 0 });
   const statsRef = useRef<HTMLElement>(null);
@@ -148,18 +148,18 @@ export default function Home() {
   }, [heroSlides.length]);
 
   const fetchComments = async () => {
-    const { data } = await supabase.from("comments").select("id, name, message, created_at").order("created_at", { ascending: false }).limit(6);
+    const { data } = await supabase.from("comments").select("id, name, message, created_at, rating").order("created_at", { ascending: false }).limit(6);
     setComments(data || []);
   };
 
   const handleSubmitComment = async () => {
     if (!commentForm.name.trim() || !commentForm.message.trim()) { showToast("Please fill in your name and message", "error"); return; }
     setSubmittingComment(true);
-    const { error } = await supabase.from("comments").insert([{ name: commentForm.name.trim(), message: commentForm.message.trim(), category: commentForm.category }]);
+    const { error } = await supabase.from("comments").insert([{ name: commentForm.name.trim(), message: commentForm.message.trim(), category: commentForm.category, rating: commentForm.rating }]);
     setSubmittingComment(false);
     if (error) { showToast("Failed to send comment", "error"); return; }
     showToast("Comment sent! Thank you.");
-    setCommentForm({ name: "", message: "", category: "product" });
+    setCommentForm({ name: "", message: "", category: "product", rating: 5 });
     fetchComments();
     router.push(commentForm.category === "repair" ? "/repair" : "/#shop");
   };
@@ -589,6 +589,18 @@ export default function Home() {
                 <label className="text-[11px] font-semibold text-[#6e6e73] dark:text-[#98989d] uppercase tracking-wider block mb-2">Message</label>
                 <textarea value={commentForm.message} onChange={(e) => setCommentForm({ ...commentForm, message: e.target.value })} rows={4} placeholder="Share your experience…" className={inputCls + " resize-none"} />
               </div>
+              <div>
+                <label className="text-[11px] font-semibold text-[#6e6e73] dark:text-[#98989d] uppercase tracking-wider block mb-2">Rating</label>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button key={star} type="button" onClick={() => setCommentForm({ ...commentForm, rating: star })} className="focus:outline-none">
+                      <svg className={`w-7 h-7 transition-colors ${star <= commentForm.rating ? "text-[#ff9f0a]" : "text-[#d2d2d7] dark:text-[#3a3a3c]"}`} viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button onClick={handleSubmitComment} disabled={submittingComment}
                 className="w-full py-3 bg-[#0071e3] dark:bg-[#0a84ff] hover:bg-[#0077ed] disabled:opacity-50 text-white text-[15px] font-semibold rounded-xl transition-colors">
                 {submittingComment ? "Sending…" : "Submit"}
@@ -604,10 +616,37 @@ export default function Home() {
                   <div key={c.id} className={`p-5 rounded-2xl ${cardOnGray}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[14px] font-semibold text-[#1d1d1f] dark:text-[#f5f5f7]">{c.name}</span>
-                      <span className="text-[11px] text-[#b0b0b5] dark:text-[#48484a]">
-                        {new Date(c.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short" })}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {c.name === (profileUsername || user?.email?.split("@")[0]) && (
+                          <button
+                            onClick={async () => {
+                              const { error } = await supabase.from("comments").delete().eq("id", c.id);
+                              if (!error) setComments((prev) => prev.filter((x) => x.id !== c.id));
+                            }}
+                            className="text-[11px] text-red-400 hover:text-red-600 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        )}
+                        <span className="text-[11px] text-[#b0b0b5] dark:text-[#48484a]">
+                          {new Date(c.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short" })}
+                        </span>
+                      </div>
                     </div>
+                    {c.rating && (
+                      <div className="flex items-center gap-0.5 mb-2">
+                        {Array.from({ length: c.rating }).map((_, si) => (
+                          <svg key={si} className="w-3.5 h-3.5 text-[#ff9f0a]" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                        {Array.from({ length: 5 - c.rating }).map((_, si) => (
+                          <svg key={`e-${si}`} className="w-3.5 h-3.5 text-[#d2d2d7] dark:text-[#3a3a3c]" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-[14px] text-[#6e6e73] dark:text-[#98989d] leading-relaxed">{c.message}</p>
                   </div>
                 ))

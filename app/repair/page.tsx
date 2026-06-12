@@ -2,8 +2,17 @@
 
 import Navbar from "@/components/Navbar";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ContactModal from "@/components/ContactModal";
+import { supabase } from "@/lib/supabase";
+
+interface Review {
+  id: string;
+  name: string;
+  message: string;
+  rating: number;
+  created_at: string;
+}
 
 /* ─── Data ─────────────────────────────────────────────────────────────────── */
 
@@ -135,12 +144,6 @@ const STATS_TICKER = [
   "Mauritius Based",
 ];
 
-const TESTIMONIALS = [
-  { name: "Priya M.", rating: 5, text: "My iPhone screen was replaced in under 2 hours. Perfect quality, looks brand new. I'll never go anywhere else.", device: "iPhone 13 Pro" },
-  { name: "Jean-Luc R.", rating: 5, text: "Dropped my Samsung in the pool. I thought it was gone forever. Tech Ninja recovered everything — even my photos!", device: "Samsung Galaxy S22" },
-  { name: "Ananya K.", rating: 5, text: "Battery was draining in 3 hours. After the swap it lasts all day again. Super fast and affordable.", device: "Xiaomi 12" },
-  { name: "Marc D.", rating: 5, text: "Laptop screen cracked on a Friday. They fixed it by Saturday morning. Professional and transparent pricing.", device: "Dell XPS 15" },
-];
 
 const FAQS = [
   { q: "Do I need to book an appointment?", a: "No appointment needed — just walk in. Our technicians are available during opening hours and will assist you right away." },
@@ -160,6 +163,17 @@ export default function RepairPage() {
   const [heroSlide, setHeroSlide] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("comments")
+      .select("id, name, message, rating, created_at")
+      .eq("category", "repair")
+      .order("created_at", { ascending: false })
+      .limit(6)
+      .then(({ data }) => setReviews(data || []));
+  }, []);
 
   const eb = "text-[12px] font-semibold tracking-[0.14em] text-[#6e6e73] dark:text-[#98989d] uppercase mb-4 block";
   const h2 = "text-[40px] sm:text-[52px] font-bold tracking-tight leading-[1.05] text-[#1d1d1f] dark:text-[#f5f5f7]";
@@ -503,37 +517,45 @@ export default function RepairPage() {
             <span className={eb}>Customer reviews</span>
             <h2 className={h2}>Real repairs,<br />real results.</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {TESTIMONIALS.map((t, i) => (
-              <div
-                key={i}
-                className={`p-8 rounded-3xl ${cardOnGray} hover:shadow-[0_4px_24px_rgba(0,0,0,0.07)] dark:hover:shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300`}
-              >
-                {/* Stars */}
-                <div className="flex items-center gap-0.5 mb-5">
-                  {Array.from({ length: t.rating }).map((_, si) => (
-                    <svg key={si} className="w-4 h-4 text-[#ff9f0a]" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="text-[16px] text-[#1d1d1f] dark:text-[#f5f5f7] leading-relaxed mb-6 font-medium">
-                  &ldquo;{t.text}&rdquo;
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0071e3] to-[#34aadc] flex items-center justify-center text-white text-[13px] font-bold flex-shrink-0">
-                      {t.name.charAt(0)}
-                    </div>
-                    <span className="text-[14px] font-semibold text-[#1d1d1f] dark:text-[#f5f5f7]">{t.name}</span>
+          {reviews.length === 0 ? (
+            <p className="text-[15px] text-[#6e6e73] dark:text-[#98989d]">No reviews yet — be the first to share your experience!</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {reviews.map((r) => (
+                <div
+                  key={r.id}
+                  className={`p-8 rounded-3xl ${cardOnGray} hover:shadow-[0_4px_24px_rgba(0,0,0,0.07)] dark:hover:shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-all duration-300`}
+                >
+                  <div className="flex items-center gap-0.5 mb-5">
+                    {Array.from({ length: r.rating || 0 }).map((_, si) => (
+                      <svg key={si} className="w-4 h-4 text-[#ff9f0a]" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                    {Array.from({ length: 5 - (r.rating || 0) }).map((_, si) => (
+                      <svg key={`e-${si}`} className="w-4 h-4 text-[#d2d2d7] dark:text-[#3a3a3c]" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
                   </div>
-                  <span className="text-[11px] font-semibold text-[#6e6e73] dark:text-[#98989d] bg-[#f5f5f7] dark:bg-[#3a3a3c] px-3 py-1 rounded-full">
-                    {t.device}
-                  </span>
+                  <p className="text-[16px] text-[#1d1d1f] dark:text-[#f5f5f7] leading-relaxed mb-6 font-medium">
+                    &ldquo;{r.message}&rdquo;
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0071e3] to-[#34aadc] flex items-center justify-center text-white text-[13px] font-bold flex-shrink-0">
+                        {r.name.charAt(0)}
+                      </div>
+                      <span className="text-[14px] font-semibold text-[#1d1d1f] dark:text-[#f5f5f7]">{r.name}</span>
+                    </div>
+                    <span className="text-[11px] text-[#b0b0b5] dark:text-[#48484a]">
+                      {new Date(r.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
