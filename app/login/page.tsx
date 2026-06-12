@@ -18,15 +18,23 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [magicSent, setMagicSent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [magicCooldown, setMagicCooldown] = useState(0);
+  const [resetCooldown, setResetCooldown] = useState(0);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [alreadyExists, setAlreadyExists] = useState(false);
 
   const go = (m: Mode) => { setMode(m); setError(""); setMagicSent(false); setResetSent(false); setSignupSuccess(false); setAlreadyExists(false); };
 
+  const startCooldown = (setter: (n: number) => void, seconds = 60) => {
+    setter(seconds);
+    const t = setInterval(() => setter((s) => { if (s <= 1) { clearInterval(t); return 0; } return s - 1; }), 1000);
+  };
+
   // ── Send magic link email ────────────────────────────────────────────────
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { setError("Enter your email address."); return; }
+    if (magicCooldown > 0) { setError(`Please wait ${magicCooldown}s before requesting another link.`); return; }
     setLoading(true);
     setError("");
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
@@ -35,7 +43,16 @@ export default function LoginPage() {
       options: { emailRedirectTo: `${siteUrl}/auth/callback` },
     });
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) {
+      if (err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("too many")) {
+        setError("Too many requests — please wait 60 seconds before trying again.");
+        startCooldown(setMagicCooldown, 60);
+      } else {
+        setError(err.message);
+      }
+      return;
+    }
+    startCooldown(setMagicCooldown, 60);
     setMagicSent(true);
   };
 
@@ -87,6 +104,7 @@ export default function LoginPage() {
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { setError("Enter your email address."); return; }
+    if (resetCooldown > 0) { setError(`Please wait ${resetCooldown}s before requesting another link.`); return; }
     setLoading(true);
     setError("");
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
@@ -94,7 +112,16 @@ export default function LoginPage() {
       redirectTo: `${siteUrl}/auth/confirm?type=recovery`,
     });
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) {
+      if (err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("too many")) {
+        setError("Too many requests — please wait 60 seconds before trying again.");
+        startCooldown(setResetCooldown, 60);
+      } else {
+        setError(err.message);
+      }
+      return;
+    }
+    startCooldown(setResetCooldown, 60);
     setResetSent(true);
   };
 
@@ -187,12 +214,25 @@ export default function LoginPage() {
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">• Only the latest link will work if you request multiple</p>
               </div>
 
-              <button
-                onClick={() => { setMagicSent(false); setError(""); }}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
-              >
-                ← Use a different email
-              </button>
+              <div className="flex flex-col items-center gap-2">
+                {magicCooldown > 0 ? (
+                  <p className="text-xs text-zinc-400">Resend available in {magicCooldown}s</p>
+                ) : (
+                  <button
+                    onClick={(e) => { setMagicSent(false); handleMagicLink(e as unknown as React.FormEvent); }}
+                    disabled={loading}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium disabled:opacity-40"
+                  >
+                    Resend link
+                  </button>
+                )}
+                <button
+                  onClick={() => { setMagicSent(false); setError(""); }}
+                  className="text-sm text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                >
+                  ← Use a different email
+                </button>
+              </div>
             </div>
 
           ) : mode === "forgot" ? (
