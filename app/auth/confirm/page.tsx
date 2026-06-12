@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 export default function AuthConfirmPage() {
@@ -9,7 +10,7 @@ export default function AuthConfirmPage() {
   const handled = useRef(false);
 
   useEffect(() => {
-    function redirect(session: { user: { app_metadata?: { role?: string }; user_metadata?: { role?: string } } } | null) {
+    function redirect(session: Session | null) {
       if (handled.current) return;
       handled.current = true;
       if (!session) { router.replace("/login?error=auth_failed"); return; }
@@ -17,7 +18,9 @@ export default function AuthConfirmPage() {
       const queryParams = new URLSearchParams(window.location.search);
       const isRecovery = queryParams.get("type") === "recovery" || hashParams.get("type") === "recovery";
       if (isRecovery) { router.replace("/reset-password"); return; }
-      const role = session.user.app_metadata?.role || session.user.user_metadata?.role;
+      const meta = session.user.app_metadata as { role?: string } | undefined;
+      const umeta = session.user.user_metadata as { role?: string } | undefined;
+      const role = meta?.role || umeta?.role;
       router.replace(role === "admin" ? "/dashboard" : "/client-dashboard");
     }
 
