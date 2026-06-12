@@ -25,7 +25,7 @@ export default function LoginPage() {
 
   const go = (m: Mode) => { setMode(m); setError(""); setMagicSent(false); setResetSent(false); setSignupSuccess(false); setAlreadyExists(false); };
 
-  const startCooldown = (setter: (n: number) => void, seconds = 60) => {
+  const startCooldown = (setter: React.Dispatch<React.SetStateAction<number>>, seconds = 60) => {
     setter(seconds);
     const t = setInterval(() => setter((s) => { if (s <= 1) { clearInterval(t); return 0; } return s - 1; }), 1000);
   };
