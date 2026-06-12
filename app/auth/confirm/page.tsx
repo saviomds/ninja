@@ -9,11 +9,15 @@ export default function AuthConfirmPage() {
 
   useEffect(() => {
     const hash = window.location.hash;
+    const searchParams = new URLSearchParams(window.location.search);
+    const isRecovery = searchParams.get("type") === "recovery";
+
     if (!hash) { router.replace("/login?error=auth_failed"); return; }
 
     const params = new URLSearchParams(hash.slice(1));
     const accessToken = params.get("access_token");
     const refreshToken = params.get("refresh_token");
+    const hashType = params.get("type");
 
     if (!accessToken || !refreshToken) {
       router.replace("/login?error=auth_failed");
@@ -25,6 +29,10 @@ export default function AuthConfirmPage() {
       .then(({ data, error }) => {
         if (error || !data.user) {
           router.replace("/login?error=auth_failed");
+          return;
+        }
+        if (isRecovery || hashType === "recovery") {
+          router.replace("/reset-password");
           return;
         }
         const role = data.user.app_metadata?.role || data.user.user_metadata?.role;

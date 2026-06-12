@@ -17,10 +17,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [magicSent, setMagicSent] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [alreadyExists, setAlreadyExists] = useState(false);
 
-  const go = (m: Mode) => { setMode(m); setError(""); setMagicSent(false); setSignupSuccess(false); setAlreadyExists(false); };
+  const go = (m: Mode) => { setMode(m); setError(""); setMagicSent(false); setResetSent(false); setSignupSuccess(false); setAlreadyExists(false); };
 
   // ── Send magic link email ────────────────────────────────────────────────
   const handleMagicLink = async (e: React.FormEvent) => {
@@ -28,9 +29,10 @@ export default function LoginPage() {
     if (!email.trim()) { setError("Enter your email address."); return; }
     setLoading(true);
     setError("");
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const { error: err } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${siteUrl}/auth/callback` },
     });
     setLoading(false);
     if (err) { setError(err.message); return; }
@@ -87,17 +89,13 @@ export default function LoginPage() {
     if (!email.trim()) { setError("Enter your email address."); return; }
     setLoading(true);
     setError("");
-    const res = await fetch("/api/forgot-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), origin: window.location.origin }),
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${siteUrl}/auth/confirm?type=recovery`,
     });
-    const text = await res.text();
-    let result: { actionLink?: string; error?: string } = {};
-    try { result = JSON.parse(text); } catch { /* ignore */ }
     setLoading(false);
-    if (!res.ok) { setError(result.error || "Failed to send reset link."); return; }
-    window.location.href = result.actionLink!;
+    if (err) { setError(err.message); return; }
+    setResetSent(true);
   };
 
   const Spinner = () => (
@@ -201,32 +199,61 @@ export default function LoginPage() {
 
             /* ══ FORGOT PASSWORD ════════════════════════════════════ */
             <>
-              <button onClick={() => go("magic")} className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-black dark:hover:text-white transition-colors mb-8">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                Back
-              </button>
-
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight">Reset password</h2>
-                <p className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm">
-                  Enter your email and you&apos;ll be taken directly to reset your password.
-                </p>
-              </div>
-
-              <form onSubmit={handleForgot} className="space-y-4">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Email address</label>
-                  <input
-                    type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                  />
+              {resetSent ? (
+                <div className="text-center space-y-6">
+                  <div className="w-20 h-20 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 flex items-center justify-center mx-auto">
+                    <svg className="w-9 h-9 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-black dark:text-white tracking-tight">Check your inbox</h2>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">We sent a password reset link to</p>
+                    <p className="text-black dark:text-white font-semibold text-sm mt-1">{email}</p>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">
+                      Click the link in the email to set a new password.
+                    </p>
+                  </div>
+                  <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 text-left space-y-2">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Tips</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">• Check your spam or junk folder if you don&apos;t see it</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">• The link expires in 1 hour</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">• Do not share this link with anyone</p>
+                  </div>
+                  <button onClick={() => { setResetSent(false); setError(""); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                    ← Try a different email
+                  </button>
                 </div>
-                {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
-                <button type="submit" disabled={loading} className="w-full bg-black dark:bg-white text-white dark:text-black py-3 rounded-xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-40">
-                  {loading ? <><Spinner />Sending…</> : "Send reset link"}
-                </button>
-              </form>
+              ) : (
+                <>
+                  <button onClick={() => go("magic")} className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-black dark:hover:text-white transition-colors mb-8">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    Back
+                  </button>
+
+                  <div className="mb-8">
+                    <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight">Reset password</h2>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm">
+                      Enter your email and we&apos;ll send you a reset link.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleForgot} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Email address</label>
+                      <input
+                        type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                      />
+                    </div>
+                    {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+                    <button type="submit" disabled={loading} className="w-full bg-black dark:bg-white text-white dark:text-black py-3 rounded-xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-40">
+                      {loading ? <><Spinner />Sending…</> : "Send reset link"}
+                    </button>
+                  </form>
+                </>
+              )}
             </>
 
           ) : (

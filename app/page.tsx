@@ -2,6 +2,7 @@
 
 import Navbar from "@/components/Navbar";
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
@@ -59,6 +60,7 @@ const WHY_CHOOSE_US = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [socialProfiles, setSocialProfiles] = useState<SocialProfile[]>([]);
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
@@ -75,7 +77,7 @@ export default function Home() {
   const [heroSlides, setHeroSlides] = useState<string[]>(["/images/1.jpg", "/images/2.jpg", "/images/3.jpg"]);
   const [profileUsername, setProfileUsername] = useState<string | null>(null);
   const [comments, setComments] = useState<{ id: string; name: string; message: string; created_at: string }[]>([]);
-  const [commentForm, setCommentForm] = useState({ name: "", message: "" });
+  const [commentForm, setCommentForm] = useState({ name: "", message: "", category: "product" });
   const [submittingComment, setSubmittingComment] = useState(false);
   const [animatedStats, setAnimatedStats] = useState({ products: 0, updates: 0, platforms: 0, members: 0 });
   const statsRef = useRef<HTMLElement>(null);
@@ -153,11 +155,13 @@ export default function Home() {
   const handleSubmitComment = async () => {
     if (!commentForm.name.trim() || !commentForm.message.trim()) { showToast("Please fill in your name and message", "error"); return; }
     setSubmittingComment(true);
-    const { error } = await supabase.from("comments").insert([{ name: commentForm.name.trim(), message: commentForm.message.trim() }]);
+    const { error } = await supabase.from("comments").insert([{ name: commentForm.name.trim(), message: commentForm.message.trim(), category: commentForm.category }]);
     setSubmittingComment(false);
     if (error) { showToast("Failed to send comment", "error"); return; }
     showToast("Comment sent! Thank you.");
-    setCommentForm({ name: "", message: "" }); fetchComments();
+    setCommentForm({ name: "", message: "", category: "product" });
+    fetchComments();
+    router.push(commentForm.category === "repair" ? "/repair" : "/#shop");
   };
 
   const handleCopyLink = (productId: string) => {
@@ -573,6 +577,13 @@ export default function Home() {
               <div>
                 <label className="text-[11px] font-semibold text-[#6e6e73] dark:text-[#98989d] uppercase tracking-wider block mb-2">Name</label>
                 <input value={commentForm.name} onChange={(e) => setCommentForm({ ...commentForm, name: e.target.value })} placeholder="Your name" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-[#6e6e73] dark:text-[#98989d] uppercase tracking-wider block mb-2">This is about</label>
+                <select value={commentForm.category} onChange={(e) => setCommentForm({ ...commentForm, category: e.target.value })} className={inputCls}>
+                  <option value="product">Product</option>
+                  <option value="repair">Repair</option>
+                </select>
               </div>
               <div>
                 <label className="text-[11px] font-semibold text-[#6e6e73] dark:text-[#98989d] uppercase tracking-wider block mb-2">Message</label>

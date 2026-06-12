@@ -5,6 +5,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 import ServiceWorker from "@/components/ServiceWorker";
 import LoadingScreen from "@/components/ClientLoadingScreen";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import AuthHashHandler from "@/components/AuthHashHandler";
 import type { Metadata, Viewport } from "next";
 
 export const viewport: Viewport = {
@@ -71,6 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className="bg-white dark:bg-[#030712] text-gray-900 dark:text-gray-50 flex flex-col min-h-screen transition-colors duration-200">
         <ThemeProvider>
+          <AuthHashHandler />
           <LoadingScreen />
           {children}
           <Footer />

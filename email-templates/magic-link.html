@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in to TechNinja</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f5f5f7;min-height:100vh;">
+    <tr>
+      <td align="center" valign="top" style="padding:48px 16px;">
+
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;">
+
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#0071e3,#005bb5);border-radius:16px;padding:14px 22px;">
+                    <span style="color:#ffffff;font-size:22px;font-weight:800;letter-spacing:-0.5px;">Tech<span style="color:#bde0ff;">Ninja</span></span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background:#ffffff;border:1px solid #e5e5ea;border-radius:24px;padding:48px 40px;box-shadow:0 8px 40px rgba(0,0,0,0.06);">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+
+                <!-- Icon -->
+                <tr>
+                  <td align="center" style="padding-bottom:28px;">
+                    <div style="display:inline-block;background:#e8f2ff;border:1px solid #b3d4ff;border-radius:20px;padding:20px;">
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15" stroke="#0071e3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <polyline points="10 17 15 12 10 7" stroke="#0071e3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="15" y1="12" x2="3" y2="12" stroke="#0071e3" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Heading -->
+                <tr>
+                  <td align="center" style="padding-bottom:8px;">
+                    <h1 style="margin:0;color:#1d1d1f;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Your sign-in link</h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-bottom:12px;">
+                    <p style="margin:0;color:#0071e3;font-size:15px;font-weight:600;">One tap and you're in.</p>
+                  </td>
+                </tr>
+
+                <!-- Body -->
+                <tr>
+                  <td align="center" style="padding-bottom:36px;">
+                    <p style="margin:0;color:#6e6e73;font-size:15px;line-height:1.7;max-width:380px;">
+                      Click the button below to securely sign in to your TechNinja account. This link expires in <strong style="color:#1d1d1f;">10 minutes</strong>.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- CTA -->
+                <tr>
+                  <td align="center" style="padding-bottom:36px;">
+                    <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:linear-gradient(135deg,#0071e3,#0077ed);color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;padding:16px 48px;border-radius:14px;letter-spacing:0.2px;box-shadow:0 8px 24px rgba(0,113,227,0.28);">
+                      Sign in to TechNinja
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- Security note -->
+                <tr>
+                  <td style="background:#f5f5f7;border:1px solid #e5e5ea;border-radius:16px;padding:20px 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="width:28px;vertical-align:top;padding-top:1px;">
+                          <span style="color:#0071e3;font-size:18px;">&#x1F512;</span>
+                        </td>
+                        <td>
+                          <p style="margin:0;color:#6e6e73;font-size:13px;line-height:1.6;">
+                            <strong style="color:#1d1d1f;">Keep this link private.</strong><br/>
+                            Never share it with anyone. TechNinja staff will never ask for it. If you didn't request this, simply ignore the email.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Divider -->
+                <tr>
+                  <td style="padding-top:32px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="border-top:1px solid #e5e5ea;"></td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding-top:28px;">
+              <p style="margin:0 0 8px;color:#aeaeb2;font-size:12px;">© 2025 TechNinja · Mauritius</p>
+              <p style="margin:0;color:#aeaeb2;font-size:12px;">
+                <a href="https://techninja.mu" style="color:#0071e3;text-decoration:none;">techninja.mu</a>
+                &nbsp;·&nbsp;
+                <a href="mailto:support@techninja.mu" style="color:#aeaeb2;text-decoration:none;">support@techninja.mu</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

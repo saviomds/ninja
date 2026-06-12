@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         type: "recovery",
         email: email.trim(),
-        redirect_to: `${origin}/auth/callback?type=recovery`,
+        redirect_to: `${origin}/auth/confirm?type=recovery`,
       }),
     });
 
