@@ -40,7 +40,7 @@ export default function LoginPage() {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const { error: err } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: `${siteUrl}/auth/callback` },
+      options: { emailRedirectTo: `${siteUrl}/auth/confirm` },
     });
     setLoading(false);
     if (err) {
@@ -109,7 +109,7 @@ export default function LoginPage() {
     setError("");
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${siteUrl}/auth/confirm?type=recovery`,
+      redirectTo: `${siteUrl}/auth/confirm`,
     });
     setLoading(false);
     if (err) {
