@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Mode = "magic" | "password" | "signup" | "forgot";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const hasAuthError = searchParams.get("error") === "auth_failed";
+
   const [mode, setMode] = useState<Mode>("magic");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +25,21 @@ export default function LoginPage() {
   const [resetCooldown, setResetCooldown] = useState(0);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [alreadyExists, setAlreadyExists] = useState(false);
+  const [alreadyLoggedIn, setAlreadyLoggedIn] = useState(false);
+  const [sessionRole, setSessionRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const role = session.user.app_metadata?.role || session.user.user_metadata?.role;
+        setSessionRole(role || "client");
+        setAlreadyLoggedIn(true);
+        if (!hasAuthError) {
+          router.replace(role === "admin" ? "/dashboard" : "/client-dashboard");
+        }
+      }
+    });
+  }, [router, hasAuthError]);
 
   const go = (m: Mode) => { setMode(m); setError(""); setMagicSent(false); setResetSent(false); setSignupSuccess(false); setAlreadyExists(false); };
 
@@ -40,7 +58,7 @@ export default function LoginPage() {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const { error: err } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: `${siteUrl}/auth/confirm` },
+      options: { emailRedirectTo: `${siteUrl}/auth/callback` },
     });
     setLoading(false);
     if (err) {
@@ -109,7 +127,7 @@ export default function LoginPage() {
     setError("");
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${siteUrl}/auth/confirm`,
+      redirectTo: `${siteUrl}/auth/callback?type=recovery`,
     });
     setLoading(false);
     if (err) {
@@ -130,6 +148,38 @@ export default function LoginPage() {
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
   );
+
+  if (alreadyLoggedIn && hasAuthError) {
+    const dest = sessionRole === "admin" ? "/dashboard" : "/client-dashboard";
+    // Auto-redirect after 2 s
+    setTimeout(() => router.replace(dest), 2000);
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black px-6">
+        <div className="w-full max-w-sm text-center space-y-6">
+          <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 flex items-center justify-center mx-auto">
+            <svg className="w-9 h-9 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-black dark:text-white tracking-tight">You&apos;re already signed in</h2>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">
+              That link has expired or was already used — but you&apos;re already logged in. Redirecting you now…
+            </p>
+          </div>
+          <button
+            onClick={() => router.replace(dest)}
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-blue-600/20"
+          >
+            Go to dashboard →
+          </button>
+          <Link href="/" className="block text-sm text-zinc-400 hover:text-black dark:hover:text-white transition-colors">
+            Back to home
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-white dark:bg-black">
