@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -8,6 +8,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 type Mode = "magic" | "password" | "signup" | "forgot";
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const hasAuthError = searchParams.get("error") === "auth_failed";
@@ -583,3 +591,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
