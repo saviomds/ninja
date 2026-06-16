@@ -68,12 +68,29 @@ export default function AdminProductsPage() {
       category: form.category,
       is_public: form.is_public,
     };
-    const { error } = editId
-      ? await supabase.from("products").update(payload).eq("id", editId)
-      : await supabase.from("products").insert([payload]);
-    setSaving(false);
-    if (error) { showToast("Error: " + error.message, false); return; }
-    showToast(editId ? "Product updated!" : "Product added!");
+    if (editId) {
+      const { error } = await supabase.from("products").update(payload).eq("id", editId);
+      setSaving(false);
+      if (error) { showToast("Error: " + error.message, false); return; }
+      showToast("Product updated!");
+    } else {
+      const { error } = await supabase.from("products").insert([payload]);
+      setSaving(false);
+      if (error) { showToast("Error: " + error.message, false); return; }
+      showToast("Product added! Notifying subscribers…");
+      fetch("/api/notify-subscribers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "product",
+          name: payload.name,
+          description: payload.description,
+          price: payload.price,
+          category: payload.category,
+          image: payload.image,
+        }),
+      }).catch(console.error);
+    }
     setForm(emptyProduct());
     setEditId(null);
     fetchProducts();

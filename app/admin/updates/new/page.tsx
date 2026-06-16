@@ -63,12 +63,28 @@ export default function AdminUpdatesPage() {
     if (!form.info.trim() || !form.content.trim()) { showToast("Title and content are required", false); return; }
     setSaving(true);
     const payload = { info: form.info.trim(), content: form.content.trim(), link: form.link.trim() || null, priority: form.priority, type: form.type };
-    const { error } = editId
-      ? await supabase.from("updates").update(payload).eq("id", editId)
-      : await supabase.from("updates").insert(payload);
-    setSaving(false);
-    if (error) { showToast("Error: " + error.message, false); return; }
-    showToast(editId ? "Update saved!" : "Update posted!");
+    if (editId) {
+      const { error } = await supabase.from("updates").update(payload).eq("id", editId);
+      setSaving(false);
+      if (error) { showToast("Error: " + error.message, false); return; }
+      showToast("Update saved!");
+    } else {
+      const { error } = await supabase.from("updates").insert(payload);
+      setSaving(false);
+      if (error) { showToast("Error: " + error.message, false); return; }
+      showToast("Update posted! Notifying subscribers…");
+      fetch("/api/notify-subscribers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "update",
+          title: payload.info,
+          content: payload.content,
+          updateType: payload.type,
+          link: payload.link,
+        }),
+      }).catch(console.error);
+    }
     setForm(emptyForm());
     setEditId(null);
     fetchUpdates();
