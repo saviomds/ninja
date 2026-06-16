@@ -119,6 +119,8 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState<"all" | "latest" | "bestseller" | "featured">("all");
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [subscriberCount, setSubscriberCount] = useState<number | null>(null);
+  const [displayCount, setDisplayCount] = useState(0);
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
@@ -163,6 +165,34 @@ export default function Home() {
     const t = setInterval(() => setHeroSlide((s) => (s + 1) % heroSlides.length), 4500);
     return () => clearInterval(t);
   }, [heroSlides.length]);
+
+  useEffect(() => {
+    const fetchCount = () =>
+      fetch("/api/subscriber-count")
+        .then((r) => r.json())
+        .then(({ count }) => setSubscriberCount(count))
+        .catch(() => {});
+    fetchCount();
+    const interval = setInterval(fetchCount, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (subscriberCount === null) return;
+    const target = subscriberCount;
+    const duration = 900;
+    const steps = 40;
+    const stepValue = target / steps;
+    let current = 0;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      current = Math.min(Math.round(stepValue * step), target);
+      setDisplayCount(current);
+      if (step >= steps) clearInterval(timer);
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [subscriberCount]);
 
   const fetchComments = async () => {
     const { data } = await supabase.from("comments").select("id, name, message, created_at, rating").order("created_at", { ascending: false }).limit(6);
@@ -210,6 +240,7 @@ export default function Home() {
       } else {
         showToast("You're subscribed! Welcome to TechNinja.");
         setNewsletterEmail("");
+        setSubscriberCount((prev) => (prev !== null ? prev + 1 : prev));
       }
     } catch {
       showToast("Network error. Please try again.", "error");
@@ -729,9 +760,21 @@ export default function Home() {
               <h2 className="text-[28px] sm:text-[38px] font-black text-white leading-tight mb-4">
                 Stay in the Loop<br />with <span className="text-[#2563EB]">TechNinja</span>
               </h2>
-              <p className="text-gray-400 text-[15px] leading-relaxed mb-7">
-                Get exclusive deals, early access to new products, and tech tips straight to your inbox. Join 500+ gadget lovers in Mauritius.
+              <p className="text-gray-400 text-[15px] leading-relaxed mb-5">
+                Get exclusive deals, early access to new products, and tech tips straight to your inbox.
               </p>
+              <div className="flex items-center gap-3 mb-7">
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                  </span>
+                  <span className="text-white font-bold text-[15px] tabular-nums">
+                    {subscriberCount === null ? "…" : displayCount.toLocaleString()}
+                  </span>
+                  <span className="text-gray-400 text-[13px]">subscribers in Mauritius</span>
+                </div>
+              </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="email"
