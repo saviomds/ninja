@@ -13,7 +13,7 @@ export default function ClientRedirect({ productId }: { productId: string }) {
 
   // Show a dark loading screen matching your theme while the soft-redirect happens
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center text-white">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white">
       <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
       <p className="text-gray-400 font-medium">Loading product...</p>
     </div>

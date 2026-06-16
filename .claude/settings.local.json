@@ -5,7 +5,15 @@
       "Bash(Select-Object FullName)",
       "PowerShell([System.IO.File]::ReadAllText\\(\"c:\\\\Users\\\\Dell\\\\ninja\\\\tech-ninja\\\\app\\\\Clients\\\\Page.tsx\"\\).Length)",
       "Bash(npm install *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(xargs wc -l)",
+      "PowerShell(cd C:\\\\Users\\\\Dell\\\\ninja; npx tsc --noEmit 2>&1 | Where-Object { $_ -notmatch \"lucide-react\" })",
+      "PowerShell(cd C:\\\\Users\\\\Dell\\\\ninja; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"loyalty\" })",
+      "PowerShell(cd C:\\\\Users\\\\Dell\\\\ninja; $out = npx tsc --noEmit 2>&1; $out | Where-Object { $_ -match \"loyalty|dashboard\" } | Select-Object -First 20; Write-Host \"---\"; $out | Where-Object { $_ -notmatch \"explore|lucide\" } | Select-Object -First 30)",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__execute_sql",
+      "mcp__claude_ai_Vercel__deploy_to_vercel"
     ]
   }
 }

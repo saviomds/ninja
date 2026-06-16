@@ -70,7 +70,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="bg-white dark:bg-[#030712] text-gray-900 dark:text-gray-50 flex flex-col min-h-screen transition-colors duration-200">
+      <body className="bg-white dark:bg-black text-gray-900 dark:text-gray-50 flex flex-col min-h-screen transition-colors duration-200 selection:bg-indigo-500/30">
         <ThemeProvider>
           <AuthHashHandler />
           <LoadingScreen />
