@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.RESEND_FROM ?? "TechNinja <onboarding@resend.dev>";
+const FROM = "Tech Ninja <onboarding@resend.dev>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://techninja.vercel.app";
 
 type Payload =
@@ -10,85 +10,65 @@ type Payload =
   | { type: "update"; title: string; content: string; updateType?: string; link?: string };
 
 function productEmail(p: Extract<Payload, { type: "product" }>) {
-  return /* html */`<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>New Product — TechNinja</title></head>
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:32px 0;">
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#09090b;padding:48px 16px">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+      <table width="100%" style="max-width:480px;background:#18181b;border-radius:16px;overflow:hidden;border:1px solid #27272a">
 
         <!-- Header -->
         <tr>
-          <td style="background:#2563EB;padding:28px 40px;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="background:rgba(255,255,255,0.2);border-radius:8px;width:36px;height:36px;text-align:center;vertical-align:middle;">
-                        <span style="color:#fff;font-size:18px;font-weight:900;line-height:36px;">⚡</span>
-                      </td>
-                      <td style="padding-left:10px;">
-                        <span style="color:#ffffff;font-size:20px;font-weight:900;letter-spacing:-0.5px;">TechNinja</span>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-                <td align="right">
-                  <span style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;">New Arrival</span>
-                </td>
-              </tr>
-            </table>
+          <td style="background:linear-gradient(135deg,#1d4ed8,#7c3aed);padding:32px;text-align:center">
+            <p style="margin:0;font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.5px">⚡ Tech Ninja</p>
+            <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.7)">Mauritius · Device Experts</p>
           </td>
         </tr>
 
         <!-- Badge -->
         <tr>
-          <td style="background:#EFF6FF;padding:14px 40px;border-bottom:1px solid #DBEAFE;">
-            <span style="display:inline-block;background:#2563EB;color:#ffffff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;padding:4px 12px;border-radius:100px;">
-              🛍️ New Product Just Dropped
-            </span>
+          <td style="padding:24px 32px 0;text-align:center">
+            <span style="display:inline-block;background:#1d4ed8;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;padding:5px 14px;border-radius:100px">🛍️ New Product Just Dropped</span>
           </td>
         </tr>
 
         <!-- Product image -->
-        ${p.image ? `<tr><td style="padding:32px 40px 0;text-align:center;">
-          <img src="${p.image}" alt="${p.name}" width="280" style="max-width:280px;height:auto;border-radius:16px;border:1px solid #E5E7EB;object-fit:cover;"/>
+        ${p.image ? `<tr><td style="padding:24px 32px 0;text-align:center">
+          <img src="${p.image}" alt="${p.name}" width="220" style="max-width:220px;height:auto;border-radius:12px;border:1px solid #27272a;object-fit:cover"/>
         </td></tr>` : ""}
 
-        <!-- Product info -->
+        <!-- Content -->
         <tr>
-          <td style="padding:32px 40px;">
-            ${p.category ? `<p style="margin:0 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#9CA3AF;">${p.category}</p>` : ""}
-            <h1 style="margin:0 0 12px;font-size:26px;font-weight:800;color:#111827;line-height:1.2;">${p.name}</h1>
-            ${p.description ? `<p style="margin:0 0 20px;font-size:15px;color:#6B7280;line-height:1.6;">${p.description}</p>` : ""}
-            <p style="margin:0 0 28px;font-size:30px;font-weight:900;color:#2563EB;">Rs ${p.price.toLocaleString()}</p>
-            <a href="${SITE_URL}/Clients" style="display:inline-block;background:#2563EB;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:10px;letter-spacing:0.02em;">
+          <td style="padding:28px 32px">
+            ${p.category ? `<p style="margin:0 0 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#52525b">${p.category}</p>` : ""}
+            <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#fafafa;line-height:1.2">${p.name}</h1>
+            ${p.description ? `<p style="margin:0 0 18px;font-size:15px;color:#a1a1aa;line-height:1.6">${p.description}</p>` : ""}
+            <p style="margin:0 0 28px;font-size:28px;font-weight:900;color:#2563eb">Rs ${p.price.toLocaleString()}</p>
+            <a href="${SITE_URL}/Clients" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 32px;border-radius:10px;letter-spacing:-0.2px">
               Shop Now →
             </a>
           </td>
         </tr>
 
-        <!-- Divider -->
-        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #F3F4F6;"/></td></tr>
+        <tr><td style="padding:0 32px"><hr style="border:none;border-top:1px solid #27272a"/></td></tr>
 
         <!-- Perks -->
         <tr>
-          <td style="padding:24px 40px;">
+          <td style="padding:20px 32px">
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td width="33%" style="text-align:center;padding:0 8px;">
-                  <p style="margin:0;font-size:20px;">⚡</p>
-                  <p style="margin:4px 0 0;font-size:12px;font-weight:600;color:#374151;">Same-day<br/>Delivery</p>
+                <td width="33%" style="text-align:center">
+                  <p style="margin:0;font-size:18px">⚡</p>
+                  <p style="margin:4px 0 0;font-size:11px;font-weight:600;color:#71717a">Same-day<br/>Delivery</p>
                 </td>
-                <td width="33%" style="text-align:center;padding:0 8px;">
-                  <p style="margin:0;font-size:20px;">🛡️</p>
-                  <p style="margin:4px 0 0;font-size:12px;font-weight:600;color:#374151;">2-Year<br/>Warranty</p>
+                <td width="33%" style="text-align:center">
+                  <p style="margin:0;font-size:18px">🛡️</p>
+                  <p style="margin:4px 0 0;font-size:11px;font-weight:600;color:#71717a">2-Year<br/>Warranty</p>
                 </td>
-                <td width="33%" style="text-align:center;padding:0 8px;">
-                  <p style="margin:0;font-size:20px;">🔒</p>
-                  <p style="margin:4px 0 0;font-size:12px;font-weight:600;color:#374151;">Secure<br/>Checkout</p>
+                <td width="33%" style="text-align:center">
+                  <p style="margin:0;font-size:18px">🔒</p>
+                  <p style="margin:4px 0 0;font-size:11px;font-weight:600;color:#71717a">Secure<br/>Checkout</p>
                 </td>
               </tr>
             </table>
@@ -97,9 +77,9 @@ function productEmail(p: Extract<Payload, { type: "product" }>) {
 
         <!-- Footer -->
         <tr>
-          <td style="background:#F9FAFB;border-top:1px solid #F3F4F6;padding:24px 40px;text-align:center;">
-            <p style="margin:0 0 4px;font-size:12px;color:#9CA3AF;">You're receiving this because you subscribed to TechNinja updates.</p>
-            <p style="margin:0;font-size:12px;color:#9CA3AF;">© ${new Date().getFullYear()} TechNinja, Mauritius · <a href="${SITE_URL}" style="color:#2563EB;text-decoration:none;">techninja.mu</a></p>
+          <td style="padding:20px 32px;background:#09090b;border-top:1px solid #27272a;text-align:center">
+            <p style="margin:0 0 4px;font-size:12px;color:#52525b">You're receiving this because you subscribed to Tech Ninja updates.</p>
+            <p style="margin:0;font-size:12px;color:#3f3f46">© ${new Date().getFullYear()} Tech Ninja · Mauritius</p>
           </td>
         </tr>
 
@@ -113,66 +93,44 @@ function productEmail(p: Extract<Payload, { type: "product" }>) {
 function updateEmail(u: Extract<Payload, { type: "update" }>) {
   const typeIcon: Record<string, string> = { feature: "✨", fix: "🔧", announcement: "📣" };
   const icon = typeIcon[u.updateType ?? "announcement"] ?? "📣";
+  const label = u.updateType ? u.updateType.charAt(0).toUpperCase() + u.updateType.slice(1) : "Announcement";
+  const ctaHref = u.link ? (u.link.startsWith("http") ? u.link : `https://${u.link}`) : SITE_URL;
 
-  return /* html */`<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${u.title} — TechNinja</title></head>
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:32px 0;">
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#09090b;padding:48px 16px">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+      <table width="100%" style="max-width:480px;background:#18181b;border-radius:16px;overflow:hidden;border:1px solid #27272a">
 
         <!-- Header -->
         <tr>
-          <td style="background:#111827;padding:28px 40px;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="background:#2563EB;border-radius:8px;width:36px;height:36px;text-align:center;vertical-align:middle;">
-                        <span style="color:#fff;font-size:18px;font-weight:900;line-height:36px;">⚡</span>
-                      </td>
-                      <td style="padding-left:10px;">
-                        <span style="color:#ffffff;font-size:20px;font-weight:900;letter-spacing:-0.5px;">TechNinja</span>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-                <td align="right">
-                  <span style="color:rgba(255,255,255,0.5);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;">Update</span>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- Badge -->
-        <tr>
-          <td style="background:#F9FAFB;padding:14px 40px;border-bottom:1px solid #E5E7EB;">
-            <span style="display:inline-block;background:#111827;color:#ffffff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;padding:4px 12px;border-radius:100px;">
-              ${icon} ${u.updateType ? u.updateType.charAt(0).toUpperCase() + u.updateType.slice(1) : "Announcement"}
-            </span>
+          <td style="background:linear-gradient(135deg,#1d4ed8,#7c3aed);padding:32px;text-align:center">
+            <p style="margin:0;font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.5px">⚡ Tech Ninja</p>
+            <p style="margin:8px 0 0;font-size:13px;color:rgba(255,255,255,0.7)">Mauritius · Device Experts</p>
           </td>
         </tr>
 
         <!-- Content -->
         <tr>
-          <td style="padding:40px 40px 32px;">
-            <h1 style="margin:0 0 16px;font-size:26px;font-weight:800;color:#111827;line-height:1.2;">${u.title}</h1>
-            <p style="margin:0 0 28px;font-size:15px;color:#6B7280;line-height:1.7;">${u.content}</p>
-            ${u.link ? `<a href="${u.link.startsWith("http") ? u.link : `https://${u.link}`}" style="display:inline-block;background:#2563EB;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:10px;letter-spacing:0.02em;">Read More →</a>` : `<a href="${SITE_URL}" style="display:inline-block;background:#2563EB;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:10px;letter-spacing:0.02em;">Visit TechNinja →</a>`}
+          <td style="padding:40px 32px">
+            <span style="display:inline-block;background:#27272a;color:#a1a1aa;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;padding:5px 12px;border-radius:100px;margin-bottom:20px">${icon} ${label}</span>
+            <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#fafafa;line-height:1.2">${u.title}</h1>
+            <p style="margin:0 0 32px;font-size:15px;color:#a1a1aa;line-height:1.6">${u.content}</p>
+            <a href="${ctaHref}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 32px;border-radius:10px;letter-spacing:-0.2px">
+              ${u.link ? "Read More →" : "Visit Tech Ninja →"}
+            </a>
+            <hr style="border:none;border-top:1px solid #27272a;margin:28px 0">
+            <p style="margin:0;font-size:12px;color:#52525b">Didn't subscribe? You can safely ignore this email.</p>
           </td>
         </tr>
 
-        <!-- Divider -->
-        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #F3F4F6;"/></td></tr>
-
         <!-- Footer -->
         <tr>
-          <td style="background:#F9FAFB;border-top:1px solid #F3F4F6;padding:24px 40px;text-align:center;">
-            <p style="margin:0 0 4px;font-size:12px;color:#9CA3AF;">You're receiving this because you subscribed to TechNinja updates.</p>
-            <p style="margin:0;font-size:12px;color:#9CA3AF;">© ${new Date().getFullYear()} TechNinja, Mauritius · <a href="${SITE_URL}" style="color:#2563EB;text-decoration:none;">techninja.mu</a></p>
+          <td style="padding:20px 32px;background:#09090b;border-top:1px solid #27272a;text-align:center">
+            <p style="margin:0 0 4px;font-size:12px;color:#52525b">You're receiving this because you subscribed to Tech Ninja updates.</p>
+            <p style="margin:0;font-size:12px;color:#3f3f46">© ${new Date().getFullYear()} Tech Ninja · Mauritius</p>
           </td>
         </tr>
 
@@ -205,28 +163,18 @@ export async function POST(request: Request) {
 
     const subject =
       payload.type === "product"
-        ? `New Product: ${payload.name} — TechNinja`
-        : `${payload.title} — TechNinja`;
+        ? `New Product: ${payload.name} — Tech Ninja`
+        : `${payload.title} — Tech Ninja`;
 
     const html =
       payload.type === "product" ? productEmail(payload) : updateEmail(payload);
 
-    // Resend batch: max 100 per call
-    const BATCH = 100;
-    let sent = 0;
-    for (let i = 0; i < subscribers.length; i += BATCH) {
-      const chunk = subscribers.slice(i, i + BATCH);
-      const emails = chunk.map(({ email }) => ({
-        from: FROM,
-        to: email,
-        subject,
-        html,
-      }));
-      await resend.batch.send(emails);
-      sent += chunk.length;
+    // Send using resend.emails.send() for each subscriber
+    for (const { email } of subscribers) {
+      await resend.emails.send({ from: FROM, to: email, subject, html });
     }
 
-    return NextResponse.json({ sent });
+    return NextResponse.json({ sent: subscribers.length });
   } catch (err: unknown) {
     console.error("notify-subscribers error:", err);
     return NextResponse.json(
