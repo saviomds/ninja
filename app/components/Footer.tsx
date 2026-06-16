@@ -1,6 +1,27 @@
 import Link from "next/link";
+import Image from "next/image";
+import { createClient } from "@/lib/supabase-server";
 
-export default function Footer() {
+interface SocialProfile {
+  id: string;
+  platform_name: string;
+  platform_icon: string;
+  profile_link: string;
+}
+
+export default async function Footer() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("social_profiles")
+    .select("id, platform_name, platform_icon, profile_link")
+    .eq("is_active", true)
+    .order("platform_name");
+
+  const socials: SocialProfile[] = data || [];
+
+  const makeHref = (link: string) =>
+    link.startsWith("http") ? link : `https://${link}`;
+
   return (
     <footer id="footer" className="bg-gray-950 text-gray-400 py-16 px-5 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -20,25 +41,36 @@ export default function Footer() {
             <p className="text-[13px] leading-relaxed mb-5">
               Premium electronics and smart gadgets for the modern lifestyle in Mauritius. Your tech, elevated.
             </p>
-            {/* Social icons */}
-            <div className="flex items-center gap-3">
-              {[
-                { title: "X / Twitter", d: "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z", fill: true },
-                { title: "Instagram",  d: "M7.5 2h9A5.5 5.5 0 0122 7.5v9A5.5 5.5 0 0116.5 22h-9A5.5 5.5 0 012 16.5v-9A5.5 5.5 0 017.5 2zm4.5 5a5 5 0 100 10A5 5 0 0012 7zm6.5-1a1 1 0 110 2 1 1 0 010-2z", fill: true },
-                { title: "Facebook",   d: "M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z", fill: true },
-              ].map(({ title, d, fill }) => (
-                <a
-                  key={title}
-                  href="#"
-                  title={title}
-                  className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#2563EB]/20 hover:text-[#2563EB] flex items-center justify-center transition-all"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill={fill ? "currentColor" : "none"} stroke={fill ? "none" : "currentColor"} strokeWidth={2}>
-                    <path d={d} />
-                  </svg>
-                </a>
-              ))}
-            </div>
+            {/* Social icons — dynamic from DB */}
+            {socials.length > 0 && (
+              <div className="flex items-center flex-wrap gap-2">
+                {socials.map((p) => (
+                  <a
+                    key={p.id}
+                    href={makeHref(p.profile_link)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={p.platform_name}
+                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-[#2563EB]/20 hover:text-[#2563EB] flex items-center justify-center transition-all overflow-hidden"
+                  >
+                    {p.platform_icon ? (
+                      <Image
+                        src={p.platform_icon}
+                        alt={p.platform_name}
+                        width={18}
+                        height={18}
+                        unoptimized
+                        className="w-[18px] h-[18px] object-contain rounded"
+                      />
+                    ) : (
+                      <span className="text-[11px] font-bold text-white/60">
+                        {p.platform_name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Shop */}
