@@ -68,6 +68,17 @@ const navSections = [
     accent: "amber",
   },
   {
+    label: "Survey Dashboard",
+    description: "Customer feedback submissions, NPS scores and response tracker",
+    href: "/admin/survey",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      </svg>
+    ),
+    accent: "cyan",
+  },
+  {
     label: "Full Dashboard",
     description: "Invoices, orders, products, and analytics",
     href: "/dashboard",
@@ -81,12 +92,13 @@ const navSections = [
 ];
 
 const accentMap: Record<string, { icon: string; card: string; dot: string }> = {
-  blue:    { icon: "text-blue-400 bg-blue-500/10 border-blue-500/20",    card: "hover:border-blue-500/40 hover:bg-blue-500/[0.04]",  dot: "bg-blue-400" },
+  blue:    { icon: "text-blue-400 bg-blue-500/10 border-blue-500/20",       card: "hover:border-blue-500/40 hover:bg-blue-500/[0.04]",    dot: "bg-blue-400" },
   emerald: { icon: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20", card: "hover:border-emerald-500/40 hover:bg-emerald-500/[0.04]", dot: "bg-emerald-400" },
   violet:  { icon: "text-violet-400 bg-violet-500/10 border-violet-500/20",  card: "hover:border-violet-500/40 hover:bg-violet-500/[0.04]",  dot: "bg-violet-400" },
-  pink:    { icon: "text-pink-400 bg-pink-500/10 border-pink-500/20",    card: "hover:border-pink-500/40 hover:bg-pink-500/[0.04]",  dot: "bg-pink-400" },
-  amber:   { icon: "text-amber-400 bg-amber-500/10 border-amber-500/20",   card: "hover:border-amber-500/40 hover:bg-amber-500/[0.04]",  dot: "bg-amber-400" },
-  slate:   { icon: "text-slate-400 bg-slate-500/10 border-slate-500/20",   card: "hover:border-slate-500/40 hover:bg-slate-500/[0.04]",  dot: "bg-slate-400" },
+  pink:    { icon: "text-pink-400 bg-pink-500/10 border-pink-500/20",       card: "hover:border-pink-500/40 hover:bg-pink-500/[0.04]",    dot: "bg-pink-400" },
+  amber:   { icon: "text-amber-400 bg-amber-500/10 border-amber-500/20",    card: "hover:border-amber-500/40 hover:bg-amber-500/[0.04]",  dot: "bg-amber-400" },
+  cyan:    { icon: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",       card: "hover:border-cyan-500/40 hover:bg-cyan-500/[0.04]",    dot: "bg-cyan-400" },
+  slate:   { icon: "text-slate-400 bg-slate-500/10 border-slate-500/20",    card: "hover:border-slate-500/40 hover:bg-slate-500/[0.04]",  dot: "bg-slate-400" },
 };
 
 export default function AdminIndexPage() {
