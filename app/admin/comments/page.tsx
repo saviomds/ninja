@@ -24,7 +24,7 @@ export default function AdminCommentsPage() {
       .from("comments")
       .select("*")
       .order("created_at", { ascending: false });
-      
+
     if (data) setComments(data);
     if (error) console.error("Error fetching comments:", error);
     setLoading(false);
@@ -32,9 +32,7 @@ export default function AdminCommentsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this comment?")) return;
-
     const { error } = await supabase.from("comments").delete().eq("id", id);
-
     if (!error) {
       setComments((prev) => prev.filter((c) => c.id !== id));
     } else {
@@ -55,10 +53,10 @@ export default function AdminCommentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 md:p-12 font-sans text-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#030712] p-8 md:p-12 font-sans text-gray-900 dark:text-gray-100">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-semibold">Manage Comments</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">Manage Comments</h1>
           {comments.length > 0 && (
             <button
               onClick={handleDeleteAll}
@@ -68,14 +66,14 @@ export default function AdminCommentsPage() {
             </button>
           )}
         </div>
-        
+
         {loading ? (
-          <p className="text-gray-500 font-light">Loading comments...</p>
+          <p className="text-gray-500 dark:text-gray-400 font-light">Loading comments...</p>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white dark:bg-gray-900/60 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-100 text-sm text-gray-500">
+                <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400">
                   <th className="p-5 font-medium">Name</th>
                   <th className="p-5 font-medium">Rating</th>
                   <th className="p-5 font-medium">Message</th>
@@ -86,14 +84,17 @@ export default function AdminCommentsPage() {
               <tbody>
                 {comments.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-gray-400 font-light">
+                    <td colSpan={5} className="p-8 text-center text-gray-400 dark:text-gray-500 font-light">
                       No comments found.
                     </td>
                   </tr>
                 ) : (
                   comments.map((comment) => (
-                    <tr key={comment.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
-                      <td className="p-5 font-medium">{comment.name}</td>
+                    <tr
+                      key={comment.id}
+                      className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50/80 dark:hover:bg-gray-800/30 transition-colors"
+                    >
+                      <td className="p-5 font-medium text-gray-900 dark:text-white">{comment.name}</td>
                       <td className="p-5">
                         {comment.rating ? (
                           <div className="flex items-center gap-0.5">
@@ -104,15 +105,19 @@ export default function AdminCommentsPage() {
                             ))}
                           </div>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-gray-300 dark:text-gray-600">—</span>
                         )}
                       </td>
-                      <td className="p-5 text-gray-600 font-light max-w-xs truncate" title={comment.message}>{comment.message}</td>
-                      <td className="p-5 text-sm text-gray-400 font-light">{new Date(comment.created_at).toLocaleString()}</td>
+                      <td className="p-5 text-gray-600 dark:text-gray-400 font-light max-w-xs truncate" title={comment.message}>
+                        {comment.message}
+                      </td>
+                      <td className="p-5 text-sm text-gray-400 dark:text-gray-500 font-light">
+                        {new Date(comment.created_at).toLocaleString()}
+                      </td>
                       <td className="p-5 text-right">
                         <button
                           onClick={() => handleDelete(comment.id)}
-                          className="px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-medium hover:bg-red-100 transition-colors"
+                          className="px-4 py-2 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-full text-sm font-medium hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
                         >
                           Delete
                         </button>

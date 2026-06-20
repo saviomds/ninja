@@ -133,7 +133,7 @@ export default function AdminIndexPage() {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-[#030712] flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#030712] flex items-center justify-center">
         <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -147,24 +147,24 @@ export default function AdminIndexPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#030712] text-gray-100">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#030712] text-gray-900 dark:text-gray-100">
       <div className="max-w-5xl mx-auto px-5 py-10 md:py-14">
 
         {/* ── Header ── */}
         <div className="flex items-start justify-between mb-10 gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-cyan-400 border border-cyan-500/25 bg-cyan-500/8 px-2.5 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-cyan-500 dark:text-cyan-400 border border-cyan-500/30 dark:border-cyan-500/25 bg-cyan-500/10 dark:bg-cyan-500/8 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400 animate-pulse" />
                 Admin
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Control Center</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Control Center</h1>
             <p className="text-gray-500 text-sm mt-1">{adminEmail}</p>
           </div>
           <Link
             href="/dashboard"
-            className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-gray-400 hover:text-white hover:border-white/20 transition-all"
+            className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.08] text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-white/20 transition-all"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6z" />
@@ -190,8 +190,8 @@ export default function AdminIndexPage() {
 
         {/* ── Section label ── */}
         <div className="flex items-center gap-3 mb-5">
-          <span className="text-xs font-bold uppercase tracking-widest text-gray-600">Quick Access</span>
-          <div className="flex-1 h-px bg-white/[0.05]" />
+          <span className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-600">Quick Access</span>
+          <div className="flex-1 h-px bg-gray-200 dark:bg-white/[0.05]" />
         </div>
 
         {/* ── Navigation cards ── */}
@@ -202,16 +202,16 @@ export default function AdminIndexPage() {
               <Link
                 key={s.href}
                 href={s.href}
-                className={`group flex items-start gap-4 bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5 transition-all duration-200 ${a.card}`}
+                className={`group flex items-start gap-4 bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.07] rounded-2xl p-5 transition-all duration-200 ${a.card}`}
               >
                 <div className={`w-10 h-10 rounded-xl border flex items-center justify-center flex-shrink-0 transition-all ${a.icon}`}>
                   {s.icon}
                 </div>
                 <div className="flex-1 min-w-0 pt-0.5">
-                  <h2 className="font-semibold text-white text-[15px] leading-snug">{s.label}</h2>
+                  <h2 className="font-semibold text-gray-900 dark:text-white text-[15px] leading-snug">{s.label}</h2>
                   <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">{s.description}</p>
                 </div>
-                <svg className="w-4 h-4 text-gray-700 group-hover:text-gray-400 transition-colors flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-4 h-4 text-gray-300 dark:text-gray-700 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               </Link>
