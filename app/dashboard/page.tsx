@@ -30,6 +30,8 @@ interface Product {
 interface Profile {
   id: string;
   username: string | null;
+  avatar_url: string | null;
+  full_name: string | null;
 }
 
 interface SocialProfile {
@@ -1041,7 +1043,7 @@ export default function Dashboard() {
   }, []);
 
   const fetchUserProfile = useCallback(async (uid: string) => {
-    const { data, error } = await supabase.from("profiles").select("id, username").eq("id", uid).single();
+    const { data, error } = await supabase.from("profiles").select("id, username, avatar_url, full_name").eq("id", uid).single();
     if (!error) setProfile(data);
   }, []);
 
@@ -3303,14 +3305,79 @@ export default function Dashboard() {
 
         {/* ══ SETTINGS TAB ════════════════════════════════════════════════════════ */}
         {activeSection === "settings" && (
-          <div className="pt-2">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Account Settings</h2>
-            <p className="text-gray-500 text-sm mb-8">Manage your public profile details.</p>
+          <div className="pt-2 max-w-2xl space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Account Settings</h2>
+              <p className="text-gray-500 text-sm">Manage your profile and account details.</p>
+            </div>
+
+            {/* Profile card */}
             {loading ? (
-              <div className="h-52 bg-gray-900/40 rounded-2xl border border-gray-800 w-full max-w-sm animate-pulse" />
+              <div className="h-32 bg-gray-100 dark:bg-gray-900/40 rounded-2xl border border-gray-200 dark:border-gray-800 animate-pulse" />
             ) : user ? (
-              <UpdateUsername userId={user.id} currentUsername={profile?.username || null} onUpdate={() => fetchUserProfile(user.id)} />
+              <div className="bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+                <div className="flex items-center gap-5">
+                  {/* Avatar */}
+                  <div className="relative flex-shrink-0">
+                    {profile?.avatar_url ? (
+                      <Image
+                        src={profile.avatar_url}
+                        alt={profile?.username || "Avatar"}
+                        width={80}
+                        height={80}
+                        unoptimized
+                        className="w-20 h-20 rounded-2xl object-cover ring-2 ring-gray-200 dark:ring-gray-700"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-3xl font-bold ring-2 ring-gray-200 dark:ring-gray-700">
+                        {(profile?.username || user?.email?.split("@")[0] || "U")[0].toUpperCase()}
+                      </div>
+                    )}
+                    <a
+                      href="/profile"
+                      className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-indigo-600 hover:bg-indigo-700 rounded-full flex items-center justify-center shadow-sm transition-colors"
+                      title="Edit avatar"
+                    >
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                    </a>
+                  </div>
+                  {/* Info */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-lg font-bold text-gray-900 dark:text-white truncate">{profile?.full_name || profile?.username || user?.email?.split("@")[0]}</p>
+                    <p className="text-sm text-gray-500 truncate">{user?.email}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">Admin</span>
+                      {profile?.username && <span className="text-xs text-gray-400">@{profile.username}</span>}
+                    </div>
+                  </div>
+                  {/* Visit public profile link */}
+                  <a href="/profile" className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex-shrink-0">
+                    Edit full profile
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                  </a>
+                </div>
+              </div>
             ) : null}
+
+            {/* Username form */}
+            {user && (
+              <UpdateUsername userId={user.id} currentUsername={profile?.username || null} onUpdate={() => fetchUserProfile(user.id)} />
+            )}
+
+            {/* Account info */}
+            <div className="bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-2xl divide-y divide-gray-100 dark:divide-gray-800">
+              {[
+                { label: "Email", value: user?.email || "—" },
+                { label: "User ID", value: user?.id?.slice(0, 16) + "…" || "—" },
+                { label: "Account Created", value: user?.created_at ? new Date(user.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "—" },
+                { label: "Last Sign In", value: user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) : "—" },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between px-5 py-3.5">
+                  <span className="text-sm text-gray-500">{label}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white font-mono text-right max-w-[60%] truncate">{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

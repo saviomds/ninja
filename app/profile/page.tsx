@@ -6,6 +6,20 @@ import { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
 
+interface Order {
+  id: string;
+  product_id: string;
+  product_name: string;
+  client_name: string;
+  client_email: string;
+  client_phone: string | null;
+  price: number;
+  quantity: number;
+  status: string;
+  notes: string | null;
+  created_at: string;
+}
+
 interface Profile {
   id: string;
   username: string | null;
@@ -39,6 +53,11 @@ export default function ProfilePage() {
     location: "",
     is_public: false,
   });
+
+  const [activeTab, setActiveTab] = useState<"profile" | "orders">("profile");
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersLoaded, setOrdersLoaded] = useState(false);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -92,6 +111,26 @@ export default function ProfilePage() {
     };
     init();
   }, [router]);
+
+  const fetchOrders = async (u: User) => {
+    if (ordersLoaded) return;
+    setOrdersLoading(true);
+    const { data } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("client_email", u.email)
+      .order("created_at", { ascending: false });
+    setOrders((data as Order[]) || []);
+    setOrdersLoading(false);
+    setOrdersLoaded(true);
+  };
+
+  const handleTabChange = (tab: "profile" | "orders") => {
+    setActiveTab(tab);
+    if (tab === "orders" && user && !ordersLoaded) {
+      fetchOrders(user);
+    }
+  };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -307,7 +346,78 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Edit form */}
+        {/* Tab switcher */}
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-2xl">
+          {(["profile", "orders"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => handleTabChange(tab)}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === tab
+                  ? isAdmin
+                    ? "bg-white dark:bg-gray-900 text-violet-600 dark:text-violet-400 shadow-sm"
+                    : "bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              }`}
+            >
+              {tab === "profile" ? "Profile" : "My Orders"}
+            </button>
+          ))}
+        </div>
+
+        {/* My Orders tab */}
+        {activeTab === "orders" && (
+          <div className="bg-white dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm">
+            <h2 className="text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-5">My Orders</h2>
+
+            {ordersLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+                ))}
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-3xl mx-auto mb-4">📦</div>
+                <p className="text-[16px] font-semibold text-gray-900 dark:text-white mb-1">No orders yet</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Your orders will appear here once you place one.</p>
+                <Link href="/Clients" className="inline-flex items-center gap-2 mt-6 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors">
+                  Browse Shop
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {orders.map((order) => {
+                  const statusMap: Record<string, { label: string; cls: string }> = {
+                    pending:   { label: "Pending",   cls: "bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30" },
+                    confirmed: { label: "Confirmed", cls: "bg-indigo-100 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30" },
+                    completed: { label: "Completed", cls: "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30" },
+                    cancelled: { label: "Cancelled", cls: "bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-300 border-red-200 dark:border-red-500/30" },
+                  };
+                  const s = statusMap[order.status] ?? { label: order.status, cls: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700" };
+                  return (
+                    <div key={order.id} className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40 hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{order.product_name}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                          Qty {order.quantity} · {new Date(order.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">Rs {order.price.toLocaleString()}</p>
+                        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${s.cls}`}>{s.label}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Edit form — only shown when profile tab is active */}
+        {activeTab === "profile" && (
+        <>
         <div className="bg-white dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-5">
           <h2 className="text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Edit Profile</h2>
 
@@ -404,6 +514,8 @@ export default function ProfilePage() {
             <InfoRow label="Last Sign In" value={user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : "—"} />
           </div>
         </div>
+        </>
+        )}
 
 
       </div>

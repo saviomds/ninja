@@ -13,6 +13,7 @@ interface Product {
 }
 interface OrderForm { name: string; email: string; phone: string; notes: string; quantity: number; }
 interface LightboxState { product: Product; rotation: number; zoom: number; }
+type QuickViewProduct = Product | null;
 
 const PAGE_SIZE = 12;
 
@@ -79,6 +80,12 @@ export default function ClientsPage() {
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "masonry">("grid");
+  const [quickViewProduct, setQuickViewProduct] = useState<QuickViewProduct>(null);
+  const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [quickOrderForm, setQuickOrderForm] = useState<OrderForm>({ name: "", email: "", phone: "", notes: "", quantity: 1 });
+  const [quickOrderLoading, setQuickOrderLoading] = useState(false);
+  const [quickOrderSuccess, setQuickOrderSuccess] = useState(false);
 
   const catScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -89,6 +96,12 @@ export default function ClientsPage() {
   };
 
   useEffect(() => {
+    // Restore wishlist from localStorage
+    const saved = localStorage.getItem("tn-wishlist");
+    if (saved) {
+      try { setWishlist(new Set(JSON.parse(saved) as string[])); } catch { /* ignore */ }
+    }
+
     (async () => {
       const [{ data: prods }, authRes] = await Promise.all([
         supabase.from("products").select("*").eq("is_public", true).order("created_at", { ascending: false }),
@@ -158,8 +171,41 @@ export default function ClientsPage() {
       const next = new Set(prev);
       if (next.has(id)) { next.delete(id); showToast("Removed from wishlist"); }
       else { next.add(id); showToast("Added to wishlist ♥"); }
+      localStorage.setItem("tn-wishlist", JSON.stringify([...next]));
       return next;
     });
+  };
+
+  const toggleCompare = (id: string) => {
+    setCompareIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); }
+      else {
+        if (next.size >= 3) { showToast("Max 3 products to compare", "error"); return prev; }
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const openQuickView = (product: Product) => {
+    setQuickViewProduct(product);
+    setQuickOrderForm({ name: "", email: user?.email || "", phone: "", notes: "", quantity: 1 });
+    setQuickOrderSuccess(false);
+  };
+
+  const handleQuickOrder = async () => {
+    if (!quickViewProduct) return;
+    if (!quickOrderForm.name.trim() || !quickOrderForm.email.trim()) { showToast("Name and email are required", "error"); return; }
+    setQuickOrderLoading(true);
+    const { error } = await supabase.from("orders").insert({
+      product_id: quickViewProduct.id, product_name: quickViewProduct.name,
+      quantity: quickOrderForm.quantity, price: quickViewProduct.price * quickOrderForm.quantity,
+      client_name: quickOrderForm.name.trim(), client_email: quickOrderForm.email.trim(),
+      client_phone: quickOrderForm.phone.trim() || null, notes: quickOrderForm.notes.trim() || null, status: "pending",
+    });
+    setQuickOrderLoading(false);
+    if (error) showToast("Failed to place order. Please try again.", "error"); else setQuickOrderSuccess(true);
   };
 
   const trackView = (product: Product) => {
@@ -568,6 +614,26 @@ export default function ClientsPage() {
                         className="absolute bottom-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 dark:bg-gray-800/90 text-gray-500 hover:text-[#2563EB] shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                       </button>
+
+                      {/* Quick View button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openQuickView(product); }}
+                        className="absolute bottom-3 left-3 z-10 h-8 px-3 rounded-full bg-white/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-300 text-[11px] font-semibold shadow-sm flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all hover:text-[#2563EB]">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        Quick View
+                      </button>
+
+                      {/* Compare checkbox */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleCompare(product.id); }}
+                        title={compareIds.has(product.id) ? "Remove from compare" : "Add to compare"}
+                        className={`absolute top-3 left-3 z-10 w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${
+                          compareIds.has(product.id)
+                            ? "bg-[#2563EB] border-[#2563EB] text-white"
+                            : "bg-white/90 dark:bg-gray-800/90 border-gray-300 dark:border-gray-600 text-transparent hover:border-[#2563EB] opacity-0 group-hover:opacity-100"
+                        }`}>
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      </button>
                     </div>
 
                     {/* Info */}
@@ -916,6 +982,249 @@ export default function ClientsPage() {
           title="Back to top">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
         </button>
+      )}
+
+      {/* ══════════════════ QUICK VIEW MODAL ══════════════════ */}
+      {quickViewProduct && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          onClick={() => { setQuickViewProduct(null); setQuickOrderSuccess(false); }}>
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-[16px] font-bold text-gray-900 dark:text-white">Quick View</h3>
+              <button onClick={() => { setQuickViewProduct(null); setQuickOrderSuccess(false); }}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-all text-sm">✕</button>
+            </div>
+
+            {quickOrderSuccess ? (
+              <div className="p-10 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#2563EB] to-emerald-500 flex items-center justify-center mx-auto shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <h3 className="text-[22px] font-bold text-gray-900 dark:text-white">Order placed!</h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Thank you! We&apos;ve received your order for <strong className="text-gray-900 dark:text-white">{quickViewProduct.name}</strong>.
+                </p>
+                <button onClick={() => { setQuickViewProduct(null); setQuickOrderSuccess(false); }}
+                  className="mt-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold px-8 py-3 rounded-full transition-all">Done</button>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-gray-800">
+                {/* Image panel */}
+                <div className="relative aspect-square bg-gray-50 dark:bg-gray-800">
+                  {quickViewProduct.image ? (
+                    <Image src={imgSrc(quickViewProduct.image)} alt={quickViewProduct.name} fill unoptimized className="object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/500x500/F5F7FA/9CA3AF?text="; }} />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-gray-600">
+                      <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    </div>
+                  )}
+                  {quickViewProduct.category && (
+                    <span className="absolute top-3 left-3 text-[10px] font-bold bg-[#2563EB] text-white px-2.5 py-1 rounded-full">
+                      {quickViewProduct.category}
+                    </span>
+                  )}
+                </div>
+
+                {/* Info + order form */}
+                <div className="p-6 space-y-4 overflow-y-auto">
+                  <div>
+                    <h4 className="text-[18px] font-bold text-gray-900 dark:text-white leading-snug">{quickViewProduct.name}</h4>
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-[22px] font-black text-gray-900 dark:text-white">Rs {quickViewProduct.price.toLocaleString()}</span>
+                      <StockPill stock={quickViewProduct.stock} />
+                    </div>
+                    {quickViewProduct.description && (
+                      <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-2 leading-relaxed line-clamp-3">{quickViewProduct.description}</p>
+                    )}
+                  </div>
+
+                  <div className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Full name <span className="text-red-500">*</span></label>
+                        <input type="text" value={quickOrderForm.name}
+                          onChange={(e) => setQuickOrderForm((f) => ({ ...f, name: e.target.value }))}
+                          placeholder="Your name" className={inputCls} />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email <span className="text-red-500">*</span></label>
+                        <input type="email" value={quickOrderForm.email}
+                          onChange={(e) => setQuickOrderForm((f) => ({ ...f, email: e.target.value }))}
+                          placeholder="you@example.com" className={inputCls} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Phone</label>
+                      <input type="tel" value={quickOrderForm.phone}
+                        onChange={(e) => setQuickOrderForm((f) => ({ ...f, phone: e.target.value }))}
+                        placeholder="+230 xxx xxxx" className={inputCls} />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Notes</label>
+                      <textarea value={quickOrderForm.notes}
+                        onChange={(e) => setQuickOrderForm((f) => ({ ...f, notes: e.target.value }))}
+                        placeholder="Delivery address, special instructions…" rows={2} className={inputCls + " resize-none"} />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[12px] font-semibold text-gray-500 dark:text-gray-400">Qty:</span>
+                      <button onClick={() => setQuickOrderForm((f) => ({ ...f, quantity: Math.max(1, f.quantity - 1) }))}
+                        className="w-7 h-7 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 text-lg leading-none transition-all">−</button>
+                      <span className="text-[14px] font-bold text-gray-900 dark:text-white w-5 text-center">{quickOrderForm.quantity}</span>
+                      <button onClick={() => setQuickOrderForm((f) => ({ ...f, quantity: Math.min(quickViewProduct.stock || 99, f.quantity + 1) }))}
+                        className="w-7 h-7 rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 text-lg leading-none transition-all">+</button>
+                      <span className="ml-auto text-[14px] font-bold text-gray-900 dark:text-white">Rs {(quickViewProduct.price * quickOrderForm.quantity).toLocaleString()}</span>
+                    </div>
+                    <button onClick={handleQuickOrder} disabled={quickOrderLoading || quickViewProduct.stock === 0 || !quickOrderForm.name.trim() || !quickOrderForm.email.trim()}
+                      className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all text-[14px] flex items-center justify-center gap-2 shadow-lg shadow-[#2563EB]/20">
+                      {quickOrderLoading ? (
+                        <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Placing…</>
+                      ) : quickViewProduct.stock === 0 ? "Sold Out" : `Place Order · Rs ${(quickViewProduct.price * quickOrderForm.quantity).toLocaleString()}`}
+                    </button>
+                    <Link href={`/product/${quickViewProduct.id}`}
+                      className="block text-center text-[13px] text-[#2563EB] hover:text-[#1D4ED8] font-semibold transition-colors">
+                      View full details →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════ COMPARE FLOATING BAR ══════════════════ */}
+      {compareIds.size >= 2 && !compareOpen && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 bg-gray-900 dark:bg-gray-800 border border-gray-700 text-white px-5 py-3 rounded-2xl shadow-2xl">
+          <span className="text-[13px] font-semibold text-gray-300">
+            Comparing {compareIds.size} product{compareIds.size > 1 ? "s" : ""}
+          </span>
+          <div className="flex gap-1.5">
+            {[...compareIds].map((id) => {
+              const p = products.find((pr) => pr.id === id);
+              return p ? (
+                <span key={id} className="text-[11px] font-semibold bg-white/10 text-white px-2.5 py-1 rounded-full max-w-[100px] truncate">{p.name}</span>
+              ) : null;
+            })}
+          </div>
+          <button onClick={() => setCompareOpen(true)}
+            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-semibold px-4 py-1.5 rounded-xl transition-colors flex-shrink-0">
+            Compare
+          </button>
+          <button onClick={() => setCompareIds(new Set())}
+            className="text-gray-400 hover:text-white text-[13px] font-semibold transition-colors flex-shrink-0">
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* ══════════════════ COMPARE MODAL ══════════════════ */}
+      {compareOpen && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          onClick={() => setCompareOpen(false)}>
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-[16px] font-bold text-gray-900 dark:text-white">Compare Products</h3>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setCompareOpen(false); setCompareIds(new Set()); }}
+                  className="text-[12px] text-gray-400 hover:text-red-500 font-semibold transition-colors">Clear all</button>
+                <button onClick={() => setCompareOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-all text-sm">✕</button>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
+                    <th className="w-28 px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Feature</th>
+                    {[...compareIds].map((id) => {
+                      const p = products.find((pr) => pr.id === id);
+                      return (
+                        <th key={id} className="px-5 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[13px] font-bold text-gray-900 dark:text-white truncate max-w-[120px]">{p?.name ?? "—"}</span>
+                            <button onClick={() => { toggleCompare(id); if (compareIds.size <= 2) setCompareOpen(false); }}
+                              className="text-gray-300 dark:text-gray-600 hover:text-red-500 text-xs flex-shrink-0">✕</button>
+                          </div>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Image row */}
+                  <tr className="border-b border-gray-50 dark:border-gray-800/60">
+                    <td className="px-5 py-4 text-[12px] font-semibold text-gray-400">Image</td>
+                    {[...compareIds].map((id) => {
+                      const p = products.find((pr) => pr.id === id);
+                      return (
+                        <td key={id} className="px-5 py-4">
+                          <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 relative">
+                            {p?.image ? (
+                              <Image src={imgSrc(p.image)} alt={p.name} fill unoptimized className="object-cover"
+                                onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/80x80/F5F7FA/9CA3AF?text="; }} />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">?</div>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Price row */}
+                  <tr className="border-b border-gray-50 dark:border-gray-800/60">
+                    <td className="px-5 py-4 text-[12px] font-semibold text-gray-400">Price</td>
+                    {[...compareIds].map((id) => {
+                      const p = products.find((pr) => pr.id === id);
+                      return <td key={id} className="px-5 py-4 text-[15px] font-black text-gray-900 dark:text-white">Rs {p?.price.toLocaleString() ?? "—"}</td>;
+                    })}
+                  </tr>
+                  {/* Category row */}
+                  <tr className="border-b border-gray-50 dark:border-gray-800/60">
+                    <td className="px-5 py-4 text-[12px] font-semibold text-gray-400">Category</td>
+                    {[...compareIds].map((id) => {
+                      const p = products.find((pr) => pr.id === id);
+                      return (
+                        <td key={id} className="px-5 py-4">
+                          {p?.category ? <span className="text-[11px] font-semibold text-[#2563EB] bg-[#2563EB]/10 px-2.5 py-1 rounded-full">{p.category}</span> : <span className="text-gray-400">—</span>}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  {/* Stock row */}
+                  <tr className="border-b border-gray-50 dark:border-gray-800/60">
+                    <td className="px-5 py-4 text-[12px] font-semibold text-gray-400">Stock</td>
+                    {[...compareIds].map((id) => {
+                      const p = products.find((pr) => pr.id === id);
+                      return <td key={id} className="px-5 py-4">{p !== undefined ? <StockPill stock={p.stock} /> : <span className="text-gray-400">—</span>}</td>;
+                    })}
+                  </tr>
+                  {/* Description row */}
+                  <tr>
+                    <td className="px-5 py-4 text-[12px] font-semibold text-gray-400">Description</td>
+                    {[...compareIds].map((id) => {
+                      const p = products.find((pr) => pr.id === id);
+                      return <td key={id} className="px-5 py-4 text-[12px] text-gray-500 dark:text-gray-400 leading-relaxed max-w-[180px]">{p?.description || "—"}</td>;
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex gap-3 flex-wrap">
+              {[...compareIds].map((id) => {
+                const p = products.find((pr) => pr.id === id);
+                return p ? (
+                  <button key={id} onClick={() => { openOrder(p); setCompareOpen(false); }} disabled={p.stock === 0}
+                    className="flex-1 min-w-[120px] bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-30 text-white font-semibold py-2.5 rounded-xl text-[13px] transition-colors">
+                    {p.stock === 0 ? "Sold Out" : `Order ${p.name.split(" ").slice(0, 2).join(" ")}`}
+                  </button>
+                ) : null;
+              })}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast */}

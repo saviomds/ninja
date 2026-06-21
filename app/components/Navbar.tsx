@@ -18,6 +18,7 @@ export default function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [cartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const shopRef = useRef<HTMLLIElement>(null);
   const { dark, toggle } = useTheme();
@@ -29,6 +30,18 @@ export default function Navbar() {
     if (data?.avatar_url) setAvatarUrl(data.avatar_url);
     setDisplayName(data?.username || email.split("@")[0]);
   };
+
+  useEffect(() => {
+    const readWishlist = () => {
+      try {
+        const raw = localStorage.getItem("tn-wishlist");
+        setWishlistCount(raw ? JSON.parse(raw).length : 0);
+      } catch { setWishlistCount(0); }
+    };
+    readWishlist();
+    window.addEventListener("storage", readWishlist);
+    return () => window.removeEventListener("storage", readWishlist);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -211,6 +224,22 @@ export default function Navbar() {
               </svg>
             </button>
 
+            {/* Wishlist */}
+            <Link
+              href="/wishlist"
+              className="relative w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
+              title="My Wishlist"
+            >
+              <svg className="w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+              </svg>
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {wishlistCount > 9 ? "9+" : wishlistCount}
+                </span>
+              )}
+            </Link>
+
             {/* Cart */}
             <Link
               href="/Clients"
@@ -278,7 +307,8 @@ export default function Navbar() {
                   <div className="py-1.5">
                     {[
                       { href: "/profile",          label: "My Profile" },
-                      ...(!isAdmin ? [{ href: "/client-dashboard", label: "My Orders" }] : []),
+                      ...(!isAdmin ? [{ href: "/profile#orders", label: "My Orders" }] : []),
+                      { href: "/wishlist",          label: "My Wishlist" },
                       { href: "/Clients",           label: "Browse Shop" },
                       { href: "/chat",              label: "Messages" },
                       ...(isAdmin ? [{ href: "/dashboard", label: "Admin Dashboard" }] : []),
@@ -335,11 +365,12 @@ export default function Navbar() {
               {[
                 { href: "/",                label: "Home" },
                 { href: "/Clients",         label: "Shop" },
+                { href: "/wishlist",        label: "Wishlist" },
                 { href: "/repair",          label: "Repair" },
                 { href: "/#services",       label: "About Us" },
                 { href: "/#newsletter",     label: "News" },
                 { href: "/#footer",         label: "Contact Us" },
-                ...(user && !isAdmin ? [{ href: "/client-dashboard", label: "My Dashboard" }] : []),
+                ...(user && !isAdmin ? [{ href: "/profile", label: "My Orders" }] : []),
                 ...(user ? [{ href: "/chat", label: "Messages" }] : []),
                 ...(isAdmin ? [{ href: "/dashboard", label: "Admin" }] : []),
               ].map(({ href, label }) => (
