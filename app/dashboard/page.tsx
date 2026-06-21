@@ -2157,9 +2157,20 @@ export default function Dashboard() {
             className="flex items-center gap-2 group"
             title="Account settings"
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ring-2 ring-transparent group-hover:ring-indigo-500/30 transition-all">
-              {(profile?.username || user?.email?.split("@")[0] || "U")[0].toUpperCase()}
-            </div>
+            {profile?.avatar_url ? (
+              <Image
+                src={profile.avatar_url}
+                alt={profile?.username || "avatar"}
+                width={32}
+                height={32}
+                unoptimized
+                className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-2 ring-transparent group-hover:ring-indigo-500/30 transition-all"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ring-2 ring-transparent group-hover:ring-indigo-500/30 transition-all">
+                {(profile?.username || user?.email?.split("@")[0] || "U")[0].toUpperCase()}
+              </div>
+            )}
             <div className="hidden lg:block text-left">
               <p className="text-xs font-semibold text-gray-900 dark:text-white leading-none">{profile?.username || user?.email?.split("@")[0]}</p>
               <p className="text-[10px] text-gray-400 truncate max-w-[100px] mt-0.5">{user?.email}</p>
@@ -2188,9 +2199,20 @@ export default function Dashboard() {
         {isMobileMenuOpen && (
           <div className="absolute top-14 left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex flex-col gap-2 md:hidden shadow-2xl z-40">
             <div className="flex items-center gap-3 pb-3 mb-1 border-b border-gray-100 dark:border-gray-800">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                {(profile?.username || user?.email?.split("@")[0] || "U")[0].toUpperCase()}
-              </div>
+              {profile?.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt={profile?.username || "avatar"}
+                  width={40}
+                  height={40}
+                  unoptimized
+                  className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                  {(profile?.username || user?.email?.split("@")[0] || "U")[0].toUpperCase()}
+                </div>
+              )}
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile?.username || user?.email?.split("@")[0]}</p>
                 <p className="text-xs text-gray-400 break-all">{user?.email}</p>
