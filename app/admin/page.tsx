@@ -79,6 +79,28 @@ const navSections = [
     accent: "cyan",
   },
   {
+    label: "Appointments",
+    description: "View and manage online repair appointment bookings",
+    href: "/admin/appointments",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+      </svg>
+    ),
+    accent: "orange",
+  },
+  {
+    label: "Blog Manager",
+    description: "Write and publish tech tips and repair guides",
+    href: "/admin/blog",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z" />
+      </svg>
+    ),
+    accent: "teal",
+  },
+  {
     label: "Full Dashboard",
     description: "Invoices, orders, products, and analytics",
     href: "/dashboard",
@@ -99,6 +121,8 @@ const accentMap: Record<string, { icon: string; card: string; dot: string }> = {
   amber:   { icon: "text-amber-400 bg-amber-500/10 border-amber-500/20",    card: "hover:border-amber-500/40 hover:bg-amber-500/[0.04]",  dot: "bg-amber-400" },
   cyan:    { icon: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",       card: "hover:border-cyan-500/40 hover:bg-cyan-500/[0.04]",    dot: "bg-cyan-400" },
   slate:   { icon: "text-slate-400 bg-slate-500/10 border-slate-500/20",    card: "hover:border-slate-500/40 hover:bg-slate-500/[0.04]",  dot: "bg-slate-400" },
+  orange:  { icon: "text-orange-400 bg-orange-500/10 border-orange-500/20",  card: "hover:border-orange-500/40 hover:bg-orange-500/[0.04]", dot: "bg-orange-400" },
+  teal:    { icon: "text-teal-400 bg-teal-500/10 border-teal-500/20",        card: "hover:border-teal-500/40 hover:bg-teal-500/[0.04]",    dot: "bg-teal-400" },
 };
 
 export default function AdminIndexPage() {

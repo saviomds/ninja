@@ -228,15 +228,15 @@ export default function RepairPage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => setShowContact(true)}
+                <a
+                  href="/book"
                   className="inline-flex items-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[15px] font-semibold px-6 py-3 rounded-lg transition-colors shadow-sm"
                 >
                   Book a Repair
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
-                </button>
+                </a>
                 <a
                   href="#services"
                   className="inline-flex items-center gap-2 text-[#2563EB] text-[15px] font-semibold px-6 py-3 rounded-lg border border-[#2563EB]/30 hover:border-[#2563EB]/60 hover:bg-[#2563EB]/5 transition-all"
@@ -442,17 +442,17 @@ export default function RepairPage() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0 w-full lg:w-auto">
-              <button onClick={() => setShowContact(true)}
+              <a href="/track"
                 className="inline-flex items-center justify-center gap-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[14px] font-semibold px-6 py-3.5 rounded-lg transition-colors hover:bg-gray-800 dark:hover:bg-gray-100">
                 Check Repair Status
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
-              </button>
-              <button onClick={() => setShowContact(true)}
+              </a>
+              <a href="/book"
                 className="inline-flex items-center justify-center gap-2 text-[#2563EB] text-[14px] font-semibold px-6 py-3.5 rounded-lg border border-[#2563EB]/30 hover:bg-[#2563EB]/5 transition-all">
                 Book New Repair
-              </button>
+              </a>
             </div>
           </div>
         </div>
