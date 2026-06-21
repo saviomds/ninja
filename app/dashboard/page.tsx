@@ -2819,11 +2819,11 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Email</p>
-                          <p className="text-sm text-gray-300 truncate">{order.client_email}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{order.client_email}</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Phone</p>
-                          <p className="text-sm text-gray-300">{order.client_phone || "—"}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">{order.client_phone || "—"}</p>
                         </div>
                       </div>
 
@@ -2875,9 +2875,16 @@ export default function Dashboard() {
                               {isBusy ? <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> : "✓"} Mark completed
                             </button>
                           )}
-                          {(order.status === "completed" || order.status === "cancelled") && (
-                            <span className="text-xs text-gray-600 italic">No further actions</span>
-                          )}
+                          <button
+                            onClick={() => setOrderToDelete(order.id)}
+                            disabled={isBusy}
+                            title="Delete order"
+                            className="flex items-center justify-center w-8 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all disabled:opacity-40 flex-shrink-0"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                          </button>
                         </div>
                       </div>
 
@@ -3456,6 +3463,23 @@ export default function Dashboard() {
               <button onClick={handleSaveProduct} disabled={isSaving || isUploadingImage} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-semibold transition-colors disabled:opacity-50 text-sm flex items-center gap-2">
                 {isSaving && <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75"></path></svg>}
                 {isSaving ? "Saving…" : editingProductId ? "Update Product" : "Add Product"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {orderToDelete && (
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
+            <div className="text-4xl mb-3">🗑️</div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Order</h2>
+            <p className="text-gray-500 mb-1 text-sm font-medium">{orders.find(o => o.id === orderToDelete)?.product_name}</p>
+            <p className="text-gray-400 mb-6 text-sm">This cannot be undone.</p>
+            <div className="flex justify-center gap-3">
+              <button onClick={() => setOrderToDelete(null)} className="px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 transition-colors text-sm">Cancel</button>
+              <button onClick={handleDeleteOrder} disabled={isDeletingOrder} className="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-xl font-semibold transition-colors disabled:opacity-50 text-sm">
+                {isDeletingOrder ? "Deleting…" : "Delete"}
               </button>
             </div>
           </div>
