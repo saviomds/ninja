@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import UpdateUsername from "./UpdateUsername";
 import * as XLSX from "xlsx";
+import { useTheme } from "@/components/ThemeProvider";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -958,6 +959,8 @@ export default function Dashboard() {
   // Notifications
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
   const [notifTab, setNotifTab] = useState<"orders" | "stock">("orders");
+  const { dark, toggle: toggleTheme } = useTheme();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const [viewMode, setViewMode] = useState<"card" | "excel">("card");
   // Products
@@ -1935,40 +1938,78 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col">
 
       {/* ── Top Bar ──────────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 md:px-6 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="font-bold text-lg text-gray-900 dark:text-white hover:text-gray-500 dark:hover:text-gray-300 transition-colors">
-            ← Home
-          </Link>
-          <span className="text-gray-700">|</span>
-          <Link href="/Clients" className="text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-            Clients
-          </Link>
-          <span className="hidden md:block text-gray-700">|</span>
-          <span className="hidden md:block text-sm text-gray-400 font-medium">{profile?.username || user?.email?.split("@")[0]}</span>
+      <div className="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-3 md:px-4 h-14 flex items-center justify-between gap-3">
+        {/* Left: sidebar toggle + breadcrumb */}
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            onClick={() => setSidebarCollapsed(c => !c)}
+            className="hidden md:flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex-shrink-0"
+            title="Toggle sidebar"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+          <div className="flex items-center gap-1.5 text-sm min-w-0">
+            <Link href="/" className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors font-medium hidden sm:block flex-shrink-0">Home</Link>
+            <svg className="w-3 h-3 text-gray-300 dark:text-gray-700 hidden sm:block flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            <span className="text-gray-700 dark:text-gray-200 font-semibold truncate">
+              {navSections.find(n => n.key === activeSection)?.label ?? "Dashboard"}
+            </span>
+          </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-3">
+        {/* Center: Search trigger */}
+        <button className="hidden md:flex items-center gap-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700/80 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 transition-all w-48 lg:w-64 flex-shrink-0">
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+          <span className="flex-1 text-left">Search...</span>
+          <kbd className="text-[10px] bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono text-gray-400">⌘K</kbd>
+        </button>
+
+        {/* Right: action icons */}
+        <div className="flex items-center gap-1">
+          {/* Stock alerts compact pill */}
           {outOfStockCount > 0 && (
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
-              {outOfStockCount} out of stock
+            <span className="hidden lg:inline-flex text-xs font-semibold px-2 py-1 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20 flex-shrink-0">
+              {outOfStockCount} OOS
             </span>
           )}
           {lowStockCount > 0 && (
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">
-              {lowStockCount} low stock
+            <span className="hidden lg:inline-flex text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 flex-shrink-0">
+              {lowStockCount} low
             </span>
           )}
+
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+            title="Toggle theme"
+          >
+            {dark ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>
+            )}
+          </button>
+
+          {/* Refresh */}
+          <button
+            onClick={() => loadAllData(true)}
+            disabled={isRefreshing}
+            title="Refresh (R)"
+            className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all disabled:opacity-40"
+          >
+            <svg className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M2.985 19.644A8.25 8.25 0 013 12a8.25 8.25 0 0115.023-5.455" /></svg>
+          </button>
 
           {/* Notification bell */}
           <div className="relative">
             <button
               onClick={() => { setShowNotifications(!showNotifications); setUnreadOrders(0); }}
-              className="relative flex items-center justify-center w-9 h-9 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-white rounded-lg border border-gray-200 dark:border-gray-700 transition-all"
+              className="relative flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-              </svg>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
               {unreadOrders > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
                   {unreadOrders > 9 ? "9+" : unreadOrders}
@@ -2107,40 +2148,64 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* User avatar + settings link */}
+          <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
           <button
-            onClick={() => loadAllData(true)}
-            disabled={isRefreshing}
-            title="Press R to refresh"
-            className="flex items-center gap-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 transition-all disabled:opacity-50"
+            onClick={() => setActiveSection("settings")}
+            className="flex items-center gap-2 group"
+            title="Account settings"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M2.985 19.644A8.25 8.25 0 013 12a8.25 8.25 0 0115.023-5.455" />
-            </svg>
-            {isRefreshing ? "Refreshing…" : "Refresh"}
-            <kbd className="hidden lg:inline-flex text-[10px] bg-gray-700 px-1.5 py-0.5 rounded border border-gray-600 font-mono text-gray-400">R</kbd>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ring-2 ring-transparent group-hover:ring-indigo-500/30 transition-all">
+              {(profile?.username || user?.email?.split("@")[0] || "U")[0].toUpperCase()}
+            </div>
+            <div className="hidden lg:block text-left">
+              <p className="text-xs font-semibold text-gray-900 dark:text-white leading-none">{profile?.username || user?.email?.split("@")[0]}</p>
+              <p className="text-[10px] text-gray-400 truncate max-w-[100px] mt-0.5">{user?.email}</p>
+            </div>
           </button>
-          <button onClick={() => setIsLogoutModalOpen(true)} className="text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 transition-all">
-            Logout
+
+          {/* Logout icon */}
+          <button
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all hidden md:flex"
+            title="Logout"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+          </button>
+
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
           </button>
         </div>
 
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-gray-400 hover:text-white p-1">
-          {isMobileMenuOpen ? (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
-          )}
-        </button>
-
+        {/* Mobile dropdown menu */}
         {isMobileMenuOpen && (
-          <div className="absolute top-full left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex flex-col gap-3 md:hidden shadow-2xl z-40">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{profile?.username || user?.email?.split("@")[0]}</p>
-            <p className="text-xs text-gray-500 break-all">{user?.email}</p>
-            <button onClick={() => { loadAllData(true); setIsMobileMenuOpen(false); }} disabled={isRefreshing} className="flex items-center gap-2 text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 w-full disabled:opacity-50">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M2.985 19.644A8.25 8.25 0 013 12a8.25 8.25 0 0115.023-5.455" /></svg>
+          <div className="absolute top-14 left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex flex-col gap-2 md:hidden shadow-2xl z-40">
+            <div className="flex items-center gap-3 pb-3 mb-1 border-b border-gray-100 dark:border-gray-800">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                {(profile?.username || user?.email?.split("@")[0] || "U")[0].toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile?.username || user?.email?.split("@")[0]}</p>
+                <p className="text-xs text-gray-400 break-all">{user?.email}</p>
+              </div>
+            </div>
+            <button onClick={() => { loadAllData(true); setIsMobileMenuOpen(false); }} disabled={isRefreshing} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 w-full disabled:opacity-50 transition-colors">
+              <svg className={`w-4 h-4 flex-shrink-0 ${isRefreshing ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M2.985 19.644A8.25 8.25 0 013 12a8.25 8.25 0 0115.023-5.455" /></svg>
               {isRefreshing ? "Refreshing…" : "Refresh"}
             </button>
-            <button onClick={() => { setIsLogoutModalOpen(true); setIsMobileMenuOpen(false); }} className="text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 w-full text-left">Logout</button>
+            <button onClick={() => { setActiveSection("settings"); setIsMobileMenuOpen(false); }} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 w-full transition-colors">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              Settings
+            </button>
+            <button onClick={() => { setIsLogoutModalOpen(true); setIsMobileMenuOpen(false); }} className="flex items-center gap-2 text-sm text-rose-500 px-3 py-2 rounded-lg hover:bg-rose-500/10 w-full transition-colors">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+              Logout
+            </button>
           </div>
         )}
       </div>
@@ -2149,68 +2214,77 @@ export default function Dashboard() {
       <div className="flex flex-1 min-h-0">
 
         {/* ── Left Sidebar ─────────────────────────────────────────────────── */}
-        <aside className="hidden md:flex flex-col w-52 flex-shrink-0 bg-white dark:bg-gray-900/60 border-r border-gray-200 dark:border-gray-800 sticky top-[57px] self-start h-[calc(100vh-57px)] overflow-y-auto">
-          {/* Brand */}
-          <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-800/80">
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">TN</div>
-              <div>
-                <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">TechNinja</p>
-                <p className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[120px]">{profile?.username || user?.email?.split("@")[0]}</p>
-              </div>
-            </div>
-          </div>
-
+        <aside className={`hidden md:flex flex-col flex-shrink-0 bg-white dark:bg-gray-900/60 border-r border-gray-200 dark:border-gray-800 sticky top-14 self-start h-[calc(100vh-56px)] overflow-y-auto overflow-x-hidden transition-all duration-200 ${sidebarCollapsed ? "w-14" : "w-52"}`}>
           {/* Nav items */}
-          <nav className="flex-1 p-2 space-y-0.5">
-            {navSections.map(s => (
-              <button
-                key={s.key}
-                onClick={() => setActiveSection(s.key)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left group ${
-                  activeSection === s.key
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white"
-                }`}
-              >
-                <span className="text-base flex-shrink-0">{s.icon}</span>
-                <span className="flex-1 truncate">{s.label}</span>
-                {s.count != null && s.count > 0 && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
-                    activeSection === s.key ? "bg-white/25 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:bg-gray-200 dark:group-hover:bg-gray-700"
-                  }`}>
-                    {s.count}
-                  </span>
-                )}
-              </button>
-            ))}
+          <nav className="flex-1 p-2 space-y-0.5 pt-3">
+            {navSections.map(s => {
+              const isActive = activeSection === s.key;
+              const svgIcons: Record<string, React.ReactNode> = {
+                home:     <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>,
+                products: <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>,
+                orders:   <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>,
+                invoice:  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>,
+                tools:    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L3 3.5 4.5 3l3.5 1.5v1.409l.002.002 5.302 4.786m-1.745 1.437l1.745-1.437" /></svg>,
+                social:   <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" /></svg>,
+                updates:  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" /></svg>,
+                settings: <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+                log:      <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+              };
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => setActiveSection(s.key)}
+                  title={sidebarCollapsed ? s.label : undefined}
+                  className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm font-medium transition-all text-left group relative ${
+                    isActive
+                      ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white"
+                  }`}
+                >
+                  {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-500 rounded-r-full" />}
+                  <span className={isActive ? "text-indigo-500" : ""}>{svgIcons[s.key]}</span>
+                  {!sidebarCollapsed && (
+                    <>
+                      <span className="flex-1 truncate">{s.label}</span>
+                      {s.count != null && s.count > 0 && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
+                          isActive ? "bg-indigo-100 dark:bg-indigo-500/25 text-indigo-600 dark:text-indigo-300" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                        }`}>
+                          {s.count}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </button>
+              );
+            })}
           </nav>
 
-          {/* Sidebar footer stats */}
-          {!loading && (
+          {/* Sidebar footer */}
+          {!loading && !sidebarCollapsed && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-800/80">
-              <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest px-1 mb-2">Quick Stats</p>
+              <p className="text-[9px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest px-1 mb-2">Quick Stats</p>
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center px-1 text-xs">
                   <span className="text-gray-500">Inventory</span>
-                  <span className="text-emerald-400 font-semibold">Rs {inventoryValue.toLocaleString()}</span>
+                  <span className="text-emerald-500 dark:text-emerald-400 font-semibold">Rs {inventoryValue.toLocaleString()}</span>
                 </div>
                 {outOfStockCount > 0 && (
                   <div className="flex justify-between items-center px-1 text-xs">
                     <span className="text-gray-500">Out of stock</span>
-                    <span className="text-rose-400 font-semibold">{outOfStockCount}</span>
+                    <span className="text-rose-500 dark:text-rose-400 font-semibold">{outOfStockCount}</span>
                   </div>
                 )}
                 {lowStockCount > 0 && (
                   <div className="flex justify-between items-center px-1 text-xs">
                     <span className="text-gray-500">Low stock</span>
-                    <span className="text-amber-400 font-semibold">{lowStockCount}</span>
+                    <span className="text-amber-500 dark:text-amber-400 font-semibold">{lowStockCount}</span>
                   </div>
                 )}
                 {repairStats.active > 0 && (
                   <div className="flex justify-between items-center px-1 text-xs">
                     <span className="text-gray-500">Open repairs</span>
-                    <span className="text-cyan-400 font-semibold">{repairStats.active}</span>
+                    <span className="text-cyan-500 dark:text-cyan-400 font-semibold">{repairStats.active}</span>
                   </div>
                 )}
               </div>
@@ -2218,23 +2292,25 @@ export default function Dashboard() {
           )}
         </aside>
 
-        {/* ── Mobile Top Tabs ──────────────────────────────────────────────── */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white/97 dark:bg-gray-900/97 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 px-1 py-1 flex justify-around">
-          {[
-            { key: "home",     icon: "⊞", label: "Home" },
-            { key: "products", icon: "📦", label: "Products" },
-            { key: "orders",   icon: "🛒", label: "Orders" },
-            { key: "invoice",  icon: "📄", label: "Invoices" },
-            { key: "tools",    icon: "🛠️", label: "Tools" },
-          ].map(s => (
+        {/* ── Mobile Bottom Nav ────────────────────────────────────────────── */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 px-2 py-1 flex justify-around">
+          {([
+            { key: "home",     label: "Home",     icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg> },
+            { key: "products", label: "Products", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg> },
+            { key: "orders",   label: "Orders",   icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg> },
+            { key: "invoice",  label: "Invoices", icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg> },
+            { key: "tools",    label: "Tools",    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L3 3.5 4.5 3l3.5 1.5v1.409l.002.002 5.302 4.786m-1.745 1.437l1.745-1.437" /></svg> },
+          ] as const).map(s => (
             <button
               key={s.key}
               onClick={() => setActiveSection(s.key as typeof activeSection)}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all min-w-0 ${
-                activeSection === s.key ? "text-indigo-400" : "text-gray-500 hover:text-gray-300"
+              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                activeSection === s.key
+                  ? "text-indigo-600 dark:text-indigo-400"
+                  : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
-              <span className="text-lg leading-none">{s.icon}</span>
+              {s.icon}
               {s.label}
             </button>
           ))}
@@ -2248,53 +2324,67 @@ export default function Dashboard() {
         {activeSection === "home" && (
           <div className="pt-2 space-y-8">
             {/* Welcome */}
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Good day, {profile?.username || user?.email?.split("@")[0]} 👋</h1>
-              <p className="text-gray-500 text-sm mt-1">Here is your TechNinja business overview</p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Good day, {profile?.username || user?.email?.split("@")[0]}</h1>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Here's your TechNinja business overview</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400 bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg flex-shrink-0">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+                {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+              </div>
             </div>
 
             {/* ─ Big Stats Cards ──────────────────────────────────────────── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-indigo-500/30 transition-colors">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Products</span>
-                  <span className="text-2xl">📦</span>
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-indigo-500/40 hover:shadow-md dark:hover:shadow-indigo-500/5 transition-all group">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/15 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <svg className="w-4.5 h-4.5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Products</span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{products.length}</p>
-                <p className="text-xs text-gray-500 mt-1">{outOfStockCount > 0 ? <span className="text-rose-400">{outOfStockCount} out of stock</span> : "All in stock"}</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white tabular-nums">{products.length}</p>
+                <p className="text-xs mt-1.5">{outOfStockCount > 0 ? <span className="text-rose-500 dark:text-rose-400 font-medium">{outOfStockCount} out of stock</span> : <span className="text-gray-400">All in stock</span>}</p>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-amber-500/30 transition-colors">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Orders</span>
-                  <span className="text-2xl">🛒</span>
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-amber-500/40 hover:shadow-md dark:hover:shadow-amber-500/5 transition-all group">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/15 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <svg className="w-4.5 h-4.5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Orders</span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{orders.length}</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-3xl font-bold text-gray-900 dark:text-white tabular-nums">{orders.length}</p>
+                <p className="text-xs mt-1.5">
                   {orders.filter(o => o.status === "pending").length > 0
-                    ? <span className="text-amber-400">{orders.filter(o => o.status === "pending").length} pending</span>
-                    : "No pending orders"}
+                    ? <span className="text-amber-600 dark:text-amber-400 font-medium">{orders.filter(o => o.status === "pending").length} pending</span>
+                    : <span className="text-gray-400">No pending orders</span>}
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-cyan-500/30 transition-colors">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Open Repairs</span>
-                  <span className="text-2xl">🔧</span>
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-cyan-500/40 hover:shadow-md dark:hover:shadow-cyan-500/5 transition-all group">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-500/15 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <svg className="w-4.5 h-4.5 text-cyan-600 dark:text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L3 3.5 4.5 3l3.5 1.5v1.409l.002.002 5.302 4.786m-1.745 1.437l1.745-1.437" /></svg>
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Repairs</span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{repairStats.active}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {repairStats.urgent > 0 ? <span className="text-rose-400">{repairStats.urgent} urgent</span> : repairStats.ready > 0 ? <span className="text-emerald-400">{repairStats.ready} ready to collect</span> : "All on track"}
+                <p className="text-3xl font-bold text-gray-900 dark:text-white tabular-nums">{repairStats.active}</p>
+                <p className="text-xs mt-1.5">
+                  {repairStats.urgent > 0 ? <span className="text-rose-500 dark:text-rose-400 font-medium">{repairStats.urgent} urgent</span> : repairStats.ready > 0 ? <span className="text-emerald-600 dark:text-emerald-400 font-medium">{repairStats.ready} ready</span> : <span className="text-gray-400">All on track</span>}
                 </p>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-emerald-500/30 transition-colors">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock Value</span>
-                  <span className="text-2xl">💰</span>
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-emerald-500/40 hover:shadow-md dark:hover:shadow-emerald-500/5 transition-all group">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <svg className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Stock Value</span>
                 </div>
-                <p className="text-2xl font-bold text-emerald-400">Rs {inventoryValue.toLocaleString()}</p>
-                <p className="text-xs text-gray-500 mt-1">{lowStockCount > 0 ? <span className="text-amber-400">{lowStockCount} low stock items</span> : "Healthy inventory"}</p>
+                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">Rs {inventoryValue.toLocaleString()}</p>
+                <p className="text-xs mt-1.5">{lowStockCount > 0 ? <span className="text-amber-600 dark:text-amber-400 font-medium">{lowStockCount} low stock</span> : <span className="text-gray-400">Healthy inventory</span>}</p>
               </div>
             </div>
 
@@ -2327,27 +2417,32 @@ export default function Dashboard() {
 
             {/* ─ Quick Actions ────────────────────────────────────────────── */}
             <div>
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</h2>
-              <div className="flex flex-wrap gap-3">
+              <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Quick Actions</h2>
+              <div className="flex flex-wrap gap-2">
                 <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true, sku: "", cost_price: "", low_stock_threshold: "5", tags: "" }); setEditingProductId(null); setImageInputType("link"); setIsModalOpen(true); setActiveSection("products"); }}
-                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
-                  <span>📦</span> New Product
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow">
+                  <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                  New Product
                 </button>
                 <button onClick={() => { setInvoiceData(defaultInvoiceData()); setIsInvoiceModalOpen(true); setActiveSection("invoice"); }}
-                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
-                  <span>📄</span> New Invoice
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow">
+                  <svg className="w-4 h-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                  New Invoice
                 </button>
                 <Link href="/dashboard/repairs"
-                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
-                  <span>🔧</span> Repair Ticket
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow">
+                  <svg className="w-4 h-4 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L3 3.5 4.5 3l3.5 1.5v1.409l.002.002 5.302 4.786m-1.745 1.437l1.745-1.437" /></svg>
+                  Repair Ticket
                 </Link>
                 <Link href="/dashboard/grading"
-                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
-                  <span>📱</span> Grade Phone
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow">
+                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3m-3 3h3m-3 3h3" /></svg>
+                  Grade Phone
                 </Link>
                 <Link href="/dashboard/loyalty"
-                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
-                  <span>🏆</span> Loyalty
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow">
+                  <svg className="w-4 h-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" /></svg>
+                  Loyalty
                 </Link>
               </div>
             </div>
@@ -2418,21 +2513,31 @@ export default function Dashboard() {
 
             {/* ─ Tools / Modules ──────────────────────────────────────────── */}
             <div>
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Modules</h2>
+              <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Modules</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                  { href: "/dashboard/repairs",   icon: "🔧", label: "Repairs",   sub: "Ticket pipeline",   color: "border-cyan-500/20 hover:border-cyan-500/50",   badge: repairStats.active > 0 ? `${repairStats.active} open` : null, badgeColor: "bg-cyan-500/10 text-cyan-400" },
-                  { href: "/dashboard/grading",   icon: "📱", label: "Grading",   sub: "Trade-in scoring",  color: "border-emerald-500/20 hover:border-emerald-500/50", badge: null, badgeColor: "" },
-                  { href: "/dashboard/loyalty",   icon: "🏆", label: "Loyalty",   sub: "Points & tiers",    color: "border-yellow-500/20 hover:border-yellow-500/50",  badge: null, badgeColor: "" },
-                  { href: "/dashboard/inventory", icon: "🗃️", label: "Inventory", sub: "Stock management",  color: "border-purple-500/20 hover:border-purple-500/50",  badge: outOfStockCount > 0 ? `${outOfStockCount} OOS` : null, badgeColor: "bg-rose-500/10 text-rose-400" },
+                  { href: "/dashboard/repairs",   label: "Repairs",   sub: "Ticket pipeline",  badge: repairStats.active > 0 ? `${repairStats.active} open` : null, badgeColor: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
+                    icon: <svg className="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}><path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L3 3.5 4.5 3l3.5 1.5v1.409l.002.002 5.302 4.786m-1.745 1.437l1.745-1.437" /></svg>,
+                    bg: "bg-cyan-50 dark:bg-cyan-500/10", border: "border-cyan-500/20 hover:border-cyan-500/40" },
+                  { href: "/dashboard/grading",   label: "Grading",   sub: "Trade-in scoring", badge: null, badgeColor: "",
+                    icon: <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3m-3 3h3m-3 3h3" /></svg>,
+                    bg: "bg-emerald-50 dark:bg-emerald-500/10", border: "border-emerald-500/20 hover:border-emerald-500/40" },
+                  { href: "/dashboard/loyalty",   label: "Loyalty",   sub: "Points & tiers",   badge: null, badgeColor: "",
+                    icon: <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" /></svg>,
+                    bg: "bg-yellow-50 dark:bg-yellow-500/10", border: "border-yellow-500/20 hover:border-yellow-500/40" },
+                  { href: "/dashboard/inventory", label: "Inventory", sub: "Stock management",  badge: outOfStockCount > 0 ? `${outOfStockCount} OOS` : null, badgeColor: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+                    icon: <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>,
+                    bg: "bg-purple-50 dark:bg-purple-500/10", border: "border-purple-500/20 hover:border-purple-500/40" },
                 ].map(m => (
                   <Link key={m.href} href={m.href}
-                    className={`bg-white dark:bg-gray-900 border ${m.color} rounded-xl p-4 transition-all hover:bg-gray-50 dark:hover:bg-gray-800/60 block group`}>
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="text-2xl">{m.icon}</span>
+                    className={`bg-white dark:bg-gray-900 border ${m.border} rounded-xl p-4 transition-all hover:shadow-sm group block`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`w-9 h-9 rounded-xl ${m.bg} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                        {m.icon}
+                      </div>
                       {m.badge && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.badgeColor}`}>{m.badge}</span>}
                     </div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-white">{m.label}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{m.label}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{m.sub}</p>
                   </Link>
                 ))}
