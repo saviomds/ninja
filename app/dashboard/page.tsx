@@ -20,6 +20,10 @@ interface Product {
   category?: string;
   created_at?: string;
   is_public?: boolean;
+  sku?: string;
+  cost_price?: number;
+  low_stock_threshold?: number;
+  tags?: string;
 }
 
 interface Profile {
@@ -307,7 +311,7 @@ const InputField = ({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
+      className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
     />
   </div>
 );
@@ -643,7 +647,7 @@ function InvoiceFormModal({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition-all"
+      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition-all"
     />
   );
 
@@ -658,7 +662,7 @@ function InvoiceFormModal({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h2 className="text-white font-bold text-lg">Invoice Details</h2>
+            <h2 className="text-gray-900 dark:text-white font-bold text-lg">Invoice Details</h2>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -679,7 +683,7 @@ function InvoiceFormModal({
               <select
                 value={data.themeColor || "#0a0a0a"}
                 onChange={(e) => set("themeColor", e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
+                className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
               >
                 <option value="#0a0a0a">Dark</option>
                 <option value="#1f2937">A bit dark</option>
@@ -697,7 +701,7 @@ function InvoiceFormModal({
               <select
                 value={data.customerTitle}
                 onChange={(e) => set("customerTitle", e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500 transition-all"
+                className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500 transition-all"
               >
                 {["Mr", "Mrs", "Miss", "Dr", "Prof"].map((t) => (
                   <option key={t} value={t}>{t}</option>
@@ -857,7 +861,7 @@ function InvoiceFormModal({
                 onChange={(e) => set("notes", e.target.value)}
                 placeholder="Additional notes, payment instructions, warranty info, or a thank you message..."
                 rows={3}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600"
               />
             </div>
           </div>
@@ -883,7 +887,7 @@ function InvoiceFormModal({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium border border-gray-700 transition-all"
+              className="px-5 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium border border-gray-200 dark:border-gray-700 transition-all"
             >
               Preview
             </button>
@@ -957,6 +961,7 @@ export default function Dashboard() {
 
   // Notifications
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
+  const [notifTab, setNotifTab] = useState<"orders" | "stock">("orders");
 
   const [viewMode, setViewMode] = useState<"card" | "excel">("card");
   // Products
@@ -979,6 +984,7 @@ export default function Dashboard() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true,
+    sku: "", cost_price: "", low_stock_threshold: "5", tags: "",
   });
 
   // Social
@@ -1250,6 +1256,10 @@ export default function Dashboard() {
       stock: parseInt(newProduct.stock, 10) || 0,
       category: newProduct.category,
       is_public: newProduct.is_public,
+      sku: newProduct.sku || null,
+      cost_price: newProduct.cost_price ? parseFloat(newProduct.cost_price) : null,
+      low_stock_threshold: parseInt(newProduct.low_stock_threshold, 10) || 5,
+      tags: newProduct.tags || null,
     };
     let error;
     if (editingProductId) {
@@ -1260,7 +1270,7 @@ export default function Dashboard() {
     setIsSaving(false);
     if (error) { showToast("Error: " + error.message, "error"); return; }
     setIsModalOpen(false);
-    setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true });
+    setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true, sku: "", cost_price: "", low_stock_threshold: "5", tags: "" });
     setEditingProductId(null);
     setImageInputType("link");
     showToast(editingProductId ? "Product updated!" : "Product added!", "success");
@@ -1330,7 +1340,13 @@ export default function Dashboard() {
   };
 
   const handleEditClick = (product: Product) => {
-    setNewProduct({ name: product.name, image: product.image || "", description: product.description || "", price: product.price.toString(), stock: product.stock.toString(), category: product.category || "", is_public: product.is_public ?? true });
+    setNewProduct({
+      name: product.name, image: product.image || "", description: product.description || "",
+      price: product.price.toString(), stock: product.stock.toString(), category: product.category || "",
+      is_public: product.is_public ?? true, sku: product.sku || "",
+      cost_price: product.cost_price?.toString() || "", low_stock_threshold: (product.low_stock_threshold ?? 5).toString(),
+      tags: product.tags || "",
+    });
     setEditingProductId(product.id);
     setImageInputType(product.image?.includes('product-images') ? "upload" : "link");
     setIsModalOpen(true);
@@ -1920,12 +1936,12 @@ export default function Dashboard() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col">
 
       {/* ── Top Bar ──────────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 px-4 md:px-6 py-3 flex justify-between items-center">
+      <div className="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 md:px-6 py-3 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <Link href="/" className="font-bold text-lg text-white hover:text-gray-300 transition-colors">
+          <Link href="/" className="font-bold text-lg text-gray-900 dark:text-white hover:text-gray-500 dark:hover:text-gray-300 transition-colors">
             ← Home
           </Link>
           <span className="text-gray-700">|</span>
@@ -1952,7 +1968,7 @@ export default function Dashboard() {
           <div className="relative">
             <button
               onClick={() => { setShowNotifications(!showNotifications); setUnreadOrders(0); }}
-              className="relative flex items-center justify-center w-9 h-9 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-all"
+              className="relative flex items-center justify-center w-9 h-9 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-white rounded-lg border border-gray-200 dark:border-gray-700 transition-all"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
@@ -1964,36 +1980,133 @@ export default function Dashboard() {
               )}
             </button>
             {showNotifications && (
-              <div className="absolute right-0 top-11 w-80 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-white">Recent Orders</span>
-                  <button onClick={() => { setActiveSection("orders"); setShowNotifications(false); }} className="text-xs text-indigo-400 hover:underline">View all</button>
+              <div className="absolute right-0 top-11 w-96 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                {/* Panel header */}
+                <div className="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">Notifications</span>
+                    <div className="flex items-center gap-2">
+                      {notifPermission !== "granted" && (
+                        <button
+                          onClick={requestNotifPermission}
+                          className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
+                        >
+                          Enable push
+                        </button>
+                      )}
+                      {notifPermission === "granted" && (
+                        <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                          ✓ Push on
+                        </span>
+                      )}
+                      <button
+                        onClick={() => setShowNotifications(false)}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  {/* Tabs */}
+                  <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+                    {([["orders", "📦 Orders", orders.length], ["stock", "⚠️ Stock", products.filter(p => p.stock <= (p.low_stock_threshold ?? 5)).length]] as const).map(([tab, label, count]) => (
+                      <button
+                        key={tab}
+                        onClick={() => setNotifTab(tab)}
+                        className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-1.5 rounded-md transition-all ${notifTab === tab ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
+                      >
+                        {label}
+                        {(count as number) > 0 && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${notifTab === tab ? "bg-indigo-500/20 text-indigo-500 dark:text-indigo-400" : "bg-gray-200 dark:bg-gray-700 text-gray-500"}`}>{count}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="max-h-72 overflow-y-auto">
-                  {orders.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-8">No orders yet</p>
-                  ) : (
-                    orders.slice(0, 8).map((order) => (
-                      <div key={order.id} className="px-4 py-3 border-b border-gray-800/50 hover:bg-gray-800/50 transition-colors">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-white truncate">{order.product_name}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">{order.client_name} · qty {order.quantity}</p>
+
+                {/* Orders tab */}
+                {notifTab === "orders" && (
+                  <div className="max-h-80 overflow-y-auto">
+                    {orders.length === 0 ? (
+                      <div className="text-center py-10">
+                        <p className="text-2xl mb-2">📭</p>
+                        <p className="text-sm text-gray-500">No orders yet</p>
+                      </div>
+                    ) : (
+                      orders.slice(0, 10).map((order) => (
+                        <div key={order.id} className="px-4 py-3 border-b border-gray-100 dark:border-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2.5 min-w-0">
+                              <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${order.status === "pending" ? "bg-amber-400" : order.status === "confirmed" ? "bg-indigo-400" : order.status === "completed" ? "bg-emerald-400" : "bg-red-400"}`} />
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{order.product_name}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{order.client_name} · qty {order.quantity}</p>
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 text-right">
+                              <p className="text-xs font-bold text-emerald-500 dark:text-emerald-400">Rs {order.price.toLocaleString()}</p>
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-1 inline-block ${
+                                order.status === "pending" ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" :
+                                order.status === "confirmed" ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" :
+                                order.status === "completed" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" :
+                                "bg-red-500/15 text-red-500"
+                              }`}>{order.status}</span>
+                            </div>
                           </div>
-                          <div className="flex-shrink-0 text-right">
-                            <p className="text-xs font-semibold text-emerald-400">Rs {order.price.toLocaleString()}</p>
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-1 inline-block ${
-                              order.status === "pending" ? "bg-amber-500/20 text-amber-400" :
-                              order.status === "confirmed" ? "bg-indigo-500/20 text-indigo-400" :
-                              order.status === "completed" ? "bg-emerald-500/20 text-emerald-400" :
-                              "bg-red-500/20 text-red-400"
-                            }`}>{order.status}</span>
+                          {order.status === "pending" && (
+                            <button
+                              onClick={async () => {
+                                await supabase.from("orders").update({ status: "confirmed" }).eq("id", order.id);
+                                setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: "confirmed" } : o));
+                                showToast("Order confirmed", "success");
+                              }}
+                              className="mt-2 text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
+                            >
+                              ✓ Confirm order
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                    <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                      <button onClick={() => { setActiveSection("orders"); setShowNotifications(false); }} className="text-xs text-indigo-500 dark:text-indigo-400 font-semibold hover:underline">View all orders →</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Stock alerts tab */}
+                {notifTab === "stock" && (
+                  <div className="max-h-80 overflow-y-auto">
+                    {(() => {
+                      const alertItems = products.filter(p => p.stock <= (p.low_stock_threshold ?? 5)).sort((a, b) => a.stock - b.stock);
+                      return alertItems.length === 0 ? (
+                        <div className="text-center py-10">
+                          <p className="text-2xl mb-2">✅</p>
+                          <p className="text-sm text-gray-500">All stock levels are healthy</p>
+                        </div>
+                      ) : alertItems.map(p => (
+                        <div key={p.id} className="px-4 py-3 border-b border-gray-100 dark:border-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.name}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{p.category || "Uncategorised"}</p>
+                            </div>
+                            <div className="flex-shrink-0 text-right">
+                              {p.stock === 0 ? (
+                                <span className="text-xs font-bold px-2 py-1 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20">Out of stock</span>
+                              ) : (
+                                <span className="text-xs font-bold px-2 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">{p.stock} left</span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                      ));
+                    })()}
+                    <div className="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                      <button onClick={() => { setActiveSection("products"); setShowNotifications(false); }} className="text-xs text-amber-500 font-semibold hover:underline">Manage inventory →</button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -2002,7 +2115,7 @@ export default function Dashboard() {
             onClick={() => loadAllData(true)}
             disabled={isRefreshing}
             title="Press R to refresh"
-            className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-700 transition-all disabled:opacity-50"
+            className="flex items-center gap-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 transition-all disabled:opacity-50"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M2.985 19.644A8.25 8.25 0 013 12a8.25 8.25 0 0115.023-5.455" />
@@ -2010,7 +2123,7 @@ export default function Dashboard() {
             {isRefreshing ? "Refreshing…" : "Refresh"}
             <kbd className="hidden lg:inline-flex text-[10px] bg-gray-700 px-1.5 py-0.5 rounded border border-gray-600 font-mono text-gray-400">R</kbd>
           </button>
-          <button onClick={() => setIsLogoutModalOpen(true)} className="text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg border border-gray-700 transition-all">
+          <button onClick={() => setIsLogoutModalOpen(true)} className="text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 transition-all">
             Logout
           </button>
         </div>
@@ -2024,14 +2137,14 @@ export default function Dashboard() {
         </button>
 
         {isMobileMenuOpen && (
-          <div className="absolute top-full left-0 w-full bg-gray-900 border-b border-gray-800 p-4 flex flex-col gap-3 md:hidden shadow-2xl z-40">
-            <p className="text-sm font-medium text-white">{profile?.username || user?.email?.split("@")[0]}</p>
+          <div className="absolute top-full left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex flex-col gap-3 md:hidden shadow-2xl z-40">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">{profile?.username || user?.email?.split("@")[0]}</p>
             <p className="text-xs text-gray-500 break-all">{user?.email}</p>
-            <button onClick={() => { loadAllData(true); setIsMobileMenuOpen(false); }} disabled={isRefreshing} className="flex items-center gap-2 text-sm bg-gray-800 text-white px-4 py-2 rounded-lg border border-gray-700 w-full disabled:opacity-50">
+            <button onClick={() => { loadAllData(true); setIsMobileMenuOpen(false); }} disabled={isRefreshing} className="flex items-center gap-2 text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 w-full disabled:opacity-50">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M2.985 19.644A8.25 8.25 0 013 12a8.25 8.25 0 0115.023-5.455" /></svg>
               {isRefreshing ? "Refreshing…" : "Refresh"}
             </button>
-            <button onClick={() => { setIsLogoutModalOpen(true); setIsMobileMenuOpen(false); }} className="text-sm bg-gray-800 text-white px-4 py-2 rounded-lg border border-gray-700 w-full text-left">Logout</button>
+            <button onClick={() => { setIsLogoutModalOpen(true); setIsMobileMenuOpen(false); }} className="text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 w-full text-left">Logout</button>
           </div>
         )}
       </div>
@@ -2040,13 +2153,13 @@ export default function Dashboard() {
       <div className="flex flex-1 min-h-0">
 
         {/* ── Left Sidebar ─────────────────────────────────────────────────── */}
-        <aside className="hidden md:flex flex-col w-52 flex-shrink-0 bg-gray-900/60 border-r border-gray-800 sticky top-[57px] self-start h-[calc(100vh-57px)] overflow-y-auto">
+        <aside className="hidden md:flex flex-col w-52 flex-shrink-0 bg-white dark:bg-gray-900/60 border-r border-gray-200 dark:border-gray-800 sticky top-[57px] self-start h-[calc(100vh-57px)] overflow-y-auto">
           {/* Brand */}
-          <div className="px-4 py-4 border-b border-gray-800/80">
+          <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-800/80">
             <div className="flex items-center gap-2.5 mb-3">
               <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">TN</div>
               <div>
-                <p className="text-xs font-bold text-white leading-none">TechNinja</p>
+                <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">TechNinja</p>
                 <p className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[120px]">{profile?.username || user?.email?.split("@")[0]}</p>
               </div>
             </div>
@@ -2061,14 +2174,14 @@ export default function Dashboard() {
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left group ${
                   activeSection === s.key
                     ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-gray-400 hover:bg-gray-800/80 hover:text-white"
+                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/80 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
                 <span className="text-base flex-shrink-0">{s.icon}</span>
                 <span className="flex-1 truncate">{s.label}</span>
                 {s.count != null && s.count > 0 && (
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
-                    activeSection === s.key ? "bg-white/25 text-white" : "bg-gray-800 text-gray-400 group-hover:bg-gray-700"
+                    activeSection === s.key ? "bg-white/25 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 group-hover:bg-gray-200 dark:group-hover:bg-gray-700"
                   }`}>
                     {s.count}
                   </span>
@@ -2079,7 +2192,7 @@ export default function Dashboard() {
 
           {/* Sidebar footer stats */}
           {!loading && (
-            <div className="p-3 border-t border-gray-800/80">
+            <div className="p-3 border-t border-gray-200 dark:border-gray-800/80">
               <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest px-1 mb-2">Quick Stats</p>
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center px-1 text-xs">
@@ -2110,7 +2223,7 @@ export default function Dashboard() {
         </aside>
 
         {/* ── Mobile Top Tabs ──────────────────────────────────────────────── */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-gray-900/97 backdrop-blur-md border-t border-gray-800 px-1 py-1 flex justify-around">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white/97 dark:bg-gray-900/97 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 px-1 py-1 flex justify-around">
           {[
             { key: "home",     icon: "⊞", label: "Home" },
             { key: "products", icon: "📦", label: "Products" },
@@ -2140,27 +2253,27 @@ export default function Dashboard() {
           <div className="pt-2 space-y-8">
             {/* Welcome */}
             <div>
-              <h1 className="text-2xl font-bold text-white">Good day, {profile?.username || user?.email?.split("@")[0]} 👋</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Good day, {profile?.username || user?.email?.split("@")[0]} 👋</h1>
               <p className="text-gray-500 text-sm mt-1">Here is your TechNinja business overview</p>
             </div>
 
             {/* ─ Big Stats Cards ──────────────────────────────────────────── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-indigo-500/30 transition-colors">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-indigo-500/30 transition-colors">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Products</span>
                   <span className="text-2xl">📦</span>
                 </div>
-                <p className="text-3xl font-bold text-white">{products.length}</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{products.length}</p>
                 <p className="text-xs text-gray-500 mt-1">{outOfStockCount > 0 ? <span className="text-rose-400">{outOfStockCount} out of stock</span> : "All in stock"}</p>
               </div>
 
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-amber-500/30 transition-colors">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-amber-500/30 transition-colors">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Orders</span>
                   <span className="text-2xl">🛒</span>
                 </div>
-                <p className="text-3xl font-bold text-white">{orders.length}</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{orders.length}</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {orders.filter(o => o.status === "pending").length > 0
                     ? <span className="text-amber-400">{orders.filter(o => o.status === "pending").length} pending</span>
@@ -2168,18 +2281,18 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-cyan-500/30 transition-colors">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-cyan-500/30 transition-colors">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Open Repairs</span>
                   <span className="text-2xl">🔧</span>
                 </div>
-                <p className="text-3xl font-bold text-white">{repairStats.active}</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{repairStats.active}</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {repairStats.urgent > 0 ? <span className="text-rose-400">{repairStats.urgent} urgent</span> : repairStats.ready > 0 ? <span className="text-emerald-400">{repairStats.ready} ready to collect</span> : "All on track"}
                 </p>
               </div>
 
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-emerald-500/30 transition-colors">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-emerald-500/30 transition-colors">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock Value</span>
                   <span className="text-2xl">💰</span>
@@ -2220,24 +2333,24 @@ export default function Dashboard() {
             <div>
               <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</h2>
               <div className="flex flex-wrap gap-3">
-                <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true }); setEditingProductId(null); setImageInputType("link"); setIsModalOpen(true); setActiveSection("products"); }}
-                  className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+                <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true, sku: "", cost_price: "", low_stock_threshold: "5", tags: "" }); setEditingProductId(null); setImageInputType("link"); setIsModalOpen(true); setActiveSection("products"); }}
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
                   <span>📦</span> New Product
                 </button>
                 <button onClick={() => { setInvoiceData(defaultInvoiceData()); setIsInvoiceModalOpen(true); setActiveSection("invoice"); }}
-                  className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
                   <span>📄</span> New Invoice
                 </button>
                 <Link href="/dashboard/repairs"
-                  className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
                   <span>🔧</span> Repair Ticket
                 </Link>
                 <Link href="/dashboard/grading"
-                  className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
                   <span>📱</span> Grade Phone
                 </Link>
                 <Link href="/dashboard/loyalty"
-                  className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
+                  className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all">
                   <span>🏆</span> Loyalty
                 </Link>
               </div>
@@ -2246,9 +2359,9 @@ export default function Dashboard() {
             {/* ─ Recent Orders + Repair pipeline ──────────────────────────── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Recent Orders */}
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
-                  <h3 className="text-sm font-semibold text-white">Recent Orders</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Recent Orders</h3>
                   <button onClick={() => setActiveSection("orders")} className="text-xs text-indigo-400 hover:underline">View all</button>
                 </div>
                 <div className="divide-y divide-gray-800/60">
@@ -2257,7 +2370,7 @@ export default function Dashboard() {
                   ) : orders.slice(0, 5).map(order => (
                     <div key={order.id} className="flex items-center justify-between px-5 py-3 hover:bg-gray-800/40 transition-colors">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{order.product_name}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{order.product_name}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{order.client_name} · qty {order.quantity}</p>
                       </div>
                       <div className="flex-shrink-0 text-right ml-4">
@@ -2275,9 +2388,9 @@ export default function Dashboard() {
               </div>
 
               {/* Repair Status Widget */}
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
-                  <h3 className="text-sm font-semibold text-white">Repair Tickets</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Repair Tickets</h3>
                   <Link href="/dashboard/repairs" className="text-xs text-indigo-400 hover:underline">Manage</Link>
                 </div>
                 <div className="p-5 space-y-3">
@@ -2290,7 +2403,7 @@ export default function Dashboard() {
                       <div className="w-32 flex-shrink-0">
                         <p className="text-xs text-gray-500">{row.label}</p>
                       </div>
-                      <div className="flex-1 bg-gray-800 rounded-full h-2">
+                      <div className="flex-1 bg-gray-200 dark:bg-gray-800 rounded-full h-2">
                         <div className={`h-2 rounded-full ${row.bar} transition-all`}
                           style={{ width: repairStats.active > 0 ? `${Math.min((row.value / Math.max(repairStats.active, 1)) * 100, 100)}%` : "0%" }} />
                       </div>
@@ -2318,12 +2431,12 @@ export default function Dashboard() {
                   { href: "/dashboard/inventory", icon: "🗃️", label: "Inventory", sub: "Stock management",  color: "border-purple-500/20 hover:border-purple-500/50",  badge: outOfStockCount > 0 ? `${outOfStockCount} OOS` : null, badgeColor: "bg-rose-500/10 text-rose-400" },
                 ].map(m => (
                   <Link key={m.href} href={m.href}
-                    className={`bg-gray-900 border ${m.color} rounded-xl p-4 transition-all hover:bg-gray-800/60 block group`}>
+                    className={`bg-white dark:bg-gray-900 border ${m.color} rounded-xl p-4 transition-all hover:bg-gray-50 dark:hover:bg-gray-800/60 block group`}>
                     <div className="flex items-start justify-between mb-2">
                       <span className="text-2xl">{m.icon}</span>
                       {m.badge && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.badgeColor}`}>{m.badge}</span>}
                     </div>
-                    <p className="text-sm font-semibold text-white group-hover:text-white">{m.label}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-white">{m.label}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{m.sub}</p>
                   </Link>
                 ))}
@@ -2337,11 +2450,11 @@ export default function Dashboard() {
           <div ref={productsRef} className="scroll-mt-32">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 pt-2">
               <div>
-                <h2 className="text-2xl font-bold text-white">Products</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Products</h2>
                 <p className="text-gray-500 text-sm mt-0.5">{filteredProducts.length} of {products.length} shown</p>
               </div>
               <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                <button onClick={handleDownloadExcel} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-700 transition-all">
+                <button onClick={handleDownloadExcel} className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 transition-all">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-emerald-400">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                   </svg>
@@ -2352,10 +2465,10 @@ export default function Dashboard() {
                     🗑 Delete {selectedProducts.size} selected
                   </button>
                 )}
-                <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true }); setEditingProductId(null); setImageInputType("link"); setIsModalOpen(true); }} className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                <button onClick={() => { setNewProduct({ name: "", image: "", description: "", price: "", stock: "", category: "", is_public: true, sku: "", cost_price: "", low_stock_threshold: "5", tags: "" }); setEditingProductId(null); setImageInputType("link"); setIsModalOpen(true); }} className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                   + New Product
                 </button>
-                <button onClick={() => setViewMode(v => v === "card" ? "excel" : "card")} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-700 transition-all">
+                <button onClick={() => setViewMode(v => v === "card" ? "excel" : "card")} className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 transition-all">
                   {viewMode === "card" ? "🗃️ Excel Mode" : "🃏 Card Mode"}
                 </button>
               </div>
@@ -2364,16 +2477,16 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="relative flex-1">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <input type="text" placeholder="Search by name, description, category…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-base md:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 transition-colors" />
+                <input type="text" placeholder="Search by name, description, category…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-base md:text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-gray-400 dark:focus:border-gray-600 transition-colors" />
               </div>
               <div className="flex gap-2 flex-wrap">
                 {(["all", "in_stock", "low", "out"] as const).map(f => (
-                  <button key={f} onClick={() => setStockFilter(f)} className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all whitespace-nowrap ${stockFilter === f ? "bg-indigo-500/15 text-indigo-300 border-indigo-500/30" : "bg-gray-900 text-gray-500 border-gray-800 hover:border-gray-600"}`}>
+                  <button key={f} onClick={() => setStockFilter(f)} className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all whitespace-nowrap ${stockFilter === f ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border-indigo-500/30" : "bg-gray-100 dark:bg-gray-900 text-gray-500 border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600"}`}>
                     {f === "all" ? "All" : f === "in_stock" ? "✅ In Stock" : f === "low" ? "⚠️ Low" : "❌ Out"}
                   </button>
                 ))}
               </div>
-              <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)} className="bg-gray-900 border border-gray-800 rounded-xl px-3 py-2.5 text-base md:text-sm text-gray-400 focus:outline-none focus:border-gray-600 cursor-pointer">
+              <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2.5 text-base md:text-sm text-gray-600 dark:text-gray-400 focus:outline-none focus:border-gray-400 dark:focus:border-gray-600 cursor-pointer">
                 <option value="newest">Newest</option>
                 <option value="price_asc">Price ↑</option>
                 <option value="price_desc">Price ↓</option>
@@ -2393,19 +2506,19 @@ export default function Dashboard() {
 
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3].map(n => <div key={n} className="h-80 bg-gray-900/50 rounded-2xl animate-pulse border border-gray-800" />)}
+                {[1, 2, 3].map(n => <div key={n} className="h-80 bg-gray-100 dark:bg-gray-900/50 rounded-2xl animate-pulse border border-gray-200 dark:border-gray-800" />)}
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-20 bg-gray-900/50 rounded-2xl border border-gray-800">
+              <div className="text-center py-20 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-800">
                 <p className="text-4xl mb-3">🔍</p>
                 <p className="text-gray-400">No products found.</p>
               </div>
             ) : (
               <>
                 {viewMode === "excel" ? (
-                  <div className="overflow-x-auto bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl">
+                  <div className="overflow-x-auto bg-white/80 dark:bg-gray-900/40 backdrop-blur-md border border-gray-200 dark:border-gray-800 rounded-2xl">
                     <table className="w-full text-sm text-left">
-                      <thead className="text-xs text-gray-400 uppercase bg-gray-800/50 border-b border-gray-800">
+                      <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-100 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                         <tr>
                           <th className="px-4 py-3 w-10">
                             <input type="checkbox" checked={selectedProducts.size > 0 && selectedProducts.size === paginatedProducts.length} onChange={toggleSelectAll} className="w-4 h-4 rounded accent-indigo-500 cursor-pointer" />
@@ -2438,7 +2551,7 @@ export default function Dashboard() {
                                 type="text"
                                 defaultValue={product.name}
                                 onBlur={(e) => e.target.value !== product.name && handleInlineUpdate(product.id, "name", e.target.value)}
-                                className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all"
+                                className="bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-50 dark:focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-gray-900 dark:text-white outline-none transition-all"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -2446,7 +2559,7 @@ export default function Dashboard() {
                                 type="text"
                                 defaultValue={product.category || ""}
                                 onBlur={(e) => e.target.value !== (product.category || "") && handleInlineUpdate(product.id, "category", e.target.value)}
-                                className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all"
+                                className="bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-50 dark:focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-gray-900 dark:text-white outline-none transition-all"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -2460,7 +2573,7 @@ export default function Dashboard() {
                                   }
                                 }}
                                 defaultValue={product.description || ""}
-                                className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all resize-none block align-middle [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600"
+                                className="bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-50 dark:focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-gray-900 dark:text-white outline-none transition-all resize-none block align-middle [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -2468,7 +2581,7 @@ export default function Dashboard() {
                                 type="number"
                                 defaultValue={product.price}
                                 onBlur={(e) => parseFloat(e.target.value) !== product.price && handleInlineUpdate(product.id, "price", parseFloat(e.target.value) || 0)}
-                                className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all"
+                                className="bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-50 dark:focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-gray-900 dark:text-white outline-none transition-all"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -2476,7 +2589,7 @@ export default function Dashboard() {
                                 type="number"
                                 defaultValue={product.stock}
                                 onBlur={(e) => parseInt(e.target.value, 10) !== product.stock && handleInlineUpdate(product.id, "stock", parseInt(e.target.value, 10) || 0)}
-                                className="bg-transparent border border-transparent hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-white outline-none transition-all"
+                                className="bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-700 focus:border-indigo-500 focus:bg-gray-50 dark:focus:bg-gray-900 rounded px-2 py-1 w-full text-base md:text-sm text-gray-900 dark:text-white outline-none transition-all"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -2498,8 +2611,8 @@ export default function Dashboard() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {paginatedProducts.map(product => (
-                      <div key={product.id} className={`group bg-gray-900/40 backdrop-blur-md border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-black/50 flex flex-col ${selectedProducts.has(product.id) ? "border-indigo-500/50 ring-1 ring-indigo-500/30" : "border-gray-800 hover:border-gray-700"}`}>
-                        <div className="aspect-[4/3] w-full bg-gray-800 relative overflow-hidden">
+                      <div key={product.id} className={`group bg-white dark:bg-gray-900/40 backdrop-blur-md border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-black/10 dark:hover:shadow-black/50 flex flex-col ${selectedProducts.has(product.id) ? "border-indigo-500/50 ring-1 ring-indigo-500/30" : "border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"}`}>
+                        <div className="aspect-[4/3] w-full bg-gray-100 dark:bg-gray-800 relative overflow-hidden">
                         <div className="absolute top-3 left-3 z-10">
                           <input type="checkbox" checked={selectedProducts.has(product.id)} onChange={() => toggleSelectProduct(product.id)} className="w-4 h-4 rounded accent-indigo-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()} />
                         </div>
@@ -2531,7 +2644,7 @@ export default function Dashboard() {
 
                       <div className="p-5 flex flex-col flex-1">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="text-base font-bold text-white line-clamp-1">{product.name}</h3>
+                          <h3 className="text-base font-bold text-gray-900 dark:text-white line-clamp-1">{product.name}</h3>
                           {product.category && (
                             <span className="text-[10px] shrink-0 font-semibold bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20">{product.category}</span>
                           )}
@@ -2555,19 +2668,19 @@ export default function Dashboard() {
                         </div>
 
                         <div className="flex items-center gap-2 mb-4">
-                          <button onClick={() => handleStockAdjust(product, -1)} disabled={product.stock === 0 || adjustingStockId === product.id} className="w-7 h-7 rounded-lg bg-gray-800 border border-gray-700 text-white flex items-center justify-center text-lg hover:bg-gray-700 disabled:opacity-30 transition-all">−</button>
+                          <button onClick={() => handleStockAdjust(product, -1)} disabled={product.stock === 0 || adjustingStockId === product.id} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white flex items-center justify-center text-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 transition-all">−</button>
                           <span className={`text-sm font-semibold min-w-[60px] text-center px-2 py-1 rounded-lg border ${product.stock === 0 ? "text-rose-400 bg-rose-500/10 border-rose-500/20" : product.stock <= 5 ? "text-amber-400 bg-amber-500/10 border-amber-500/20" : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"}`}>
                             {adjustingStockId === product.id ? "…" : `${product.stock} left`}
                           </span>
-                          <button onClick={() => handleStockAdjust(product, 1)} disabled={adjustingStockId === product.id} className="w-7 h-7 rounded-lg bg-gray-800 border border-gray-700 text-white flex items-center justify-center text-lg hover:bg-gray-700 disabled:opacity-30 transition-all">+</button>
+                          <button onClick={() => handleStockAdjust(product, 1)} disabled={adjustingStockId === product.id} className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white flex items-center justify-center text-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 transition-all">+</button>
                         </div>
 
-                        <div className="flex gap-2 pt-4 border-t border-gray-800/60">
+                        <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-800/60">
                           <button onClick={() => handleTogglePublic(product)}
-                            className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${(product.is_public ?? true) ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600"}`}>
+                            className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${(product.is_public ?? true) ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`}>
                             {(product.is_public ?? true) ? "Public" : "Private"}
                           </button>
-                          <button onClick={() => handleEditClick(product)} className="flex-1 bg-gray-800/80 hover:bg-gray-700 text-white py-2 rounded-xl text-sm font-medium transition-all border border-gray-700/50">Edit</button>
+                          <button onClick={() => handleEditClick(product)} className="flex-1 bg-gray-100 dark:bg-gray-800/80 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white py-2 rounded-xl text-sm font-medium transition-all border border-gray-200 dark:border-gray-700/50">Edit</button>
                           <button onClick={() => setProductToDelete(product.id)} className="flex-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 py-2 rounded-xl text-sm font-medium transition-all border border-rose-500/10">Delete</button>
                         </div>
                       </div>
@@ -2578,7 +2691,7 @@ export default function Dashboard() {
 
                 {totalPages > 1 && (
                   <div className="flex justify-center items-center mt-10 gap-2 flex-wrap">
-                    <button disabled={currentPage === 1} onClick={() => { setCurrentPage(p => p - 1); productsRef.current?.scrollIntoView({ behavior: "smooth" }); }} className="px-4 py-2 rounded-xl border border-gray-800 text-sm text-gray-400 hover:bg-gray-800 disabled:opacity-40 transition-all">Prev</button>
+                    <button disabled={currentPage === 1} onClick={() => { setCurrentPage(p => p - 1); productsRef.current?.scrollIntoView({ behavior: "smooth" }); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 transition-all">Prev</button>
                     <div className="flex flex-wrap justify-center gap-1">
                       {(totalPages <= 5
                         ? Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -2601,15 +2714,15 @@ export default function Dashboard() {
                             page === "..."
                               ? "text-gray-500 cursor-default"
                               : currentPage === page
-                              ? "bg-white text-black"
-                              : "text-gray-400 hover:bg-gray-800 border border-transparent hover:border-gray-700"
+                              ? "bg-gray-900 dark:bg-white text-white dark:text-black"
+                              : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
                           }`}
                         >
                           {page}
                         </button>
                       ))}
                     </div>
-                    <button disabled={currentPage === totalPages} onClick={() => { setCurrentPage(p => p + 1); productsRef.current?.scrollIntoView({ behavior: "smooth" }); }} className="px-4 py-2 rounded-xl border border-gray-800 text-sm text-gray-400 hover:bg-gray-800 disabled:opacity-40 transition-all">Next</button>
+                    <button disabled={currentPage === totalPages} onClick={() => { setCurrentPage(p => p + 1); productsRef.current?.scrollIntoView({ behavior: "smooth" }); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 transition-all">Next</button>
                   </div>
                 )}
               </>
@@ -2622,12 +2735,12 @@ export default function Dashboard() {
           <div className="pt-2">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-white">Client Orders</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Client Orders</h2>
                 <p className="text-gray-500 text-sm mt-0.5">{orders.length} total · {orders.filter(o => o.status === "pending").length} pending</p>
               </div>
               <button
                 onClick={fetchOrders}
-                className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-xl border border-gray-700 transition-all"
+                className="flex items-center gap-2 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 transition-all"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0M2.985 19.644A8.25 8.25 0 013 12a8.25 8.25 0 0115.023-5.455" />
@@ -2655,7 +2768,7 @@ export default function Dashboard() {
             </div>
 
             {orders.length === 0 ? (
-              <div className="bg-gray-900 rounded-2xl border border-gray-800 p-16 text-center">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-16 text-center">
                 <p className="text-4xl mb-4">🛒</p>
                 <p className="text-gray-400">No orders yet. They&apos;ll appear here in real time.</p>
               </div>
@@ -2681,15 +2794,15 @@ export default function Dashboard() {
                   };
                   const isBusy = updatingOrderId === order.id;
                   return (
-                    <div key={order.id} className={`bg-gray-900 rounded-2xl border p-5 transition-all ${order.status === "pending" ? "border-amber-500/40" : "border-gray-800"}`}>
+                    <div key={order.id} className={`bg-white dark:bg-gray-900 rounded-2xl border p-5 transition-all ${order.status === "pending" ? "border-amber-500/40" : "border-gray-200 dark:border-gray-800"}`}>
                       {/* Header row */}
                       <div className="flex items-start justify-between gap-3 mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 border border-gray-700 flex-shrink-0">
+                          <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 flex-shrink-0">
                             #{orders.length - idx}
                           </div>
                           <div>
-                            <p className="font-bold text-white text-sm leading-tight">{order.product_name}</p>
+                            <p className="font-bold text-gray-900 dark:text-white text-sm leading-tight">{order.product_name}</p>
                             <p className="text-xs text-gray-500 mt-0.5">{new Date(order.created_at).toLocaleString()}</p>
                           </div>
                         </div>
@@ -2699,10 +2812,10 @@ export default function Dashboard() {
                       </div>
 
                       {/* Client info */}
-                      <div className="bg-gray-800/50 rounded-xl p-3 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="bg-gray-100 dark:bg-gray-800/50 rounded-xl p-3 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
                           <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Name</p>
-                          <p className="text-sm font-semibold text-white">{order.client_name}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{order.client_name}</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Email</p>
@@ -2723,7 +2836,7 @@ export default function Dashboard() {
                           </div>
                           <div>
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Qty</p>
-                            <p className="text-base font-bold text-white">{order.quantity}</p>
+                            <p className="text-base font-bold text-gray-900 dark:text-white">{order.quantity}</p>
                           </div>
                           {order.notes && (
                             <div className="hidden sm:block">
@@ -2784,7 +2897,7 @@ export default function Dashboard() {
           <div>
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 pt-2">
               <div>
-                <h2 className="text-2xl font-bold text-white">Social Media Profiles</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Social Media Profiles</h2>
                 <p className="text-gray-500 text-sm mt-0.5">Manage platform accounts and credentials</p>
               </div>
               <button onClick={() => { setNewSocial({ platform_name: "", platform_icon: "", profile_link: "", username: "", email: "", password: "", description: "", is_active: true, followers: "" }); setEditingSocialId(null); setIsSocialModalOpen(true); }} className="w-full md:w-auto bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 hover:-translate-y-0.5 transition-all duration-200 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
@@ -2797,13 +2910,13 @@ export default function Dashboard() {
                 {[1, 2, 3].map(n => <div key={n} className="h-64 bg-gray-900/40 rounded-2xl border border-gray-800" />)}
               </div>
             ) : socialProfiles.length === 0 ? (
-              <div className="text-center py-20 bg-gray-900/50 rounded-2xl border border-gray-800">
+              <div className="text-center py-20 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-800">
                 <p className="text-gray-400">No social media profiles added yet.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {socialProfiles.map(profile => (
-                  <div key={profile.id} className="group bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all duration-300 flex flex-col relative">
+                  <div key={profile.id} className="group bg-white/80 dark:bg-gray-900/40 backdrop-blur-md border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all duration-300 flex flex-col relative">
                     <button
                       onClick={() => handleToggleActive(profile)}
                       title={profile.is_active ? "Mark as inactive" : "Mark as active"}
@@ -2828,14 +2941,14 @@ export default function Dashboard() {
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600 flex items-center justify-center text-xl font-bold text-gray-300">{profile.platform_name.charAt(0).toUpperCase()}</div>
                       )}
                       <div className="overflow-hidden">
-                        <h3 className="text-lg font-bold text-white truncate">{profile.platform_name}</h3>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">{profile.platform_name}</h3>
                         <a href={profile.profile_link?.startsWith("http") ? profile.profile_link : `https://${profile.profile_link}`} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-400 hover:text-indigo-300 truncate block transition-colors">Visit ↗</a>
                       </div>
                     </div>
 
                     {profile.description && <p className="text-sm text-gray-400 mb-3 line-clamp-2">{profile.description}</p>}
 
-                    <div className="space-y-2 mb-4 flex-1 text-sm text-gray-300 bg-gray-950/50 p-3.5 rounded-xl border border-gray-800/50">
+                    <div className="space-y-2 mb-4 flex-1 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-950/50 p-3.5 rounded-xl border border-gray-200 dark:border-gray-800/50">
                       {profile.username && (
                         <div className="flex justify-between items-center gap-2">
                           <span className="text-gray-500 shrink-0">Username</span>
@@ -2877,8 +2990,8 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex gap-2 mt-auto">
-                      <button onClick={() => copyToClipboard(`Email: ${profile.email}\nUsername: ${profile.username}\nPassword: ${profile.password}`, "All credentials")} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg text-xs font-medium border border-gray-700 transition-all">Copy All</button>
-                      <button onClick={() => handleEditSocial(profile)} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-2 rounded-lg text-xs font-medium border border-gray-700 transition-all">Edit</button>
+                      <button onClick={() => copyToClipboard(`Email: ${profile.email}\nUsername: ${profile.username}\nPassword: ${profile.password}`, "All credentials")} className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white py-2 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700 transition-all">Copy All</button>
+                      <button onClick={() => handleEditSocial(profile)} className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white py-2 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-700 transition-all">Edit</button>
                       <button onClick={() => setSocialToDelete(profile.id)} className="flex-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 py-2 rounded-lg text-xs font-medium border border-rose-500/20 transition-all">Delete</button>
                     </div>
                   </div>
@@ -2893,7 +3006,7 @@ export default function Dashboard() {
           <div>
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 pt-2">
               <div>
-                <h2 className="text-2xl font-bold text-white">Latest Updates</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Latest Updates</h2>
                 <p className="text-gray-500 text-sm mt-0.5">Announcements, snippets, and important links</p>
               </div>
               <button onClick={() => { setNewUpdate({ info: "", content: "", link: "", priority: "low", type: "announcement" }); setEditingUpdateId(null); setIsUpdateModalOpen(true); }} className="w-full md:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 hover:-translate-y-0.5 transition-all duration-200 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
@@ -2904,13 +3017,13 @@ export default function Dashboard() {
             {loading ? (
               <div className="space-y-4 animate-pulse">{[1, 2].map(n => <div key={n} className="h-32 bg-gray-900/40 rounded-2xl border border-gray-800" />)}</div>
             ) : updates.length === 0 ? (
-              <div className="text-center py-20 bg-gray-900/50 rounded-2xl border border-gray-800">
+              <div className="text-center py-20 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-800">
                 <p className="text-gray-400">No updates posted yet.</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {updates.map(update => (
-                  <div key={update.id} className="group bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-all relative flex flex-col md:flex-row gap-4">
+                  <div key={update.id} className="group bg-white/80 dark:bg-gray-900/40 backdrop-blur-md border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-all relative flex flex-col md:flex-row gap-4">
                     {update.priority && (
                       <div className={`absolute top-0 right-0 text-[10px] font-bold uppercase px-2.5 py-1 rounded-bl-xl rounded-tr-xl border-l border-b ${priorityColors[update.priority]}`}>
                         {update.priority}
@@ -2919,7 +3032,7 @@ export default function Dashboard() {
                     <div className="flex-1 pr-12">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-base">{updateTypeIcons[update.type || "announcement"] || "📣"}</span>
-                        <h3 className="text-lg font-bold text-white">{update.info}</h3>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{update.info}</h3>
                         {update.type && (
                           <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">{update.type}</span>
                         )}
@@ -2933,7 +3046,7 @@ export default function Dashboard() {
                       )}
                     </div>
                     <div className="flex md:flex-col gap-2 justify-end items-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-gray-800">
-                      <button onClick={() => handleEditUpdate(update)} className="text-sm text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-4 py-1.5 rounded-lg border border-gray-700 transition-all">Edit</button>
+                      <button onClick={() => handleEditUpdate(update)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 transition-all">Edit</button>
                       <button onClick={() => setUpdateToDelete(update.id)} className="text-sm text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 px-4 py-1.5 rounded-lg border border-rose-500/20 transition-all">Delete</button>
                     </div>
                   </div>
@@ -2968,7 +3081,7 @@ export default function Dashboard() {
               `}</style>
               <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 pt-2">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">Invoice Generator</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Invoice Generator</h2>
                   <p className="text-gray-500 text-sm mt-0.5">Create and export PDF invoices</p>
                 </div>
                 <button onClick={() => setIsInvoiceModalOpen(true)} className="w-full md:w-auto flex justify-center items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black px-6 py-3 rounded-xl font-bold transition-all duration-200 shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_28px_rgba(0,212,255,0.5)]">
@@ -2986,7 +3099,7 @@ export default function Dashboard() {
                   { label: "Discount", val: `Rs ${discountAmount.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-rose-400" },
                   { label: "Total Due", val: `Rs ${total.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-cyan-400" },
                 ].map((s) => (
-                  <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                  <div key={s.label} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
                     <p className="text-xs text-gray-500 mb-1 font-semibold uppercase tracking-wider">{s.label}</p>
                     <p className={`text-lg font-bold ${s.color}`}>{s.val}</p>
                   </div>
@@ -2999,14 +3112,14 @@ export default function Dashboard() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => { setInvoiceData(defaultInvoiceData()); showToast("Invoice reset", "success"); }}
-                      className="text-xs text-gray-500 hover:text-rose-400 px-3 py-1.5 rounded-lg border border-gray-800 hover:border-rose-500/30 transition-all"
+                      className="text-xs text-gray-500 hover:text-rose-400 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-rose-500/30 transition-all"
                     >
                       Reset
                     </button>
                     <button
                       onClick={handleExportInvoice}
                       disabled={isExportingInvoice}
-                      className="flex items-center gap-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg border border-gray-700 transition-all disabled:opacity-50"
+                      className="flex items-center gap-1.5 text-xs bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-white px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 transition-all disabled:opacity-50"
                     >
                       <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -3044,7 +3157,7 @@ export default function Dashboard() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {invoices.map(inv => (
-                  <div key={inv.id} className="group relative bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-cyan-500/50 transition-colors cursor-pointer" onClick={() => { setInvoiceData(inv); showToast(`Loaded ${inv.invoiceNo}`, "success"); }}>
+                  <div key={inv.id} className="group relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 hover:border-cyan-500/50 transition-colors cursor-pointer" onClick={() => { setInvoiceData(inv); showToast(`Loaded ${inv.invoiceNo}`, "success"); }}>
                     <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
                       <button
                         onClick={(e) => handleDuplicateInvoice(inv, e)}
@@ -3066,7 +3179,7 @@ export default function Dashboard() {
                       </button>
                     </div>
                     <div className="flex justify-between items-start mb-2 pr-6">
-                      <span className="font-bold text-white">{inv.invoiceNo}</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{inv.invoiceNo}</span>
                       <span className="text-xs text-gray-500">{inv.date ? new Date(inv.date).toLocaleDateString() : "No Date"}</span>
                     </div>
                     <p className="text-sm text-gray-400">{inv.customerName || "Unknown Customer"}</p>
@@ -3083,7 +3196,7 @@ export default function Dashboard() {
         {/* ══ SETTINGS TAB ════════════════════════════════════════════════════════ */}
         {activeSection === "settings" && (
           <div className="pt-2">
-            <h2 className="text-2xl font-bold text-white mb-2">Account Settings</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Account Settings</h2>
             <p className="text-gray-500 text-sm mb-8">Manage your public profile details.</p>
             {loading ? (
               <div className="h-52 bg-gray-900/40 rounded-2xl border border-gray-800 w-full max-w-sm animate-pulse" />
@@ -3098,7 +3211,7 @@ export default function Dashboard() {
           <div className="pt-2">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-white">Activity Log</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Activity Log</h2>
                 <p className="text-gray-500 text-sm mt-0.5">In-session action trail (resets on page reload)</p>
               </div>
               {activityLog.length > 0 && (
@@ -3106,17 +3219,17 @@ export default function Dashboard() {
               )}
             </div>
             {activityLog.length === 0 ? (
-              <div className="text-center py-20 bg-gray-900/50 rounded-2xl border border-gray-800">
+              <div className="text-center py-20 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-800">
                 <p className="text-3xl mb-3">🕐</p>
                 <p className="text-gray-400">No activity yet. Start managing your data!</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {activityLog.map(entry => (
-                  <div key={entry.id} className="flex items-start gap-4 bg-gray-900/40 border border-gray-800 rounded-xl px-4 py-3 hover:border-gray-700 transition-colors">
+                  <div key={entry.id} className="flex items-start gap-4 bg-white dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
                     <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded border mt-0.5 shrink-0 ${logTypeColors[entry.type]}`}>{entry.type}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white font-medium">{entry.action}</p>
+                      <p className="text-sm text-gray-900 dark:text-white font-medium">{entry.action}</p>
                       <p className="text-xs text-gray-500 truncate">{entry.target}</p>
                     </div>
                     <span className="text-xs text-gray-600 shrink-0 mt-0.5">{entry.timestamp.toLocaleTimeString()}</span>
@@ -3131,21 +3244,21 @@ export default function Dashboard() {
         {activeSection === "tools" && (
           <div className="pt-2">
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white">Tools & Modules</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Tools & Modules</h2>
               <p className="text-gray-500 text-sm mt-0.5">Specialist systems connected to TechNinja</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {/* Repair Tickets */}
               <Link href="/dashboard/repairs"
-                className="group bg-gray-900 border border-gray-800 hover:border-cyan-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(6,182,212,0.08)] cursor-pointer block">
+                className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-cyan-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(6,182,212,0.08)] cursor-pointer block">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-2xl">🔧</div>
                   <svg className="w-4 h-4 text-gray-600 group-hover:text-cyan-500 transition-colors mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">Repair Tickets</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Repair Tickets</h3>
                 <p className="text-sm text-gray-400 mb-4">Create and manage device repair jobs with a full Kanban pipeline tracker — Received → Diagnosed → In Repair → Ready → Delivered.</p>
                 <div className="flex flex-wrap gap-2">
                   {["Pipeline view", "Status history", "Priority flags", "Cost tracking"].map(f => (
@@ -3156,14 +3269,14 @@ export default function Dashboard() {
 
               {/* Phone Grading */}
               <Link href="/dashboard/grading"
-                className="group bg-gray-900 border border-gray-800 hover:border-emerald-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(16,185,129,0.08)] cursor-pointer block">
+                className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-emerald-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(16,185,129,0.08)] cursor-pointer block">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl">📱</div>
                   <svg className="w-4 h-4 text-gray-600 group-hover:text-emerald-500 transition-colors mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">Phone Grading</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Phone Grading</h3>
                 <p className="text-sm text-gray-400 mb-4">Grade trade-in phones with a structured checklist covering cosmetics, battery health and all functional tests. Auto-calculates A+ to F grade.</p>
                 <div className="flex flex-wrap gap-2">
                   {["Auto-grade score", "Battery health", "Functional checks", "Trade-in value"].map(f => (
@@ -3174,14 +3287,14 @@ export default function Dashboard() {
 
               {/* Loyalty Program */}
               <Link href="/dashboard/loyalty"
-                className="group bg-gray-900 border border-gray-800 hover:border-yellow-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(234,179,8,0.08)] cursor-pointer block">
+                className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-yellow-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(234,179,8,0.08)] cursor-pointer block">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-2xl">🏆</div>
                   <svg className="w-4 h-4 text-gray-600 group-hover:text-yellow-500 transition-colors mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">Loyalty Program</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Loyalty Program</h3>
                 <p className="text-sm text-gray-400 mb-4">Reward repeat customers with points. Bronze → Silver → Gold → Platinum tiers with full transaction history and point management.</p>
                 <div className="flex flex-wrap gap-2">
                   {["4 tier levels", "Earn & redeem", "Transaction log", "Member cards"].map(f => (
@@ -3192,14 +3305,14 @@ export default function Dashboard() {
 
               {/* Inventory */}
               <Link href="/dashboard/inventory"
-                className="group bg-gray-900 border border-gray-800 hover:border-purple-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(168,85,247,0.08)] cursor-pointer block">
+                className="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-purple-500/40 rounded-2xl p-6 transition-all hover:shadow-[0_0_30px_rgba(168,85,247,0.08)] cursor-pointer block">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-2xl">🗃️</div>
                   <svg className="w-4 h-4 text-gray-600 group-hover:text-purple-500 transition-colors mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">Inventory Management</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Inventory Management</h3>
                 <p className="text-sm text-gray-400 mb-4">Full inventory control with stock level alerts, category filtering, quick adjustments, grid and table views, and total stock value reporting.</p>
                 <div className="flex flex-wrap gap-2">
                   {["Stock alerts", "Quick adjust", "Category filter", "Value tracking"].map(f => (
@@ -3218,29 +3331,54 @@ export default function Dashboard() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-white mb-5">{editingProductId ? "Edit Product" : "Add New Product"}</h2>
-            <div className="space-y-3">
-              {[
-                { placeholder: "Product Name *", key: "name", type: "text" },
-                { placeholder: "Category (e.g. Electronics, Fashion)", key: "category", type: "text" },
-              ].map(f => (
-                <input key={f.key} type={f.type} placeholder={f.placeholder} value={(newProduct as any)[f.key]} onChange={e => setNewProduct({ ...newProduct, [f.key]: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" />
-              ))}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl w-full max-w-lg shadow-2xl max-h-[92vh] overflow-y-auto flex flex-col">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white dark:bg-gray-900 z-10 rounded-t-2xl">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-base">📦</div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">{editingProductId ? "Edit Product" : "Add New Product"}</h2>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
 
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-center px-1">
-                  <label className="text-xs text-gray-500 uppercase tracking-wider">Product Image</label>
-                  <div className="flex gap-2 bg-gray-800/50 p-1 rounded-lg border border-gray-700/50">
-                    <button type="button" onClick={() => setImageInputType("link")} className={`text-xs px-3 py-1 rounded-md transition-colors ${imageInputType === "link" ? "bg-gray-700 text-white shadow-sm" : "text-gray-500 hover:text-gray-300"}`}>Link</button>
-                    <button type="button" onClick={() => setImageInputType("upload")} className={`text-xs px-3 py-1 rounded-md transition-colors ${imageInputType === "upload" ? "bg-gray-700 text-white shadow-sm" : "text-gray-500 hover:text-gray-300"}`}>Upload</button>
+            <div className="p-6 space-y-5">
+              {/* Basic info */}
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Basic Info</p>
+                <div className="space-y-3">
+                  <input type="text" placeholder="Product Name *" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="text" placeholder="Category" value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                    <input type="text" placeholder="SKU / Product Code" value={newProduct.sku} onChange={e => setNewProduct({ ...newProduct, sku: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                  </div>
+                  <textarea placeholder="Description" rows={2} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm resize-none" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
+                  <input type="text" placeholder="Tags (comma-separated, e.g. iphone, apple, used)" value={newProduct.tags} onChange={e => setNewProduct({ ...newProduct, tags: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                  {newProduct.tags && (
+                    <div className="flex flex-wrap gap-1.5 px-1">
+                      {newProduct.tags.split(",").map(t => t.trim()).filter(Boolean).map(tag => (
+                        <span key={tag} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Image */}
+              <div>
+                <div className="flex items-center justify-between mb-2.5">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product Image</p>
+                  <div className="flex gap-1 bg-gray-100 dark:bg-gray-800/50 p-0.5 rounded-lg border border-gray-200 dark:border-gray-700/50">
+                    <button type="button" onClick={() => setImageInputType("link")} className={`text-xs px-2.5 py-1 rounded-md transition-colors ${imageInputType === "link" ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}>Link</button>
+                    <button type="button" onClick={() => setImageInputType("upload")} className={`text-xs px-2.5 py-1 rounded-md transition-colors ${imageInputType === "upload" ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}>Upload</button>
                   </div>
                 </div>
                 {imageInputType === "link" ? (
-                  <input type="text" placeholder="Image URL" value={newProduct.image} onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" />
+                  <input type="text" placeholder="Image URL" value={newProduct.image} onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
                 ) : (
                   <div className="relative">
-                    <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage} className="w-full border border-gray-700 px-3 py-2 rounded-xl text-white bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20 disabled:opacity-50 cursor-pointer" />
+                    <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-500/10 file:text-indigo-400 hover:file:bg-indigo-500/20 disabled:opacity-50 cursor-pointer" />
                     {isUploadingImage && (
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-indigo-400 font-medium flex items-center gap-1.5">
                         <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75"></path></svg>
@@ -3250,43 +3388,74 @@ export default function Dashboard() {
                   </div>
                 )}
                 {imageInputType === "upload" && newProduct.image && !isUploadingImage && (
-                  <div className="text-xs text-emerald-400 ml-1 font-medium">✓ Image uploaded successfully</div>
+                  <p className="text-xs text-emerald-500 mt-1.5 font-medium">✓ Image uploaded</p>
                 )}
                 {newProduct.image && (
-                  <div className="relative w-full h-40 mt-1 bg-gray-900/50 rounded-xl border border-gray-700 overflow-hidden flex items-center justify-center">
-                    <Image
-                      src={newProduct.image.replace('/object/public/', '/render/image/public/')}
-                      alt="Product preview" 
-                      fill
-                      unoptimized
-                      className="object-contain" 
-                      onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x300/1f2937/9ca3af?text=Broken+Link"; }}
-                    />
+                  <div className="relative w-full h-36 mt-2 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <Image src={newProduct.image.replace('/object/public/', '/render/image/public/')} alt="Preview" fill unoptimized className="object-contain" onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/400x300/1f2937/9ca3af?text=Broken+Link"; }} />
+                    <button onClick={() => setNewProduct({ ...newProduct, image: "" })} className="absolute top-2 right-2 w-6 h-6 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center text-xs transition-colors">✕</button>
                   </div>
                 )}
               </div>
 
-              <textarea placeholder="Description" rows={3} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
-              <div className="flex gap-3">
-                <input type="number" placeholder="Price (Rs)" className="flex-1 border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} />
-                <input type="number" placeholder="Stock qty" className="flex-1 border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })} />
+              {/* Pricing */}
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Pricing</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Selling Price (Rs) *</label>
+                    <input type="number" placeholder="0" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Cost Price (Rs)</label>
+                    <input type="number" placeholder="0" value={newProduct.cost_price} onChange={e => setNewProduct({ ...newProduct, cost_price: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                  </div>
+                </div>
+                {newProduct.price && newProduct.cost_price && parseFloat(newProduct.price) > 0 && parseFloat(newProduct.cost_price) > 0 && (() => {
+                  const profit = parseFloat(newProduct.price) - parseFloat(newProduct.cost_price);
+                  const margin = (profit / parseFloat(newProduct.price)) * 100;
+                  return (
+                    <div className={`mt-2 flex items-center gap-3 px-3 py-2 rounded-lg ${profit >= 0 ? "bg-emerald-500/8 border border-emerald-500/15" : "bg-red-500/8 border border-red-500/15"}`}>
+                      <span className={`text-xs font-bold ${profit >= 0 ? "text-emerald-500 dark:text-emerald-400" : "text-red-500"}`}>{profit >= 0 ? "↑" : "↓"} Rs {Math.abs(profit).toLocaleString()} profit</span>
+                      <span className="text-xs text-gray-500">{margin.toFixed(1)}% margin</span>
+                    </div>
+                  );
+                })()}
               </div>
 
-              <div className={`flex items-center justify-between gap-4 p-3.5 rounded-xl border transition-colors ${newProduct.is_public ? "bg-emerald-500/5 border-emerald-500/20" : "bg-gray-800/50 border-gray-700"}`}>
+              {/* Stock */}
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Stock</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Current Stock</label>
+                    <input type="number" placeholder="0" value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Low-stock alert at</label>
+                    <input type="number" placeholder="5" value={newProduct.low_stock_threshold} onChange={e => setNewProduct({ ...newProduct, low_stock_threshold: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Visibility */}
+              <div className={`flex items-center justify-between gap-4 p-3.5 rounded-xl border transition-colors ${newProduct.is_public ? "bg-emerald-500/5 border-emerald-500/20" : "bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"}`}>
                 <div>
-                  <p className="text-sm font-semibold text-white">{newProduct.is_public ? "Public" : "Private"}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{newProduct.is_public ? "Public" : "Private"}</p>
                   <p className="text-xs text-gray-500">{newProduct.is_public ? "Visible to all clients" : "Hidden from clients"}</p>
                 </div>
                 <button type="button" onClick={() => setNewProduct({ ...newProduct, is_public: !newProduct.is_public })}
-                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${newProduct.is_public ? "bg-emerald-500" : "bg-gray-600"}`}>
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${newProduct.is_public ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"}`}>
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${newProduct.is_public ? "translate-x-5" : "translate-x-0"}`} />
                 </button>
               </div>
             </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>
-              <button onClick={handleSaveProduct} disabled={isSaving || isUploadingImage} className="bg-white text-black px-5 py-2 rounded-xl font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 text-sm">
-                {isSaving ? "Saving…" : "Save Product"}
+
+            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-gray-900 rounded-b-2xl">
+              <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 transition-colors text-sm">Cancel</button>
+              <button onClick={handleSaveProduct} disabled={isSaving || isUploadingImage} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl font-semibold transition-colors disabled:opacity-50 text-sm flex items-center gap-2">
+                {isSaving && <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75"></path></svg>}
+                {isSaving ? "Saving…" : editingProductId ? "Update Product" : "Add Product"}
               </button>
             </div>
           </div>
@@ -3295,9 +3464,9 @@ export default function Dashboard() {
 
       {productToDelete && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
             <div className="text-4xl mb-3">🗑️</div>
-            <h2 className="text-xl font-bold text-white mb-2">Delete Product</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Product</h2>
             <p className="text-gray-400 mb-6 text-sm">This action cannot be undone.</p>
             <div className="flex justify-center gap-3">
               <button onClick={() => setProductToDelete(null)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>
@@ -3311,9 +3480,9 @@ export default function Dashboard() {
 
       {showBulkConfirm && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
             <div className="text-4xl mb-3">⚠️</div>
-            <h2 className="text-xl font-bold text-white mb-2">Delete {selectedProducts.size} products?</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete {selectedProducts.size} products?</h2>
             <p className="text-gray-400 mb-6 text-sm">This cannot be undone.</p>
             <div className="flex justify-center gap-3">
               <button onClick={() => setShowBulkConfirm(false)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>
@@ -3327,8 +3496,8 @@ export default function Dashboard() {
 
       {isSocialModalOpen && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-white mb-5">{editingSocialId ? "Edit Social Profile" : "Add Social Info"}</h2>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">{editingSocialId ? "Edit Social Profile" : "Add Social Info"}</h2>
             <div className="space-y-3">
               {[
                 { placeholder: "Platform Name * (e.g. Instagram)", key: "platform_name", type: "text" },
@@ -3339,9 +3508,9 @@ export default function Dashboard() {
                 { placeholder: "Password", key: "password", type: "password" },
                 { placeholder: "Followers count", key: "followers", type: "number" },
               ].map(f => (
-                <input key={f.key} type={f.type} placeholder={f.placeholder} value={(newSocial as any)[f.key]} onChange={e => setNewSocial({ ...newSocial, [f.key]: e.target.value })} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" />
+                <input key={f.key} type={f.type} placeholder={f.placeholder} value={(newSocial as any)[f.key]} onChange={e => setNewSocial({ ...newSocial, [f.key]: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm" />
               ))}
-              <textarea placeholder="Description or extra info" rows={2} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600" value={newSocial.description} onChange={e => setNewSocial({ ...newSocial, description: e.target.value })} />
+              <textarea placeholder="Description or extra info" rows={2} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-base md:text-sm resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600" value={newSocial.description} onChange={e => setNewSocial({ ...newSocial, description: e.target.value })} />
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={newSocial.is_active} onChange={e => setNewSocial({ ...newSocial, is_active: e.target.checked })} className="w-4 h-4 appearance-none border border-gray-600 bg-transparent checked:bg-emerald-500 checked:border-emerald-500 cursor-pointer transition-all rounded flex items-center justify-center relative after:content-['✓'] after:text-white after:text-[10px] after:font-bold after:absolute after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:opacity-0 checked:after:opacity-100" />
                 <span className="text-sm text-gray-300">Mark as active</span>
@@ -3359,9 +3528,9 @@ export default function Dashboard() {
 
       {socialToDelete && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
             <div className="text-4xl mb-3">🗑️</div>
-            <h2 className="text-xl font-bold text-white mb-2">Delete Profile</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Profile</h2>
             <p className="text-gray-400 mb-6 text-sm">This action cannot be undone.</p>
             <div className="flex justify-center gap-3">
               <button onClick={() => setSocialToDelete(null)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>
@@ -3375,16 +3544,16 @@ export default function Dashboard() {
 
       {isUpdateModalOpen && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-white mb-5">{editingUpdateId ? "Edit Update" : "Post New Update"}</h2>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-5">{editingUpdateId ? "Edit Update" : "Post New Update"}</h2>
             <div className="space-y-3">
-              <input type="text" placeholder="Title / Info *" className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-base md:text-sm" value={newUpdate.info} onChange={e => setNewUpdate({ ...newUpdate, info: e.target.value })} />
+              <input type="text" placeholder="Title / Info *" className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-base md:text-sm" value={newUpdate.info} onChange={e => setNewUpdate({ ...newUpdate, info: e.target.value })} />
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Type</label>
                   <div className="flex gap-2 flex-wrap">
                     {(["announcement", "feature", "fix"] as const).map(t => (
-                      <button key={t} type="button" onClick={() => setNewUpdate({ ...newUpdate, type: t })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${newUpdate.type === t ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-gray-800 text-gray-500 border-gray-700 hover:border-gray-600"}`}>
+                      <button key={t} type="button" onClick={() => setNewUpdate({ ...newUpdate, type: t })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${newUpdate.type === t ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/30" : "bg-gray-100 dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`}>
                         {updateTypeIcons[t]} {t}
                       </button>
                     ))}
@@ -3394,15 +3563,15 @@ export default function Dashboard() {
                   <label className="text-xs text-gray-500 mb-1 block uppercase tracking-wider">Priority</label>
                   <div className="flex gap-2 flex-wrap">
                     {(["low", "medium", "high"] as const).map(p => (
-                      <button key={p} type="button" onClick={() => setNewUpdate({ ...newUpdate, priority: p })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all capitalize ${newUpdate.priority === p ? priorityColors[p] : "bg-gray-800 text-gray-500 border-gray-700 hover:border-gray-600"}`}>
+                      <button key={p} type="button" onClick={() => setNewUpdate({ ...newUpdate, priority: p })} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all capitalize ${newUpdate.priority === p ? priorityColors[p] : "bg-gray-100 dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"}`}>
                         {p}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
-              <textarea placeholder="Content / Snippets *" rows={6} className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-base md:text-sm resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600" value={newUpdate.content} onChange={e => setNewUpdate({ ...newUpdate, content: e.target.value })} />
-              <input type="text" placeholder="Relevant Link (optional)" className="w-full border border-gray-700 px-3 py-2.5 rounded-xl text-white bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-base md:text-sm" value={newUpdate.link} onChange={e => setNewUpdate({ ...newUpdate, link: e.target.value })} />
+              <textarea placeholder="Content / Snippets *" rows={6} className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-base md:text-sm resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600" value={newUpdate.content} onChange={e => setNewUpdate({ ...newUpdate, content: e.target.value })} />
+              <input type="text" placeholder="Relevant Link (optional)" className="w-full border border-gray-200 dark:border-gray-700 px-3 py-2.5 rounded-xl text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-colors text-base md:text-sm" value={newUpdate.link} onChange={e => setNewUpdate({ ...newUpdate, link: e.target.value })} />
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={() => setIsUpdateModalOpen(false)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>
@@ -3416,9 +3585,9 @@ export default function Dashboard() {
 
       {updateToDelete && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
             <div className="text-4xl mb-3">🗑️</div>
-            <h2 className="text-xl font-bold text-white mb-2">Delete Update</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Update</h2>
             <p className="text-gray-400 mb-6 text-sm">This action cannot be undone.</p>
             <div className="flex justify-center gap-3">
               <button onClick={() => setUpdateToDelete(null)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>
@@ -3432,9 +3601,9 @@ export default function Dashboard() {
 
       {invoiceToDelete && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
             <div className="text-4xl mb-3">🗑️</div>
-            <h2 className="text-xl font-bold text-white mb-2">Delete Invoice</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Invoice</h2>
             <p className="text-gray-400 mb-6 text-sm">This action cannot be undone.</p>
             <div className="flex justify-center gap-3">
               <button onClick={() => setInvoiceToDelete(null)} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm">Cancel</button>
@@ -3448,8 +3617,8 @@ export default function Dashboard() {
 
       {isLogoutModalOpen && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
-            <h2 className="text-xl font-bold text-white mb-2">Confirm Logout</h2>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Confirm Logout</h2>
             <p className="text-gray-400 mb-6 text-sm">Are you sure you want to log out?</p>
             <div className="flex justify-center gap-3">
               <button onClick={() => setIsLogoutModalOpen(false)} disabled={isLoggingOut} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white transition-colors text-sm disabled:opacity-50">Cancel</button>
@@ -3475,7 +3644,7 @@ export default function Dashboard() {
       )}
 
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${toast.type === "success" ? "bg-emerald-500/20 text-emerald-200 border border-emerald-500/30" : "bg-rose-500/20 text-rose-200 border border-rose-500/30"}`}>
+        <div className={`fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl transition-all duration-300 animate-in slide-in-from-bottom-5 ${toast.type === "success" ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-500/30" : "bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-200 border border-rose-300 dark:border-rose-500/30"}`}>
           <span className="text-xl">{toast.type === "success" ? "✅" : "❌"}</span>
           <span className="text-sm font-semibold">{toast.message}</span>
         </div>

@@ -63,10 +63,9 @@ function LoginContent() {
     if (magicCooldown > 0) return;
     setLoading(true);
     setError("");
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const { error: err } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: `${siteUrl}/auth/callback` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     setLoading(false);
     if (err) {
@@ -133,9 +132,8 @@ function LoginContent() {
     if (resetCooldown > 0) return;
     setLoading(true);
     setError("");
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${siteUrl}/auth/callback?type=recovery`,
+      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
     });
     setLoading(false);
     if (err) {

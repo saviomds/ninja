@@ -244,14 +244,14 @@ export default function GradingPage() {
   });
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   const CheckButton = ({ label, value, onChange }: { label: string; value: boolean | null; onChange: (v: boolean | null) => void }) => (
-    <div className="flex items-center justify-between py-2 border-b border-gray-800/50">
-      <span className="text-sm text-gray-300">{label}</span>
+    <div className="flex items-center justify-between py-2 border-b border-gray-200/60 dark:border-gray-800/50">
+      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
       <div className="flex gap-1">
         {([true, false, null] as (boolean | null)[]).map(v => (
           <button
@@ -262,7 +262,7 @@ export default function GradingPage() {
                 ? v === true  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
                 : v === false ? "bg-rose-500/20 text-rose-400 border-rose-500/50"
                 :               "bg-gray-700 text-gray-400 border-gray-600"
-                : "bg-gray-800/50 text-gray-600 border-gray-800 hover:border-gray-600"
+                : "bg-gray-100 dark:bg-gray-800/50 text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600"
             }`}
           >
             {v === true ? "✓" : v === false ? "✕" : "—"}
@@ -273,7 +273,7 @@ export default function GradingPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white">
 
       {/* Toast */}
       {toast && (
@@ -283,11 +283,11 @@ export default function GradingPage() {
       )}
 
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 px-4 md:px-6 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 md:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">← Dashboard</Link>
+          <Link href="/dashboard" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">← Dashboard</Link>
           <span className="text-gray-700">|</span>
-          <h1 className="font-bold text-white">Phone Grading System</h1>
+          <h1 className="font-bold text-gray-900 dark:text-white">Phone Grading System</h1>
         </div>
         <button
           onClick={() => { setForm(emptyForm()); setEditingId(null); setIsFormOpen(true); }}
@@ -324,15 +324,15 @@ export default function GradingPage() {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search by ref, customer, device..."
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all"
+            className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all"
           />
         </div>
 
         {/* Records table */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-800 bg-gray-900/80">
+              <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Ref</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Customer</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Device</th>
@@ -351,21 +351,21 @@ export default function GradingPage() {
               {filtered.map(g => {
                 const cfg = GRADE_CONFIG[g.grade];
                 return (
-                  <tr key={g.id} className="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors">
+                  <tr key={g.id} className="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
                     <td className="px-4 py-3 text-xs font-mono text-cyan-400">{g.grade_ref}</td>
                     <td className="px-4 py-3">
-                      <p className="text-white font-medium">{g.customer_name || "—"}</p>
+                      <p className="text-gray-900 dark:text-white font-medium">{g.customer_name || "—"}</p>
                       <p className="text-xs text-gray-500">{g.customer_phone || ""}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-white">{g.device_brand} {g.device_model}</p>
+                      <p className="text-gray-900 dark:text-white">{g.device_brand} {g.device_model}</p>
                       {g.color && <p className="text-xs text-gray-500">{g.color}</p>}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-300">{g.storage_capacity || "—"}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{g.storage_capacity || "—"}</td>
                     <td className="px-4 py-3">
                       {g.battery_health !== null ? (
                         <div className="flex items-center gap-1.5">
-                          <div className="w-16 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                          <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div className={`h-full rounded-full ${g.battery_health >= 80 ? "bg-emerald-500" : g.battery_health >= 60 ? "bg-amber-500" : "bg-rose-500"}`}
                               style={{ width: `${g.battery_health}%` }} />
                           </div>
@@ -399,18 +399,18 @@ export default function GradingPage() {
       {/* ── Grading Form Modal ─────────────────────────────────────────────────── */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 backdrop-blur-sm overflow-y-auto p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl my-4 shadow-2xl">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl w-full max-w-2xl my-4 shadow-2xl">
 
             {/* Live grade banner */}
-            <div className={`rounded-t-2xl px-6 py-4 flex items-center justify-between border-b border-gray-800 ${GRADE_CONFIG[autoGrade].bg}`}>
+            <div className={`rounded-t-2xl px-6 py-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-800 ${GRADE_CONFIG[autoGrade].bg}`}>
               <div>
                 <p className="text-xs text-gray-400 uppercase tracking-wider">{editingId ? "Edit Grade" : "New Phone Grade"}</p>
-                <p className="text-sm text-gray-300 mt-0.5">Score: <span className="font-bold text-white">{score}/165</span></p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">Score: <span className="font-bold text-gray-900 dark:text-white">{score}/165</span></p>
               </div>
               <div className={`w-20 h-20 rounded-2xl border-2 flex items-center justify-center ${GRADE_CONFIG[autoGrade].color} ${GRADE_CONFIG[autoGrade].bg}`}>
                 <span className={`text-4xl font-black ${GRADE_CONFIG[autoGrade].textColor}`}>{autoGrade}</span>
               </div>
-              <button onClick={() => setIsFormOpen(false)} className="text-gray-500 hover:text-white text-xl self-start transition-colors">✕</button>
+              <button onClick={() => setIsFormOpen(false)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white text-xl self-start transition-colors">✕</button>
             </div>
 
             <div className="px-6 py-5 space-y-6 max-h-[calc(100vh-220px)] overflow-y-auto">
@@ -432,7 +432,7 @@ export default function GradingPage() {
                     <div key={key}>
                       <label className="block text-xs text-gray-400 mb-1">{label}</label>
                       <input value={(form[key] as string) ?? ""} onChange={e => setField(key, e.target.value as never)} placeholder={placeholder}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all" />
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all" />
                     </div>
                   ))}
                 </div>
@@ -457,7 +457,7 @@ export default function GradingPage() {
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                               (form[field] as string) === o.value
                                 ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/50"
-                                : "bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500"
+                                : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
                             }`}
                           >
                             <span>{o.icon}</span>
@@ -487,12 +487,12 @@ export default function GradingPage() {
                       value={form.battery_health ?? ""}
                       onChange={e => setField("battery_health", e.target.value ? parseInt(e.target.value) : null)}
                       placeholder="80"
-                      className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:outline-none focus:border-cyan-500 transition-all"
+                      className="w-16 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-900 dark:text-white text-center focus:outline-none focus:border-cyan-500 transition-all"
                     />
                     <span className="text-sm text-gray-400">%</span>
                   </div>
                 </div>
-                <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden mt-2">
+                <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-2">
                   <div
                     className={`h-full rounded-full transition-all ${(form.battery_health ?? 80) >= 80 ? "bg-emerald-500" : (form.battery_health ?? 80) >= 60 ? "bg-amber-500" : "bg-rose-500"}`}
                     style={{ width: `${form.battery_health ?? 80}%` }}
@@ -504,7 +504,7 @@ export default function GradingPage() {
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Functional Checks</p>
                 <p className="text-xs text-gray-600 mb-3">✓ = Pass  ✕ = Fail  — = Not tested</p>
-                <div className="bg-gray-800/50 rounded-xl px-4 py-2">
+                <div className="bg-gray-100 dark:bg-gray-800/50 rounded-xl px-4 py-2">
                   {FUNC_CHECKS.filter(c => c.key !== "battery_health").map(c => (
                     <CheckButton
                       key={c.key as string}
@@ -523,29 +523,29 @@ export default function GradingPage() {
                   <input
                     type="number" value={form.trade_in_value ?? ""} placeholder="0.00"
                     onChange={e => setField("trade_in_value", e.target.value ? parseFloat(e.target.value) : null)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all"
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Graded By</label>
                   <input value={form.graded_by} onChange={e => setField("graded_by", e.target.value)} placeholder="Technician name"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all" />
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs text-gray-400 mb-1">Notes</label>
                 <textarea value={form.notes} onChange={e => setField("notes", e.target.value)} rows={2} placeholder="Additional notes..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all resize-none" />
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-all resize-none" />
               </div>
             </div>
 
-            <div className="flex justify-between items-center px-6 py-4 border-t border-gray-800">
+            <div className="flex justify-between items-center px-6 py-4 border-t border-gray-200 dark:border-gray-800">
               <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${GRADE_CONFIG[autoGrade].bg} ${GRADE_CONFIG[autoGrade].color}`}>
                 <span className={`text-2xl font-black ${GRADE_CONFIG[autoGrade].textColor}`}>{autoGrade}</span>
                 <span className="text-xs text-gray-400">{GRADE_CONFIG[autoGrade].desc}</span>
               </div>
               <div className="flex gap-3">
-                <button onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white border border-gray-700 rounded-lg transition-all">Cancel</button>
+                <button onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 rounded-lg transition-all">Cancel</button>
                 <button onClick={handleSave} disabled={isSaving}
                   className="px-5 py-2 text-sm bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg transition-all disabled:opacity-50">
                   {isSaving ? "Saving…" : editingId ? "Save Changes" : "Save Grade"}
@@ -559,11 +559,11 @@ export default function GradingPage() {
       {/* Delete confirm */}
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <p className="text-white font-semibold mb-2">Delete this grade record?</p>
-            <p className="text-gray-400 text-sm mb-5">This cannot be undone.</p>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <p className="text-gray-900 dark:text-white font-semibold mb-2">Delete this grade record?</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">This cannot be undone.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteId(null)} className="px-4 py-2 text-sm text-gray-400 border border-gray-700 rounded-lg hover:text-white transition-all">Cancel</button>
+              <button onClick={() => setDeleteId(null)} className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:text-gray-900 dark:hover:text-white transition-all">Cancel</button>
               <button onClick={confirmDelete} disabled={isDeleting} className="px-4 py-2 text-sm bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-lg transition-all disabled:opacity-50">
                 {isDeleting ? "Deleting…" : "Delete"}
               </button>
