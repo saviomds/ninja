@@ -304,14 +304,14 @@ const InputField = ({
   placeholder?: string;
   className?: string;
 }) => (
-  <div className={`flex flex-col gap-1 ${className}`}>
-    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{label}</label>
+  <div className={`flex flex-col gap-1.5 ${className}`}>
+    <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{label}</label>
     <input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
+      className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 transition-all shadow-sm hover:border-gray-300 dark:hover:border-gray-600"
     />
   </div>
 );
@@ -633,13 +633,15 @@ function InvoiceFormModal({
     if (section === "labour") onChange({ ...data, labour: data.labour.filter((_, idx) => idx !== i) });
   };
 
-  const sectionHeader = (title: string) => (
-    <div className="flex items-center gap-3 mb-4 mt-6">
-      <div className="h-px flex-1 bg-gray-700" />
-      <span className="text-xs font-bold uppercase tracking-widest text-cyan-400">{title}</span>
-      <div className="h-px flex-1 bg-gray-700" />
+  const sectionHeader = (title: string, icon: string) => (
+    <div className="flex items-center gap-3 pt-6 pb-3">
+      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 dark:bg-cyan-500/20 border border-cyan-500/20 flex items-center justify-center text-sm flex-shrink-0">{icon}</div>
+      <span className="text-xs font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400">{title}</span>
+      <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800" />
     </div>
   );
+
+  const selectCls = "bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 transition-all shadow-sm hover:border-gray-300 dark:hover:border-gray-600 w-full";
 
   const tableInput = (value: string, onChange: (v: string) => void, type = "text", placeholder = "") => (
     <input
@@ -647,261 +649,255 @@ function InvoiceFormModal({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:border-cyan-500 transition-all"
+      className="w-full bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 transition-all"
     />
   );
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-[100] backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 py-8">
-      <div className="bg-gray-950 border border-gray-800 rounded-2xl w-full max-w-3xl shadow-2xl">
+    <div className="fixed inset-0 bg-black/60 z-[100] backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 py-8">
+      <div className="bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden">
+
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+        <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-900/80 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
-              <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+              <svg className="w-4 h-4 text-cyan-500 dark:text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h2 className="text-gray-900 dark:text-white font-bold text-lg">Invoice Details</h2>
+            <div>
+              <h2 className="font-bold text-gray-900 dark:text-white text-base leading-tight">Invoice Details</h2>
+              <p className="text-xs text-gray-400">Fill in all sections then export as PDF</p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="p-6 space-y-1">
-          {/* Invoice Meta */}
-          {sectionHeader("Invoice Info")}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="p-6">
+          {/* ── Invoice Info ─────────────────────────────────────────────── */}
+          {sectionHeader("Invoice Info", "🧾")}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <InputField label="Invoice No" value={data.invoiceNo} onChange={(v) => set("invoiceNo", v)} placeholder="INV-001" />
             <InputField label="Date" value={data.date} onChange={(v) => set("date", v)} type="date" />
             <InputField label="Due Date" value={data.due} onChange={(v) => set("due", v)} type="date" />
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Theme Color</label>
-              <select
-                value={data.themeColor || "#0a0a0a"}
-                onChange={(e) => set("themeColor", e.target.value)}
-                className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all"
-              >
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Theme Color</label>
+              <select value={data.themeColor || "#0a0a0a"} onChange={(e) => set("themeColor", e.target.value)} className={selectCls}>
                 <option value="#0a0a0a">Dark</option>
-                <option value="#1f2937">A bit dark</option>
-                <option value="#374151">Dark Gray</option>
+                <option value="#1f2937">Navy</option>
+                <option value="#374151">Slate</option>
                 <option value="#4b5563">Gray</option>
               </select>
             </div>
           </div>
 
-          {/* Bill To */}
-          {sectionHeader("Bill To")}
-          <div className="grid grid-cols-4 gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Title</label>
-              <select
-                value={data.customerTitle}
-                onChange={(e) => set("customerTitle", e.target.value)}
-                className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500 transition-all"
-              >
-                {["Mr", "Mrs", "Miss", "Dr", "Prof"].map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
+          {/* ── Bill To ──────────────────────────────────────────────────── */}
+          {sectionHeader("Bill To", "👤")}
+          <div className="bg-white dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 space-y-4">
+            <div className="grid grid-cols-4 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Title</label>
+                <select value={data.customerTitle} onChange={(e) => set("customerTitle", e.target.value)} className={selectCls}>
+                  {["Mr", "Mrs", "Miss", "Dr", "Prof"].map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="col-span-3">
+                <InputField label="Full Name" value={data.customerName} onChange={(v) => set("customerName", v)} placeholder="John Doe" />
+              </div>
             </div>
-            <div className="col-span-3">
-              <InputField label="Full Name" value={data.customerName} onChange={(v) => set("customerName", v)} placeholder="John Doe" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-3 mt-3">
             <InputField label="Address" value={data.address} onChange={(v) => set("address", v)} placeholder="123 Main Street, Port Louis" />
-          </div>
-          <div className="grid grid-cols-2 gap-3 mt-3">
-            <InputField label="Tel" value={data.tel} onChange={(v) => set("tel", v)} placeholder="+230 5XXX XXXX" />
-            <InputField label="Email" value={data.email} onChange={(v) => set("email", v)} type="email" placeholder="customer@email.com" />
-          </div>
-
-          {/* Service Details */}
-          {sectionHeader("Service Details")}
-          <div className="grid grid-cols-2 gap-3">
-            <InputField label="Device" value={data.device} onChange={(v) => set("device", v)} placeholder="iPhone 14 Pro" />
-            <InputField label="Serial" value={data.serial} onChange={(v) => set("serial", v)} placeholder="SN123456789" />
-            <InputField label="Tech" value={data.tech} onChange={(v) => set("tech", v)} placeholder="Technician name" />
-            <InputField label="Work Order (WO)" value={data.wo} onChange={(v) => set("wo", v)} placeholder="WO-2024-001" />
-            <InputField label="Done" value={data.done} onChange={(v) => set("done", v)} placeholder="Completion status" />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Tel" value={data.tel} onChange={(v) => set("tel", v)} placeholder="+230 5XXX XXXX" />
+              <InputField label="Email" value={data.email} onChange={(v) => set("email", v)} type="email" placeholder="customer@email.com" />
+            </div>
           </div>
 
-          {/* Services Performed */}
-          {sectionHeader("Services Performed")}
-          <div className="overflow-x-auto">
+          {/* ── Service Details ───────────────────────────────────────────── */}
+          {sectionHeader("Service Details", "🔧")}
+          <div className="bg-white dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 p-4">
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Device" value={data.device} onChange={(v) => set("device", v)} placeholder="iPhone 14 Pro" />
+              <InputField label="Serial No" value={data.serial} onChange={(v) => set("serial", v)} placeholder="SN123456789" />
+              <InputField label="Technician" value={data.tech} onChange={(v) => set("tech", v)} placeholder="Technician name" />
+              <InputField label="Work Order (WO)" value={data.wo} onChange={(v) => set("wo", v)} placeholder="WO-2024-001" />
+              <InputField label="Status / Done" value={data.done} onChange={(v) => set("done", v)} placeholder="Completion status" />
+            </div>
+          </div>
+
+          {/* ── Services Performed ────────────────────────────────────────── */}
+          {sectionHeader("Services Performed", "⚙️")}
+          <div className="bg-white dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-gray-900">
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-6">#</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold">Description</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-16">Qty</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Unit (Rs)</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Total</th>
-                  <th className="w-8"></th>
+                <tr className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
+                  <th className="text-left px-3 py-2.5 text-gray-400 font-semibold w-7">#</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold">Description</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold w-16">Qty</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold w-24">Unit (Rs)</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold w-24">Total</th>
+                  <th className="w-8" />
                 </tr>
               </thead>
               <tbody>
                 {data.services.map((s, i) => (
-                  <tr key={s.id} className="border-t border-gray-800">
-                    <td className="px-2 py-1.5 text-gray-500 text-center">{i + 1}</td>
-                    <td className="px-2 py-1.5">{tableInput(s.description, (v) => updateService(i, "description", v), "text", "Service description")}</td>
-                    <td className="px-2 py-1.5">{tableInput(s.qty, (v) => updateService(i, "qty", v), "number", "0")}</td>
-                    <td className="px-2 py-1.5">{tableInput(s.unit, (v) => updateService(i, "unit", v), "number", "0.00")}</td>
-                    <td className="px-2 py-1.5 text-emerald-400 font-semibold">
-                      {calcTotal(s.qty, s.unit) ? `Rs ${parseFloat(calcTotal(s.qty, s.unit)).toLocaleString()}` : "—"}
+                  <tr key={s.id} className={`border-t border-gray-100 dark:border-gray-800 ${i % 2 === 1 ? "bg-gray-50/60 dark:bg-gray-800/20" : ""}`}>
+                    <td className="px-3 py-2 text-gray-400 text-center font-medium">{i + 1}</td>
+                    <td className="px-2 py-2">{tableInput(s.description, (v) => updateService(i, "description", v), "text", "Service description")}</td>
+                    <td className="px-2 py-2">{tableInput(s.qty, (v) => updateService(i, "qty", v), "number", "0")}</td>
+                    <td className="px-2 py-2">{tableInput(s.unit, (v) => updateService(i, "unit", v), "number", "0.00")}</td>
+                    <td className="px-3 py-2 text-emerald-600 dark:text-emerald-400 font-semibold whitespace-nowrap">
+                      {calcTotal(s.qty, s.unit) ? `Rs ${parseFloat(calcTotal(s.qty, s.unit)).toLocaleString()}` : <span className="text-gray-300 dark:text-gray-700">—</span>}
                     </td>
-                    <td className="px-1 py-1.5">
-                      <button onClick={() => removeRow("services", i)} className="text-gray-600 hover:text-rose-400 transition-colors">×</button>
+                    <td className="px-2 py-2">
+                      <button onClick={() => removeRow("services", i)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-300 dark:text-gray-700 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all">×</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <div className="px-3 py-2.5 border-t border-gray-100 dark:border-gray-800">
+              <button onClick={() => addRow("services")} className="flex items-center gap-1.5 text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors">
+                <span className="w-5 h-5 rounded-full bg-cyan-500/10 flex items-center justify-center text-sm leading-none">+</span> Add Row
+              </button>
+            </div>
           </div>
-          <button onClick={() => addRow("services")} className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
-            <span>+</span> Add Row
-          </button>
 
-          {/* Parts Used */}
-          {sectionHeader("Parts Used")}
-          <div className="overflow-x-auto">
+          {/* ── Parts Used ────────────────────────────────────────────────── */}
+          {sectionHeader("Parts Used", "🔩")}
+          <div className="bg-white dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-gray-900">
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-6">#</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold">Description</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Part No</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-16">Qty</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Unit (Rs)</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Total</th>
-                  <th className="w-8"></th>
+                <tr className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
+                  <th className="text-left px-3 py-2.5 text-gray-400 font-semibold w-7">#</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold">Description</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold w-24">Part No</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold w-16">Qty</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold w-24">Unit (Rs)</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold w-24">Total</th>
+                  <th className="w-8" />
                 </tr>
               </thead>
               <tbody>
                 {data.parts.map((p, i) => (
-                  <tr key={p.id} className="border-t border-gray-800">
-                    <td className="px-2 py-1.5 text-gray-500 text-center">{i + 1}</td>
-                    <td className="px-2 py-1.5">{tableInput(p.description, (v) => updatePart(i, "description", v), "text", "Part name")}</td>
-                    <td className="px-2 py-1.5">{tableInput(p.partNo, (v) => updatePart(i, "partNo", v), "text", "PN-001")}</td>
-                    <td className="px-2 py-1.5">{tableInput(p.qty, (v) => updatePart(i, "qty", v), "number", "0")}</td>
-                    <td className="px-2 py-1.5">{tableInput(p.unit, (v) => updatePart(i, "unit", v), "number", "0.00")}</td>
-                    <td className="px-2 py-1.5 text-emerald-400 font-semibold">
-                      {calcTotal(p.qty, p.unit) ? `Rs ${parseFloat(calcTotal(p.qty, p.unit)).toLocaleString()}` : "—"}
+                  <tr key={p.id} className={`border-t border-gray-100 dark:border-gray-800 ${i % 2 === 1 ? "bg-gray-50/60 dark:bg-gray-800/20" : ""}`}>
+                    <td className="px-3 py-2 text-gray-400 text-center font-medium">{i + 1}</td>
+                    <td className="px-2 py-2">{tableInput(p.description, (v) => updatePart(i, "description", v), "text", "Part name")}</td>
+                    <td className="px-2 py-2">{tableInput(p.partNo, (v) => updatePart(i, "partNo", v), "text", "PN-001")}</td>
+                    <td className="px-2 py-2">{tableInput(p.qty, (v) => updatePart(i, "qty", v), "number", "0")}</td>
+                    <td className="px-2 py-2">{tableInput(p.unit, (v) => updatePart(i, "unit", v), "number", "0.00")}</td>
+                    <td className="px-3 py-2 text-emerald-600 dark:text-emerald-400 font-semibold whitespace-nowrap">
+                      {calcTotal(p.qty, p.unit) ? `Rs ${parseFloat(calcTotal(p.qty, p.unit)).toLocaleString()}` : <span className="text-gray-300 dark:text-gray-700">—</span>}
                     </td>
-                    <td className="px-1 py-1.5">
-                      <button onClick={() => removeRow("parts", i)} className="text-gray-600 hover:text-rose-400 transition-colors">×</button>
+                    <td className="px-2 py-2">
+                      <button onClick={() => removeRow("parts", i)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-300 dark:text-gray-700 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all">×</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <div className="px-3 py-2.5 border-t border-gray-100 dark:border-gray-800">
+              <button onClick={() => addRow("parts")} className="flex items-center gap-1.5 text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors">
+                <span className="w-5 h-5 rounded-full bg-cyan-500/10 flex items-center justify-center text-sm leading-none">+</span> Add Row
+              </button>
+            </div>
           </div>
-          <button onClick={() => addRow("parts")} className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
-            <span>+</span> Add Row
-          </button>
 
-          {/* Labour Charges */}
-          {sectionHeader("Labour Charges")}
-          <div className="overflow-x-auto">
+          {/* ── Labour Charges ────────────────────────────────────────────── */}
+          {sectionHeader("Labour Charges", "🧑‍🔧")}
+          <div className="bg-white dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-gray-900">
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-6">#</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold">Description</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-20">Hours</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-28">Rate/Hr (Rs)</th>
-                  <th className="text-left px-2 py-2 text-gray-400 font-semibold w-24">Total</th>
-                  <th className="w-8"></th>
+                <tr className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-700">
+                  <th className="text-left px-3 py-2.5 text-gray-400 font-semibold w-7">#</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold">Description</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold w-20">Hours</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold w-28">Rate/Hr (Rs)</th>
+                  <th className="text-left px-3 py-2.5 text-gray-500 dark:text-gray-400 font-semibold w-24">Total</th>
+                  <th className="w-8" />
                 </tr>
               </thead>
               <tbody>
                 {data.labour.map((l, i) => (
-                  <tr key={l.id} className="border-t border-gray-800">
-                    <td className="px-2 py-1.5 text-gray-500 text-center">{i + 1}</td>
-                    <td className="px-2 py-1.5">{tableInput(l.description, (v) => updateLabour(i, "description", v), "text", "Labour description")}</td>
-                    <td className="px-2 py-1.5">{tableInput(l.hours, (v) => updateLabour(i, "hours", v), "number", "0")}</td>
-                    <td className="px-2 py-1.5">{tableInput(l.rate, (v) => updateLabour(i, "rate", v), "number", "0.00")}</td>
-                    <td className="px-2 py-1.5 text-emerald-400 font-semibold">
-                      {calcLabourTotal(l.hours, l.rate) ? `Rs ${parseFloat(calcLabourTotal(l.hours, l.rate)).toLocaleString()}` : "—"}
+                  <tr key={l.id} className={`border-t border-gray-100 dark:border-gray-800 ${i % 2 === 1 ? "bg-gray-50/60 dark:bg-gray-800/20" : ""}`}>
+                    <td className="px-3 py-2 text-gray-400 text-center font-medium">{i + 1}</td>
+                    <td className="px-2 py-2">{tableInput(l.description, (v) => updateLabour(i, "description", v), "text", "Labour description")}</td>
+                    <td className="px-2 py-2">{tableInput(l.hours, (v) => updateLabour(i, "hours", v), "number", "0")}</td>
+                    <td className="px-2 py-2">{tableInput(l.rate, (v) => updateLabour(i, "rate", v), "number", "0.00")}</td>
+                    <td className="px-3 py-2 text-emerald-600 dark:text-emerald-400 font-semibold whitespace-nowrap">
+                      {calcLabourTotal(l.hours, l.rate) ? `Rs ${parseFloat(calcLabourTotal(l.hours, l.rate)).toLocaleString()}` : <span className="text-gray-300 dark:text-gray-700">—</span>}
                     </td>
-                    <td className="px-1 py-1.5">
-                      <button onClick={() => removeRow("labour", i)} className="text-gray-600 hover:text-rose-400 transition-colors">×</button>
+                    <td className="px-2 py-2">
+                      <button onClick={() => removeRow("labour", i)} className="w-6 h-6 rounded-md flex items-center justify-center text-gray-300 dark:text-gray-700 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all">×</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-          <button onClick={() => addRow("labour")} className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
-            <span>+</span> Add Row
-          </button>
-
-          {/* Discount */}
-          {sectionHeader("Discount")}
-          <div className="grid grid-cols-4 gap-3">
-            <InputField label="Discount Amount (Rs)" value={data.discount || ''} onChange={(v) => set("discount", v)} type="number" placeholder="0.00" />
+            <div className="px-3 py-2.5 border-t border-gray-100 dark:border-gray-800">
+              <button onClick={() => addRow("labour")} className="flex items-center gap-1.5 text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors">
+                <span className="w-5 h-5 rounded-full bg-cyan-500/10 flex items-center justify-center text-sm leading-none">+</span> Add Row
+              </button>
+            </div>
           </div>
 
-          {/* Payment Terms */}
-          {sectionHeader("Payment Terms")}
-          <div className="grid grid-cols-2 gap-3">
-            <InputField label="Terms" value={data.terms} onChange={(v) => set("terms", v)} placeholder="Net 30" />
-            <InputField label="Juice Payment" value={data.juice} onChange={(v) => set("juice", v)} placeholder="Phone number / Account" />
-            <InputField label="Cash" value={data.cash} onChange={(v) => set("cash", v)} placeholder="Accepted" />
-          </div>
-          <div className="mt-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notes / Remarks</label>
+          {/* ── Payment & Notes ────────────────────────────────────────────── */}
+          {sectionHeader("Payment & Notes", "💳")}
+          <div className="bg-white dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <InputField label="Discount (Rs)" value={data.discount || ''} onChange={(v) => set("discount", v)} type="number" placeholder="0.00" />
+              <InputField label="Terms" value={data.terms} onChange={(v) => set("terms", v)} placeholder="Net 30" />
+              <InputField label="Juice / Mobile Pay" value={data.juice} onChange={(v) => set("juice", v)} placeholder="Phone / Account" />
+              <InputField label="Cash" value={data.cash} onChange={(v) => set("cash", v)} placeholder="Accepted" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Notes / Remarks</label>
               <textarea
                 value={data.notes || ""}
                 onChange={(e) => set("notes", e.target.value)}
                 placeholder="Additional notes, payment instructions, warranty info, or a thank you message..."
                 rows={3}
-                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40 transition-all resize-y [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-600"
+                className="w-full bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 transition-all shadow-sm resize-y"
               />
             </div>
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800">
+        <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-900/80 border-t border-gray-100 dark:border-gray-800">
           <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 rounded-xl text-gray-400 hover:text-white text-sm transition-colors">
+            <button onClick={onClose} className="px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
               Cancel
             </button>
-            <button 
-              onClick={() => {
-                if (window.confirm("Are you sure you want to clear the entire form?")) {
-                  onChange(defaultInvoiceData());
-                }
-              }} 
-              className="px-4 py-2 rounded-xl text-rose-500 hover:bg-rose-500/10 hover:text-rose-400 text-sm transition-colors"
+            <button
+              onClick={() => { if (window.confirm("Clear the entire form?")) onChange(defaultInvoiceData()); }}
+              className="px-4 py-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 text-sm transition-all"
             >
               Clear
             </button>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium border border-gray-200 dark:border-gray-700 transition-all"
+              className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-white text-sm font-medium border border-gray-200 dark:border-gray-700 transition-all"
             >
               Preview
             </button>
             <button
-            onClick={() => onSave(data)}
-            disabled={isSaving}
-            className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium border border-indigo-700 transition-all disabled:opacity-50"
-          >
-            {isSaving ? "Saving..." : "Save to DB"}
-          </button>
-          <button
+              onClick={() => onSave(data)}
+              disabled={isSaving}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold border border-indigo-700 transition-all disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {isSaving && <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}
+              {isSaving ? "Saving…" : "Save"}
+            </button>
+            <button
               onClick={onExport}
               disabled={isExporting}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-sm font-bold transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-sm font-bold transition-all disabled:opacity-50 shadow-sm"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
