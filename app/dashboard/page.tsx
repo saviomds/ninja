@@ -948,6 +948,11 @@ export default function Dashboard() {
   const [isSavingInvoice, setIsSavingInvoice] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
   const [activeEditors, setActiveEditors] = useState<string[]>([]);
+  const [invoiceSearch,   setInvoiceSearch]   = useState("");
+  const [invoiceSort,     setInvoiceSort]     = useState<"date_desc"|"date_asc"|"name"|"total_desc"|"total_asc"|"invno">("date_desc");
+  const [invoiceDateFrom, setInvoiceDateFrom] = useState("");
+  const [invoiceDateTo,   setInvoiceDateTo]   = useState("");
+  const [invoiceStatusF,  setInvoiceStatusF]  = useState<"all"|"paid"|"draft">("all");
 
   // Orders
   const [orders, setOrders] = useState<ClientOrder[]>([]);
@@ -3223,137 +3228,277 @@ export default function Dashboard() {
 
         {/* ══ INVOICE TAB ═════════════════════════════════════════════════════════ */}
         {activeSection === "invoice" && (() => {
-          const servicesSubtotal = sumRows(invoiceData.services);
-          const subtotal = sumRows(invoiceData.parts) + sumLabour(invoiceData.labour) + servicesSubtotal;
-          const discountAmount = parseFloat(invoiceData.discount || '0');
-          const subtotalAfterDiscount = subtotal - discountAmount;
-          const vat = subtotalAfterDiscount * 0.15;
-          const total = subtotalAfterDiscount + vat;
+          // helper: compute invoice total
+          const invTotal = (inv: InvoiceData) => {
+            const sub  = sumRows(inv.parts) + sumLabour(inv.labour) + sumRows(inv.services);
+            const disc = parseFloat(inv.discount || "0");
+            const net  = sub - disc;
+            return net + net * 0.15;
+          };
+          const isPaid = (inv: InvoiceData) => !!(inv.cash || inv.juice);
+
+          // filters + sort
+          const q = invoiceSearch.toLowerCase();
+          let filtered = invoices.filter(inv => {
+            const matchQ  = !q || inv.invoiceNo.toLowerCase().includes(q) || inv.customerName.toLowerCase().includes(q) || inv.tel.includes(q);
+            const matchSt = invoiceStatusF === "all" || (invoiceStatusF === "paid" ? isPaid(inv) : !isPaid(inv));
+            const d       = inv.date ? new Date(inv.date) : null;
+            const matchF  = !invoiceDateFrom || (d && d >= new Date(invoiceDateFrom));
+            const matchT  = !invoiceDateTo   || (d && d <= new Date(invoiceDateTo + "T23:59:59"));
+            return matchQ && matchSt && matchF && matchT;
+          });
+          filtered = [...filtered].sort((a, b) => {
+            if (invoiceSort === "date_desc") return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+            if (invoiceSort === "date_asc")  return new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime();
+            if (invoiceSort === "name")      return a.customerName.localeCompare(b.customerName);
+            if (invoiceSort === "total_desc") return invTotal(b) - invTotal(a);
+            if (invoiceSort === "total_asc")  return invTotal(a) - invTotal(b);
+            if (invoiceSort === "invno")     return a.invoiceNo.localeCompare(b.invoiceNo);
+            return 0;
+          });
+
+          const totalRevenue  = invoices.reduce((s, inv) => s + invTotal(inv), 0);
+          const paidCount     = invoices.filter(isPaid).length;
+          const draftCount    = invoices.length - paidCount;
+
+          // current preview totals
+          const curSub   = sumRows(invoiceData.parts) + sumLabour(invoiceData.labour) + sumRows(invoiceData.services);
+          const curDisc  = parseFloat(invoiceData.discount || "0");
+          const curNet   = curSub - curDisc;
+          const curTotal = curNet + curNet * 0.15;
 
           return (
-            <div>
+            <div className="space-y-6">
               <style>{`
                 @media print {
                   body > *:not(#print-root) { display: none !important; }
                   #print-root { display: block !important; }
                   #invoice-preview { width: 100%; }
                 }
-                @keyframes fadeSlideUp {
-                  from { opacity: 0; transform: translateY(12px); }
-                  to   { opacity: 1; transform: translateY(0); }
-                }
-                .animate-fsu { animation: fadeSlideUp 0.35s ease both; }
               `}</style>
-              <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 pt-2">
+
+              {/* ── Header ──────────────────────────────────────────────────── */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Invoice Generator</h2>
-                  <p className="text-gray-500 text-sm mt-0.5">Create and export PDF invoices</p>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Invoices</h2>
+                  <p className="text-gray-500 text-sm mt-0.5">Manage, search and export all invoices</p>
                 </div>
-                <button onClick={() => setIsInvoiceModalOpen(true)} className="w-full md:w-auto flex justify-center items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black px-6 py-3 rounded-xl font-bold transition-all duration-200 shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_28px_rgba(0,212,255,0.5)]">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  Fill Invoice
+                <button
+                  onClick={() => {
+                    if (!invoiceData.invoiceNo) setInvoiceData(prev => ({ ...prev, invoiceNo: `INV-${String(invoiceCounter).padStart(3, "0")}` }));
+                    setIsInvoiceModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-[0_0_16px_rgba(0,212,255,0.25)]">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                  New Invoice
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-fsu">
+              {/* ── Aggregate stats ──────────────────────────────────────────── */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: "Subtotal", val: `Rs ${subtotal.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-blue-400" },
-                  { label: "VAT (15%)", val: `Rs ${vat.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-amber-400" },
-                  { label: "Discount", val: `Rs ${discountAmount.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-rose-400" },
-                  { label: "Total Due", val: `Rs ${total.toLocaleString("en-MU", { minimumFractionDigits: 2 })}`, color: "text-cyan-400" },
-                ].map((s) => (
-                  <div key={s.label} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
-                    <p className="text-xs text-gray-500 mb-1 font-semibold uppercase tracking-wider">{s.label}</p>
-                    <p className={`text-lg font-bold ${s.color}`}>{s.val}</p>
+                  { label: "Total Invoices", val: invoices.length,                                                                   color: "text-cyan-600 dark:text-cyan-400",    bg: "bg-cyan-50 dark:bg-cyan-500/10 border-cyan-200 dark:border-cyan-500/20"       },
+                  { label: "Total Revenue",  val: `Rs ${totalRevenue.toLocaleString("en-MU", { minimumFractionDigits: 0 })}`,        color: "text-emerald-600 dark:text-emerald-400",bg:"bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20"},
+                  { label: "Paid",           val: paidCount,                                                                          color: "text-indigo-600 dark:text-indigo-400",  bg: "bg-indigo-50 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/20"  },
+                  { label: "Draft / Unpaid", val: draftCount,                                                                         color: "text-amber-600 dark:text-amber-400",  bg: "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20"    },
+                ].map(s => (
+                  <div key={s.label} className={`rounded-xl border p-4 ${s.bg}`}>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{s.label}</p>
+                    <p className={`text-xl font-bold ${s.color}`}>{s.val}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="animate-fsu" style={{ animationDelay: "0.1s" }}>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Live Preview</h2>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => { setInvoiceData(defaultInvoiceData()); showToast("Invoice reset", "success"); }}
-                      className="text-xs text-gray-500 hover:text-rose-400 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-rose-500/30 transition-all"
-                    >
-                      Reset
-                    </button>
-                    <button
-                      onClick={handleExportInvoice}
-                      disabled={isExportingInvoice}
-                      className="flex items-center gap-1.5 text-xs bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-white px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 transition-all disabled:opacity-50"
-                    >
-                      <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      {isExportingInvoice ? "Exporting…" : "Export PDF"}
-                    </button>
+              {/* ── Invoice List ─────────────────────────────────────────────── */}
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
+                {/* Toolbar */}
+                <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex flex-wrap gap-2 items-center">
+                  {/* Search */}
+                  <div className="relative flex-1 min-w-[180px]">
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <input
+                      value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)}
+                      placeholder="Search by name, INV#, phone…"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-9 pr-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/10 transition-all"
+                    />
                   </div>
+                  {/* Status filter */}
+                  <div className="flex gap-1">
+                    {(["all","paid","draft"] as const).map(s => (
+                      <button key={s} onClick={() => setInvoiceStatusF(s)}
+                        className={`px-3 py-2 text-xs font-medium rounded-lg border transition-all capitalize ${
+                          invoiceStatusF === s
+                            ? s === "paid"  ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-400"
+                            : s === "draft" ? "bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-400"
+                            : "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+                            : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                        }`}>{s}</button>
+                    ))}
+                  </div>
+                  {/* Date range */}
+                  <div className="flex items-center gap-1">
+                    <input type="date" value={invoiceDateFrom} onChange={e => setInvoiceDateFrom(e.target.value)} title="From"
+                      className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-2.5 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500 transition-all" />
+                    <span className="text-gray-400 text-xs">→</span>
+                    <input type="date" value={invoiceDateTo} onChange={e => setInvoiceDateTo(e.target.value)} title="To"
+                      className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-2.5 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500 transition-all" />
+                  </div>
+                  {/* Sort */}
+                  <select value={invoiceSort} onChange={e => setInvoiceSort(e.target.value as typeof invoiceSort)}
+                    className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500 transition-all">
+                    <option value="date_desc">Newest first</option>
+                    <option value="date_asc">Oldest first</option>
+                    <option value="name">Customer A–Z</option>
+                    <option value="invno">INV# A–Z</option>
+                    <option value="total_desc">Highest total</option>
+                    <option value="total_asc">Lowest total</option>
+                  </select>
+                  {(invoiceSearch || invoiceStatusF !== "all" || invoiceDateFrom || invoiceDateTo) && (
+                    <button onClick={() => { setInvoiceSearch(""); setInvoiceStatusF("all"); setInvoiceDateFrom(""); setInvoiceDateTo(""); }}
+                      className="px-3 py-2 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 transition-all">
+                      Clear
+                    </button>
+                  )}
+                  <p className="text-xs text-gray-400 ml-1">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</p>
                 </div>
 
-                <div className="rounded-2xl overflow-hidden border border-gray-800 shadow-2xl overflow-x-auto bg-white p-4">
-                  <div id="print-root">
-                    <InvoicePreview data={invoiceData} />
+                {/* Table */}
+                {filtered.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <p className="text-3xl mb-3">📄</p>
+                    <p className="text-sm text-gray-400 mb-4">{invoices.length === 0 ? "No invoices yet" : "No results match your filters"}</p>
+                    {invoices.length === 0 && (
+                      <button onClick={() => setIsInvoiceModalOpen(true)}
+                        className="px-5 py-2 text-sm bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl transition-all">
+                        Create First Invoice
+                      </button>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60">
+                          {["INV #","Date","Due","Customer","Phone","Device","Total","Status","Actions"].map(h => (
+                            <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map((inv, i) => {
+                          const paid  = isPaid(inv);
+                          const total = invTotal(inv);
+                          const isLoaded = invoiceData.id === inv.id;
+                          return (
+                            <tr key={inv.id}
+                              className={`border-b border-gray-50 dark:border-gray-800/40 transition-colors cursor-pointer ${
+                                isLoaded
+                                  ? "bg-cyan-50 dark:bg-cyan-500/5 hover:bg-cyan-50 dark:hover:bg-cyan-500/10"
+                                  : i % 2 === 1 ? "bg-gray-50/40 dark:bg-gray-900/20 hover:bg-gray-100 dark:hover:bg-gray-800/40"
+                                               : "hover:bg-gray-50 dark:hover:bg-gray-800/30"
+                              }`}
+                              onClick={() => { setInvoiceData(inv); showToast(`Loaded ${inv.invoiceNo || "invoice"}`, "success"); }}>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className={`font-bold text-sm ${isLoaded ? "text-cyan-600 dark:text-cyan-400" : "text-gray-900 dark:text-white"}`}>
+                                  {inv.invoiceNo || <span className="text-gray-400 font-normal italic">—</span>}
+                                </span>
+                                {isLoaded && <span className="ml-1.5 text-[9px] font-bold text-cyan-500 bg-cyan-100 dark:bg-cyan-500/20 px-1.5 py-0.5 rounded-full uppercase">loaded</span>}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">
+                                {inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit" }) : <span className="text-gray-400">—</span>}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
+                                {inv.due ? new Date(inv.due).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit" }) : <span className="text-gray-400">—</span>}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <p className="font-medium text-gray-900 dark:text-white text-sm">{inv.customerName || <span className="text-gray-400 italic font-normal">Unknown</span>}</p>
+                                {inv.email && <p className="text-[10px] text-gray-400 truncate max-w-[140px]">{inv.email}</p>}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500 font-mono">{inv.tel || "—"}</td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <p className="text-sm text-cyan-600 dark:text-cyan-400">{inv.device || <span className="text-gray-400 italic font-normal">—</span>}</p>
+                                {inv.serial && <p className="text-[10px] text-gray-400 font-mono">{inv.serial}</p>}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap font-bold text-gray-900 dark:text-white">
+                                Rs {total.toLocaleString("en-MU", { minimumFractionDigits: 0 })}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                                  paid
+                                    ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-400"
+                                    : "bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/40 text-amber-700 dark:text-amber-400"
+                                }`}>{paid ? "Paid" : "Draft"}</span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                  {/* Edit */}
+                                  <button title="Edit invoice"
+                                    onClick={() => { setInvoiceData(inv); setIsInvoiceModalOpen(true); }}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all">
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                  </button>
+                                  {/* Duplicate */}
+                                  <button title="Duplicate"
+                                    onClick={e => handleDuplicateInvoice(inv, e)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all">
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                  </button>
+                                  {/* Export PDF */}
+                                  <button title="Export PDF"
+                                    onClick={async () => { setInvoiceData(inv); await new Promise(r => setTimeout(r, 80)); handleExportInvoice(); }}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 transition-all">
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                  </button>
+                                  {/* Delete */}
+                                  <button title="Delete"
+                                    onClick={() => setInvoiceToDelete(inv.id!)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all">
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
-              {!invoiceData.customerName && !invoiceData.device && (
-                <div className="mt-8 text-center animate-fsu" style={{ animationDelay: "0.2s" }}>
-                  <p className="text-gray-500 text-sm mb-3">No data yet — click <strong className="text-cyan-400">Fill Invoice</strong> to get started</p>
-                <button onClick={() => {
-                  if (!invoiceData.invoiceNo) {
-                    setInvoiceData(prev => ({ ...prev, invoiceNo: `INV-${String(invoiceCounter).padStart(3, '0')}` }));
-                  }
-                  setIsInvoiceModalOpen(true);
-                }} className="text-sm text-cyan-400 hover:text-cyan-300 underline underline-offset-2 transition-colors">
-                    Open form →
-                  </button>
+              {/* ── Invoice Preview (only when data loaded) ──────────────────── */}
+              {(invoiceData.customerName || invoiceData.device) && (
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40">
+                    <div className="flex items-center gap-2.5">
+                      <svg className="w-4 h-4 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                        Preview — {invoiceData.invoiceNo || "Draft"}
+                        {invoiceData.customerName && <span className="text-gray-400 font-normal"> · {invoiceData.customerName}</span>}
+                      </span>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Rs {curTotal.toLocaleString("en-MU", { minimumFractionDigits: 0 })}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setIsInvoiceModalOpen(true)}
+                        className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white border border-gray-200 dark:border-gray-700 px-3 py-1.5 rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-gray-800">
+                        Edit
+                      </button>
+                      <button onClick={() => { setInvoiceData(defaultInvoiceData()); showToast("Invoice cleared", "success"); }}
+                        className="text-xs text-gray-500 hover:text-rose-400 border border-gray-200 dark:border-gray-700 hover:border-rose-400/40 px-3 py-1.5 rounded-lg transition-all">
+                        Clear
+                      </button>
+                      <button onClick={handleExportInvoice} disabled={isExportingInvoice}
+                        className="flex items-center gap-1.5 text-xs bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-3.5 py-1.5 rounded-lg transition-all disabled:opacity-50">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        {isExportingInvoice ? "Exporting…" : "Export PDF"}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto bg-white p-4">
+                    <div id="print-root"><InvoicePreview data={invoiceData} /></div>
+                  </div>
                 </div>
               )}
-
-          {invoices.length > 0 && (
-            <div className="mt-8 animate-fsu" style={{ animationDelay: "0.3s" }}>
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                All Invoices ({invoices.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {invoices.map(inv => (
-                  <div key={inv.id} className="group relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 hover:border-cyan-500/50 transition-colors cursor-pointer" onClick={() => { setInvoiceData(inv); showToast(`Loaded ${inv.invoiceNo}`, "success"); }}>
-                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                      <button
-                        onClick={(e) => handleDuplicateInvoice(inv, e)}
-                        className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 transition-all"
-                        title="Duplicate invoice"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.32-.883l-2.26-2.259" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setInvoiceToDelete(inv.id!); }}
-                        className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition-all"
-                        title="Delete invoice"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="flex justify-between items-start mb-2 pr-6">
-                      <span className="font-bold text-gray-900 dark:text-white">{inv.invoiceNo}</span>
-                      <span className="text-xs text-gray-500">{inv.date ? new Date(inv.date).toLocaleDateString() : "No Date"}</span>
-                    </div>
-                    <p className="text-sm text-gray-400">{inv.customerName || "Unknown Customer"}</p>
-                    <p className="text-xs text-cyan-400 mt-2">{inv.device || "No device specified"}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
             </div>
           );
         })()}
