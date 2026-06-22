@@ -12,15 +12,13 @@ interface SocialProfile {
   profile_link: string;
   username: string;
   email: string;
-  password?: string;
   description?: string;
   is_active?: boolean;
-  followers?: number;
 }
 
 const emptyForm = () => ({
   platform_name: "", platform_icon: "", profile_link: "", username: "",
-  email: "", password: "", description: "", is_active: true, followers: "",
+  email: "", description: "", is_active: true,
 });
 
 const COMMON_PLATFORMS = [
@@ -43,7 +41,6 @@ export default function AdminSocialPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
-  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -73,7 +70,7 @@ export default function AdminSocialPage() {
       showToast("Platform name and link are required", false); return;
     }
     setSaving(true);
-    const payload = { ...form, followers: form.followers ? parseInt(form.followers) : null };
+    const payload = { ...form };
     const { error } = editId
       ? await supabase.from("social_profiles").update(payload).eq("id", editId)
       : await supabase.from("social_profiles").insert([payload]);
@@ -89,9 +86,8 @@ export default function AdminSocialPage() {
     setForm({
       platform_name: p.platform_name || "", platform_icon: p.platform_icon || "",
       profile_link: p.profile_link || "", username: p.username || "",
-      email: p.email || "", password: p.password || "",
+      email: p.email || "",
       description: p.description || "", is_active: p.is_active ?? true,
-      followers: p.followers?.toString() || "",
     });
     setEditId(p.id);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -185,14 +181,6 @@ export default function AdminSocialPage() {
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1.5">Account Email</label>
               <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="account@email.com" className={inputClass} />
             </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1.5">Account Password</label>
-              <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="••••••••" className={inputClass} />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1.5">Followers</label>
-              <input type="number" value={form.followers} onChange={(e) => setForm({ ...form, followers: e.target.value })} placeholder="0" className={inputClass} />
-            </div>
             <div className="flex items-center gap-3 pt-5">
               <button
                 onClick={() => setForm({ ...form, is_active: !form.is_active })}
@@ -262,22 +250,7 @@ export default function AdminSocialPage() {
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${p.is_active ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"}`} />
                       </div>
                       {p.username && <p className="text-xs text-gray-500 dark:text-gray-400">@{p.username}</p>}
-                      {p.email && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-gray-400 dark:text-gray-600">{p.email}</span>
-                          {p.password && (
-                            <button
-                              onClick={() => setShowPasswords((s) => ({ ...s, [p.id]: !s[p.id] }))}
-                              className="text-xs text-cyan-500 hover:text-cyan-400"
-                            >
-                              {showPasswords[p.id] ? p.password : "••••••• (show)"}
-                            </button>
-                          )}
-                        </div>
-                      )}
-                      {p.followers && p.followers > 0 && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{p.followers.toLocaleString()} followers</p>
-                      )}
+                      {p.email && <span className="text-xs text-gray-400 dark:text-gray-600 mt-1 block">{p.email}</span>}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button

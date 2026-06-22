@@ -131,7 +131,7 @@ export default function Home() {
     const fetchAllData = async () => {
       const [productsRes, socialRes, updatesRes, authRes] = await Promise.all([
         supabase.from("products").select("*").eq("is_public", true).order("created_at", { ascending: false }),
-        supabase.from("social_profiles").select("id, platform_name, platform_icon, profile_link, username, description, followers, is_active").order("created_at", { ascending: false }),
+        supabase.from("social_profiles").select("id, platform_name, platform_icon, profile_link, username, description, is_active").order("created_at", { ascending: false }),
         supabase.from("updates").select("*").order("created_at", { ascending: false }),
         supabase.auth.getUser(),
       ]);
@@ -282,7 +282,7 @@ export default function Home() {
                   {/* Left text */}
                   <div className="text-center md:text-left">
                     <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#2563EB] mb-3">
-                      {i === 0 ? "Feel the Music with" : i === 1 ? "Track Every Moment" : "Your Tech Experts"}
+                      {i === 0 ? "Mauritius's #1 Tech Store" : i === 1 ? "Track Every Moment" : "Your Tech Experts"}
                     </p>
                     <h1 className="text-[46px] sm:text-[58px] font-black leading-[0.95] text-gray-900 dark:text-white mb-5">
                       {i === 0 ? <>Your trusted<br /><span className="text-[#2563EB]">tech partner.</span></> :
@@ -891,42 +891,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══ ADMIN ══ */}
-      {isAdmin && !loading && (
-        <section className="bg-white dark:bg-gray-950 py-14 px-5 lg:px-8 border-t border-gray-100 dark:border-gray-800">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-3 mb-7">
-              <h2 className="text-[16px] font-bold text-gray-900 dark:text-white">Admin</h2>
-              <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">Private</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-              {[
-                { label: "Est. Inventory Value", value: `Rs ${adminStats.totalRevenue.toLocaleString()}` },
-                { label: "Low Stock",            value: `${adminStats.lowStockCount} products` },
-                { label: "Out of Stock",         value: `${adminStats.outOfStockCount} products` },
-              ].map((stat) => (
-                <div key={stat.label} className="rounded-xl border border-gray-100 dark:border-gray-800 bg-[#F9FAFB] dark:bg-gray-800 p-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">{stat.label}</p>
-                  <p className="text-[20px] font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: "Add Product",  href: "/admin/products/new" },
-                { label: "Post Update",  href: "/admin/updates/new" },
-                { label: "Manage Users", href: "/admin/users" },
-                { label: "Social Links", href: "/admin/social" },
-              ].map((action) => (
-                <Link key={action.label} href={action.href}
-                  className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-[13px] font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600 transition-all">
-                  {action.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ══ FOOTER CTA ══ */}
       <section className="relative overflow-hidden bg-gray-900 py-24 px-5 lg:px-8">

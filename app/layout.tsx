@@ -19,8 +19,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://techninja-psi.vercel.app/"),
-  title: "Tech Ninja Platform",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://techninja-psi.vercel.app"),
+  title: { default: "Tech Ninja · Mauritius", template: "%s · Tech Ninja" },
   description: "Repair. Buy. Sell. Your Local Tech Experts in Mauritius.",
   applicationName: "Tech Ninja",
   manifest: "/manifest.webmanifest",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     shortcut: [{ url: "/favicon.ico", type: "image/x-icon" }],
   },
   openGraph: {
-    title: "Tech Ninja Platform",
+    title: "Tech Ninja · Mauritius",
     description: "Repair. Buy. Sell. Your Local Tech Experts in Mauritius.",
     type: "website",
     siteName: "Tech Ninja",
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="bg-white dark:bg-black text-gray-900 dark:text-gray-50 flex flex-col min-h-screen transition-colors duration-200 selection:bg-indigo-500/30">
         <ThemeProvider>
           <AuthHashHandler />

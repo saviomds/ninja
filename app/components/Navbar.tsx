@@ -88,9 +88,9 @@ export default function Navbar() {
   const isActive = (href: string) => pathname === href;
 
   const shopLinks = [
-    { href: "/Clients",  label: "All Products" },
-    { href: "/repair",   label: "Repair Services" },
-    { href: "/#deals",   label: "Deals & Offers" },
+    { href: "/shop",   label: "All Products"    },
+    { href: "/repair", label: "Repair Services" },
+    { href: "/wishlist", label: "My Wishlist"   },
   ];
 
   const navLinks = [
@@ -143,7 +143,7 @@ export default function Navbar() {
               <button
                 onClick={() => setShopOpen((p) => !p)}
                 className={`flex items-center gap-1 px-3.5 py-2 rounded-lg text-[13.5px] font-medium transition-all ${
-                  isActive("/Clients")
+                  isActive("/shop")
                     ? "text-[#2563EB] bg-blue-50 dark:bg-blue-900/20"
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
                 }`}
@@ -170,15 +170,18 @@ export default function Navbar() {
             </li>
 
             {[
-              { href: "/repair",      label: "Repair" },
-              { href: "/#services",   label: "About Us" },
-              { href: "/#newsletter", label: "News" },
-              { href: "/#footer",     label: "Contact Us" },
+              { href: "/repair",    label: "Repair"     },
+              { href: "/about",     label: "About Us"   },
+              { href: "/contact",   label: "Contact Us" },
             ].map(({ href, label }) => (
               <li key={href}>
                 <Link
                   href={href}
-                  className="px-3.5 py-2 rounded-lg text-[13.5px] font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                  className={`px-3.5 py-2 rounded-lg text-[13.5px] font-medium transition-all ${
+                    isActive(href)
+                      ? "text-[#2563EB] bg-blue-50 dark:bg-blue-900/20"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`}
                 >
                   {label}
                 </Link>
@@ -199,16 +202,7 @@ export default function Navbar() {
                 </Link>
               </li>
             )}
-            {isAdmin && (
-              <li>
-                <Link
-                  href="/dashboard"
-                  className="px-3.5 py-2 rounded-lg text-[13.5px] font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
-                >
-                  Admin
-                </Link>
-              </li>
-            )}
+            {/* Admin link intentionally removed from public nav — access via /dashboard directly */}
           </ul>
 
           {/* ── Right icons ── */}
@@ -242,7 +236,7 @@ export default function Navbar() {
 
             {/* Cart */}
             <Link
-              href="/Clients"
+              href="/shop"
               className="relative w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-[#2563EB] hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
               title="Shop"
             >
@@ -309,7 +303,7 @@ export default function Navbar() {
                       { href: "/profile",          label: "My Profile" },
                       ...(!isAdmin ? [{ href: "/profile#orders", label: "My Orders" }] : []),
                       { href: "/wishlist",          label: "My Wishlist" },
-                      { href: "/Clients",           label: "Browse Shop" },
+                      { href: "/shop",              label: "Browse Shop" },
                       { href: "/chat",              label: "Messages" },
                       ...(isAdmin ? [{ href: "/dashboard", label: "Admin Dashboard" }] : []),
                     ].map(({ href, label }) => (
@@ -363,16 +357,14 @@ export default function Navbar() {
           <div className="bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 px-4 pt-3 pb-5">
             <div className="flex flex-col gap-0.5 mb-4">
               {[
-                { href: "/",                label: "Home" },
-                { href: "/Clients",         label: "Shop" },
-                { href: "/wishlist",        label: "Wishlist" },
-                { href: "/repair",          label: "Repair" },
-                { href: "/#services",       label: "About Us" },
-                { href: "/#newsletter",     label: "News" },
-                { href: "/#footer",         label: "Contact Us" },
+                { href: "/",          label: "Home"       },
+                { href: "/shop",      label: "Shop"       },
+                { href: "/wishlist",  label: "Wishlist"   },
+                { href: "/repair",    label: "Repair"     },
+                { href: "/about",     label: "About Us"   },
+                { href: "/contact",   label: "Contact Us" },
                 ...(user && !isAdmin ? [{ href: "/profile", label: "My Orders" }] : []),
-                ...(user ? [{ href: "/chat", label: "Messages" }] : []),
-                ...(isAdmin ? [{ href: "/dashboard", label: "Admin" }] : []),
+                ...(isAdmin ? [{ href: "/dashboard", label: "Dashboard" }] : []),
               ].map(({ href, label }) => (
                 <Link
                   key={href}

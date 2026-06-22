@@ -16,7 +16,14 @@
       "mcp__claude_ai_Vercel__deploy_to_vercel",
       "PowerShell(Head-Object *)",
       "Bash(vercel deploy *)",
-      "PowerShell(Get-NetTCPConnection *)"
+      "PowerShell(Get-NetTCPConnection *)",
+      "mcp__supabase__list_tables",
+      "Bash(ls app/admin)",
+      "Bash(ls app/dashboard)",
+      "Bash(cat middleware.ts)",
+      "Bash(ls app/shop)",
+      "Bash(grep -n \"shopLinks\\\\|\\\\/Clients\" app/components/Navbar.tsx)",
+      "Bash(grep -n \"hero\\\\|\\\\/images\\\\/1\\\\|\\\\/images\\\\/2\\\\|slide.*Image\\\\|Image.*hero\" app/page.tsx)"
     ]
   }
 }

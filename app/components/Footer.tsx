@@ -158,11 +158,11 @@ export default async function Footer() {
         <div className="pt-8 border-t border-white/[0.07] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[12px]">© {new Date().getFullYear()} Tech Ninja. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <Link href="#" className="text-[12px] hover:text-white transition-colors">Privacy</Link>
+            <Link href="/privacy" className="text-[12px] hover:text-white transition-colors">Privacy Policy</Link>
             <span className="text-gray-700">·</span>
-            <Link href="#" className="text-[12px] hover:text-white transition-colors">Terms</Link>
+            <Link href="/terms" className="text-[12px] hover:text-white transition-colors">Terms of Service</Link>
             <span className="text-gray-700">·</span>
-            <Link href="#" className="text-[12px] hover:text-white transition-colors">Sitemap</Link>
+            <Link href="/refund-policy" className="text-[12px] hover:text-white transition-colors">Refund Policy</Link>
           </div>
         </div>
 

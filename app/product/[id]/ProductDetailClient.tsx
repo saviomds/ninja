@@ -214,12 +214,6 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
             {/* Details table */}
             <div className="border-t border-[#e8e8ed] dark:border-[#3a3a3c] pt-5 space-y-3">
-              <div className="flex items-center justify-between text-[13px]">
-                <span className="text-[#6e6e73] dark:text-[#98989d] font-medium">Product ID</span>
-                <span className="font-mono text-[#1d1d1f] dark:text-[#f5f5f7] text-[11px] bg-[#f5f5f7] dark:bg-[#2c2c2e] px-2.5 py-1 rounded-lg select-all border border-[#e8e8ed] dark:border-[#3a3a3c]">
-                  {product.id}
-                </span>
-              </div>
               {product.category && (
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="text-[#6e6e73] dark:text-[#98989d] font-medium">Category</span>
