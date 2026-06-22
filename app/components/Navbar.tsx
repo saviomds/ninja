@@ -212,7 +212,7 @@ export default function Navbar() {
           </ul>
 
           {/* ── Right icons ── */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
 
             {/* Search */}
             <button
@@ -224,10 +224,10 @@ export default function Navbar() {
               </svg>
             </button>
 
-            {/* Wishlist */}
+            {/* Wishlist — hidden on mobile, visible sm+ */}
             <Link
               href="/wishlist"
-              className="relative w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
+              className="relative w-9 h-9 hidden sm:flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
               title="My Wishlist"
             >
               <svg className="w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -275,7 +275,7 @@ export default function Navbar() {
 
             {/* Auth */}
             {user ? (
-              <div className="relative ml-1" ref={dropdownRef}>
+              <div className="relative ml-0.5 sm:ml-1" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-transparent hover:ring-[#2563EB]/40 transition-all flex-shrink-0"
@@ -336,7 +336,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="ml-1 px-4 py-2 text-[13px] font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-lg transition-all active:scale-95 shadow-sm"
+                className="ml-0.5 sm:ml-1 px-3 sm:px-4 py-2 text-[13px] font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-lg transition-all active:scale-95 shadow-sm"
               >
                 Log In
               </Link>
