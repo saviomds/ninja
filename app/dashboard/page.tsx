@@ -684,7 +684,14 @@ function InvoiceFormModal({
           {/* ── Invoice Info ─────────────────────────────────────────────── */}
           {sectionHeader("Invoice Info", "🧾")}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <InputField label="Invoice No" value={data.invoiceNo} onChange={(v) => set("invoiceNo", v)} placeholder="INV-001" />
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Invoice No</label>
+                <span className="text-[9px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/30 px-1.5 py-0.5 rounded-full uppercase">Auto</span>
+              </div>
+              <input type="text" value={data.invoiceNo} onChange={(e) => set("invoiceNo", e.target.value)} placeholder="INV-007"
+                className="bg-cyan-50/60 dark:bg-cyan-500/5 border border-cyan-200 dark:border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-sm font-bold text-cyan-700 dark:text-cyan-300 placeholder-cyan-300 dark:placeholder-cyan-700 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 transition-all shadow-sm" />
+            </div>
             <InputField label="Date" value={data.date} onChange={(v) => set("date", v)} type="date" />
             <InputField label="Due Date" value={data.due} onChange={(v) => set("due", v)} type="date" />
             <div className="flex flex-col gap-1.5">
@@ -726,7 +733,14 @@ function InvoiceFormModal({
               <InputField label="Device" value={data.device} onChange={(v) => set("device", v)} placeholder="iPhone 14 Pro" />
               <InputField label="Serial No" value={data.serial} onChange={(v) => set("serial", v)} placeholder="SN123456789" />
               <InputField label="Technician" value={data.tech} onChange={(v) => set("tech", v)} placeholder="Technician name" />
-              <InputField label="Work Order (WO)" value={data.wo} onChange={(v) => set("wo", v)} placeholder="WO-2024-001" />
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Work Order (WO)</label>
+                  <span className="text-[9px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/30 px-1.5 py-0.5 rounded-full uppercase">Auto</span>
+                </div>
+                <input type="text" value={data.wo} onChange={(e) => set("wo", e.target.value)} placeholder="WO-2026-003"
+                  className="bg-cyan-50/60 dark:bg-cyan-500/5 border border-cyan-200 dark:border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-sm font-bold text-cyan-700 dark:text-cyan-300 placeholder-cyan-300 dark:placeholder-cyan-700 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 transition-all shadow-sm" />
+              </div>
               <InputField label="Status / Done" value={data.done} onChange={(v) => set("done", v)} placeholder="Completion status" />
             </div>
           </div>
@@ -1850,15 +1864,32 @@ export default function Dashboard() {
     }
   };
 
+  // Opens new invoice modal pre-filled with auto-generated INV# and WO#
+  const openNewInvoiceModal = async () => {
+    const [{ data: invNo }, { data: woNo }] = await Promise.all([
+      supabase.rpc("next_invoice_no"),
+      supabase.rpc("next_wo_no"),
+    ]);
+    setInvoiceData({ ...defaultInvoiceData(), invoiceNo: invNo || "", wo: woNo || "" });
+    setIsInvoiceModalOpen(true);
+  };
+
   const handleSaveInvoice = async (invoiceToSave: InvoiceData) => {
     setIsSavingInvoice(true);
     try {
-      // Only consume a sequence number when actually saving a brand-new invoice
+      // If somehow still blank at save time, assign now
       let invoiceNo = invoiceToSave.invoiceNo;
-      if (!invoiceToSave.id && !invoiceNo) {
-        const { data: nextNo } = await supabase.rpc("next_invoice_no");
-        invoiceNo = nextNo || "";
-        setInvoiceData(prev => ({ ...prev, invoiceNo }));
+      let wo        = invoiceToSave.wo;
+      if (!invoiceToSave.id) {
+        if (!invoiceNo || !wo) {
+          const [invRes, woRes] = await Promise.all([
+            !invoiceNo ? supabase.rpc("next_invoice_no") : Promise.resolve({ data: invoiceNo }),
+            !wo        ? supabase.rpc("next_wo_no")       : Promise.resolve({ data: wo }),
+          ]);
+          invoiceNo = (invRes.data as string) || invoiceNo;
+          wo        = (woRes.data  as string) || wo;
+          setInvoiceData(prev => ({ ...prev, invoiceNo, wo }));
+        }
       }
       const payload = {
         invoice_no: invoiceNo,
@@ -1872,7 +1903,7 @@ export default function Dashboard() {
         device: invoiceToSave.device,
         serial: invoiceToSave.serial,
         tech: invoiceToSave.tech,
-        wo: invoiceToSave.wo,
+        wo: wo,
         done: invoiceToSave.done,
         services: invoiceToSave.services,
         parts: invoiceToSave.parts,
@@ -2493,7 +2524,7 @@ export default function Dashboard() {
                   <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
                   New Product
                 </button>
-                <button onClick={() => { setInvoiceData(defaultInvoiceData()); setIsInvoiceModalOpen(true); setActiveSection("invoice"); }}
+                <button onClick={async () => { await openNewInvoiceModal(); setActiveSection("invoice"); }}
                   className="flex items-center gap-2 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm hover:shadow">
                   <svg className="w-4 h-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
                   New Invoice
@@ -3291,7 +3322,7 @@ export default function Dashboard() {
                   <p className="text-gray-500 text-sm mt-0.5">Manage, search and export all invoices</p>
                 </div>
                 <button
-                  onClick={() => { setInvoiceData(defaultInvoiceData()); setIsInvoiceModalOpen(true); }}
+                  onClick={openNewInvoiceModal}
                   className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-black px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-[0_0_16px_rgba(0,212,255,0.25)]">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                   New Invoice
@@ -3372,7 +3403,7 @@ export default function Dashboard() {
                     <p className="text-3xl mb-3">📄</p>
                     <p className="text-sm text-gray-400 mb-4">{invoices.length === 0 ? "No invoices yet" : "No results match your filters"}</p>
                     {invoices.length === 0 && (
-                      <button onClick={() => setIsInvoiceModalOpen(true)}
+                      <button onClick={openNewInvoiceModal}
                         className="px-5 py-2 text-sm bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-xl transition-all">
                         Create First Invoice
                       </button>
