@@ -47,31 +47,37 @@ export default function WishlistPage() {
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
 
   useEffect(() => {
-    const raw = localStorage.getItem("tn-wishlist");
-    const ids: string[] = raw ? (JSON.parse(raw) as string[]) : [];
-    setWishlistIds(ids);
-
-    if (ids.length === 0) {
-      setLoading(false);
-      return;
-    }
-
     (async () => {
-      const { data } = await supabase
-        .from("products")
-        .select("*")
-        .eq("is_public", true)
-        .in("id", ids);
+      const { data: { user } } = await supabase.auth.getUser();
+      let ids: string[] = [];
+
+      if (user) {
+        // Logged in: pull from DB
+        const { data: rows } = await supabase.from("wishlists").select("product_id").eq("user_id", user.id);
+        ids = (rows || []).map((r: { product_id: string }) => r.product_id);
+        localStorage.setItem("tn-wishlist", JSON.stringify(ids));
+      } else {
+        // Guest: use localStorage
+        const raw = localStorage.getItem("tn-wishlist");
+        ids = raw ? (JSON.parse(raw) as string[]) : [];
+      }
+
+      setWishlistIds(ids);
+      if (ids.length === 0) { setLoading(false); return; }
+
+      const { data } = await supabase.from("products").select("*").eq("is_public", true).in("id", ids);
       setProducts((data as Product[]) || []);
       setLoading(false);
     })();
   }, []);
 
-  const removeFromWishlist = (id: string) => {
+  const removeFromWishlist = async (id: string) => {
     const next = wishlistIds.filter((wid) => wid !== id);
     setWishlistIds(next);
     setProducts((prev) => prev.filter((p) => p.id !== id));
     localStorage.setItem("tn-wishlist", JSON.stringify(next));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await supabase.from("wishlists").delete().eq("user_id", user.id).eq("product_id", id);
   };
 
   return (

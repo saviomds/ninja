@@ -96,21 +96,30 @@ export default function ClientsPage() {
   };
 
   useEffect(() => {
-    // Restore wishlist from localStorage
-    const saved = localStorage.getItem("tn-wishlist");
-    if (saved) {
-      try { setWishlist(new Set(JSON.parse(saved) as string[])); } catch { /* ignore */ }
-    }
-
     (async () => {
       const [{ data: prods }, authRes] = await Promise.all([
         supabase.from("products").select("*").eq("is_public", true).order("created_at", { ascending: false }),
         supabase.auth.getUser(),
       ]);
       const list: Product[] = prods || [];
-      setProducts(list); setUser(authRes.data?.user ?? null);
+      setProducts(list);
+      const u = authRes.data?.user ?? null;
+      setUser(u);
       const cats = Array.from(new Set(list.map((p) => p.category).filter(Boolean))) as string[];
-      setCategories(cats); setLoading(false);
+      setCategories(cats);
+
+      if (u) {
+        // Logged in: load wishlist from DB
+        const { data: rows } = await supabase.from("wishlists").select("product_id").eq("user_id", u.id);
+        const ids = (rows || []).map((r: { product_id: string }) => r.product_id);
+        setWishlist(new Set(ids));
+        localStorage.setItem("tn-wishlist", JSON.stringify(ids));
+      } else {
+        // Guest: restore from localStorage
+        const saved = localStorage.getItem("tn-wishlist");
+        if (saved) { try { setWishlist(new Set(JSON.parse(saved) as string[])); } catch { /* ignore */ } }
+      }
+      setLoading(false);
     })();
     const { data: sub } = supabase.auth.onAuthStateChange((_, session) => { setUser(session?.user ?? null); });
     return () => sub.subscription.unsubscribe();
@@ -166,14 +175,22 @@ export default function ClientsPage() {
     if (el) el.scrollBy({ left: dir === "left" ? -200 : 200, behavior: "smooth" });
   };
 
-  const toggleWishlist = (id: string) => {
+  const toggleWishlist = async (id: string) => {
+    const adding = !wishlist.has(id);
     setWishlist((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); showToast("Removed from wishlist"); }
-      else { next.add(id); showToast("Added to wishlist ♥"); }
+      adding ? next.add(id) : next.delete(id);
       localStorage.setItem("tn-wishlist", JSON.stringify([...next]));
       return next;
     });
+    showToast(adding ? "Added to wishlist ♥" : "Removed from wishlist");
+    if (user) {
+      if (adding) {
+        await supabase.from("wishlists").upsert({ user_id: user.id, product_id: id }, { onConflict: "user_id,product_id" });
+      } else {
+        await supabase.from("wishlists").delete().eq("user_id", user.id).eq("product_id", id);
+      }
+    }
   };
 
   const toggleCompare = (id: string) => {
@@ -602,7 +619,7 @@ export default function ClientsPage() {
                         className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                           wishlist.has(product.id)
                             ? "bg-red-500 text-white shadow-lg"
-                            : "bg-white/90 dark:bg-gray-800/90 text-gray-400 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100"
+                            : "bg-white/90 dark:bg-gray-800/90 text-gray-300 hover:text-red-500 shadow-sm sm:opacity-0 sm:group-hover:opacity-100"
                         }`}>
                         <svg className="w-4 h-4" fill={wishlist.has(product.id) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
