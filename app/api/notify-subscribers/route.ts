@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "Tech Ninja <onboarding@resend.dev>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://techninja.vercel.app";
 
@@ -142,6 +141,7 @@ function updateEmail(u: Extract<Payload, { type: "update" }>) {
 }
 
 export async function POST(request: Request) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     const payload: Payload = await request.json();
 

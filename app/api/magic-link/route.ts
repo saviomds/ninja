@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(request: Request) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     const { email, origin } = await request.json();
     if (!email) return NextResponse.json({ error: "Email is required." }, { status: 400 });

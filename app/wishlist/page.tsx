@@ -81,7 +81,7 @@ export default function WishlistPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 pt-16">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-5 lg:px-8 py-12">
