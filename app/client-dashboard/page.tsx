@@ -323,11 +323,42 @@ export default function ClientDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white pt-16">
       <Navbar />
 
-      {/* ── Tab bar ──────────────────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 sticky top-16 z-40">
+      {/* ── Mobile bottom nav (icons only) ──────────────────────────────────── */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex items-stretch">
+        {/* Home */}
+        <button onClick={() => setTab("overview")} className={`relative flex-1 flex items-center justify-center py-3 transition-colors ${tab === "overview" ? "text-[#2563EB]" : "text-gray-400 dark:text-gray-500"}`}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 9.75L12 3l9 6.75V21a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75v-4.5h-4.5V21a.75.75 0 01-.75.75H3.75A.75.75 0 013 21V9.75z"/></svg>
+        </button>
+        {/* Shop */}
+        <button onClick={() => setTab("shop")} className={`relative flex-1 flex items-center justify-center py-3 transition-colors ${tab === "shop" ? "text-[#2563EB]" : "text-gray-400 dark:text-gray-500"}`}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
+        </button>
+        {/* Orders */}
+        <button onClick={() => setTab("orders")} className={`relative flex-1 flex items-center justify-center py-3 transition-colors ${tab === "orders" ? "text-[#2563EB]" : "text-gray-400 dark:text-gray-500"}`}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+          {activeOrders > 0 && <span className="absolute top-1.5 right-[calc(50%-14px)] w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{activeOrders}</span>}
+        </button>
+        {/* Repairs */}
+        <button onClick={() => setTab("repairs")} className={`relative flex-1 flex items-center justify-center py-3 transition-colors ${tab === "repairs" ? "text-[#2563EB]" : "text-gray-400 dark:text-gray-500"}`}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75"/></svg>
+          {activeRepairs > 0 && <span className="absolute top-1.5 right-[calc(50%-14px)] w-4 h-4 bg-blue-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{activeRepairs}</span>}
+        </button>
+        {/* Rewards */}
+        <button onClick={() => setTab("loyalty")} className={`relative flex-1 flex items-center justify-center py-3 transition-colors ${tab === "loyalty" ? "text-[#2563EB]" : "text-gray-400 dark:text-gray-500"}`}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/></svg>
+        </button>
+        {/* Cart */}
+        <button onClick={() => setCartOpen(true)} className="relative flex-1 flex items-center justify-center py-3 text-gray-400 dark:text-gray-500 hover:text-[#2563EB] transition-colors">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/></svg>
+          {cartCount > 0 && <span className="absolute top-1.5 right-[calc(50%-14px)] w-4 h-4 bg-blue-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{cartCount}</span>}
+        </button>
+      </div>
+
+      {/* ── Desktop tab bar ──────────────────────────────────────────────────── */}
+      <div className="hidden sm:block bg-white dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800 sticky top-16 z-40">
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between gap-2">
           <div className="flex overflow-x-auto" style={{ scrollbarWidth: "none" }}>
             {([
@@ -356,7 +387,6 @@ export default function ClientDashboard() {
               </button>
             ))}
           </div>
-
           <button
             onClick={() => setCartOpen(true)}
             className="relative flex-shrink-0 flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold px-4 py-2 rounded-full hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors"
@@ -364,7 +394,7 @@ export default function ClientDashboard() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <span className="hidden sm:inline">Cart</span>
+            Cart
             {cartCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{cartCount}</span>
             )}
@@ -372,7 +402,7 @@ export default function ClientDashboard() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8 pb-24 sm:pb-8">
 
         {/* ══ OVERVIEW ═══════════════════════════════════════════════════════════ */}
         {tab === "overview" && (
