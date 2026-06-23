@@ -65,13 +65,18 @@ function LoginContent() {
     setError("");
     const { error: err } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        shouldCreateUser: false,
+      },
     });
     setLoading(false);
     if (err) {
       if (err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("too many")) {
         startCooldown(setMagicCooldown, 60);
         setMagicSent(true);
+      } else if (err.message.toLowerCase().includes("signup") || err.message.toLowerCase().includes("not found") || err.message.toLowerCase().includes("invalid login")) {
+        setError("No account found with this email. Please sign up first.");
       } else {
         setError(err.message);
       }

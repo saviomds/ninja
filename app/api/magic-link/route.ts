@@ -10,6 +10,22 @@ export async function POST(request: Request) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+    // Verify user exists before generating a magic link
+    const userRes = await fetch(`${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(email.trim())}`, {
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: serviceRoleKey,
+      },
+    });
+    if (userRes.ok) {
+      const userData = await userRes.json();
+      const users = userData.users ?? [];
+      const exists = users.some((u: { email: string }) => u.email.toLowerCase() === email.trim().toLowerCase());
+      if (!exists) {
+        return NextResponse.json({ error: "No account found with this email. Please sign up first." }, { status: 404 });
+      }
+    }
+
     const res = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
       method: "POST",
       headers: {

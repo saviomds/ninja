@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Suspense } from "react";
 import Footer from "@/components/Footer";
 import ContactFAB from "@/components/ContactFAB";
 import InstallPrompt from "@/components/InstallPrompt";
@@ -75,7 +76,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthHashHandler />
           <LoadingScreen />
           {children}
-          <Footer />
+          <Suspense fallback={null}>
+            <Footer />
+          </Suspense>
           <ContactFAB />
           <InstallPrompt />
           <ServiceWorker />

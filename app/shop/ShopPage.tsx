@@ -664,7 +664,9 @@ export default function ClientsPage() {
                       </div>
 
                       {/* Name */}
-                      <h3 className="text-[14px] font-bold text-gray-900 dark:text-white leading-snug mb-1 line-clamp-2 flex-1">{product.name}</h3>
+                      <Link href={`/product/${product.id}`} className="block hover:text-[#2563EB] transition-colors">
+                        <h3 className="text-[14px] font-bold text-gray-900 dark:text-white leading-snug mb-1 line-clamp-2 flex-1 hover:text-[#2563EB]">{product.name}</h3>
+                      </Link>
 
                       {/* Price row */}
                       <div className="flex items-center justify-between mt-2 mb-3">
