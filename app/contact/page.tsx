@@ -1,11 +1,42 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+
+interface Settings {
+  address: string;
+  phone: string;
+  email: string;
+  hours: string;
+  whatsapp: string;
+}
+
+const DEFAULTS: Settings = {
+  address:  "Port Louis, Mauritius",
+  phone:    "+230 5800 0000",
+  email:    "hello@techninja.mu",
+  hours:    "Mon–Sat: 9:00 AM – 8:00 PM",
+  whatsapp: "2305800000",
+};
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [settings, setSettings] = useState<Settings>(DEFAULTS);
+
+  useEffect(() => {
+    supabase.from("site_settings").select("key, value").then(({ data }) => {
+      if (!data) return;
+      const map = Object.fromEntries(data.map((r) => [r.key, r.value]));
+      setSettings({
+        address:  map.contact_address  || DEFAULTS.address,
+        phone:    map.contact_phone    || DEFAULTS.phone,
+        email:    map.contact_email    || DEFAULTS.email,
+        hours:    map.contact_hours    || DEFAULTS.hours,
+        whatsapp: map.contact_whatsapp || DEFAULTS.whatsapp,
+      });
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,10 +73,10 @@ export default function ContactPage() {
           {/* Contact details */}
           <div className="space-y-6">
             {[
-              { icon: "📍", label: "Address",        value: "Port Louis, Mauritius"        },
-              { icon: "📞", label: "Phone",           value: "+230 5800 0000"               },
-              { icon: "✉️", label: "Email",           value: "hello@techninja.mu"           },
-              { icon: "🕐", label: "Business Hours",  value: "Mon–Sat: 9:00 AM – 8:00 PM"  },
+              { icon: "📍", label: "Address",       value: settings.address },
+              { icon: "📞", label: "Phone",          value: settings.phone   },
+              { icon: "✉️", label: "Email",          value: settings.email   },
+              { icon: "🕐", label: "Business Hours", value: settings.hours   },
             ].map(({ icon, label, value }) => (
               <div key={label} className="flex items-start gap-4 p-5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl">
                 <span className="text-2xl">{icon}</span>
@@ -59,8 +90,12 @@ export default function ContactPage() {
             <div className="p-5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 rounded-2xl">
               <p className="text-[13px] font-semibold text-green-800 dark:text-green-400 mb-1">WhatsApp Support</p>
               <p className="text-[12px] text-green-700 dark:text-green-500 mb-3">Chat with us directly for quick answers.</p>
-              <a href="https://wa.me/2305800000" target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-[13px] font-semibold px-4 py-2 rounded-lg transition-colors">
+              <a
+                href={`https://wa.me/${settings.whatsapp}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-[13px] font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
                 Open WhatsApp
               </a>
             </div>
@@ -77,8 +112,12 @@ export default function ContactPage() {
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Message sent!</h3>
                 <p className="text-gray-500 text-sm mb-6">We&apos;ll get back to you within 24 hours.</p>
-                <button onClick={() => { setForm({ name: "", email: "", subject: "", message: "" }); setStatus("idle"); }}
-                  className="text-[#2563EB] text-sm font-semibold hover:underline">Send another message</button>
+                <button
+                  onClick={() => { setForm({ name: "", email: "", subject: "", message: "" }); setStatus("idle"); }}
+                  className="text-[#2563EB] text-sm font-semibold hover:underline"
+                >
+                  Send another message
+                </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -101,10 +140,13 @@ export default function ContactPage() {
                   <textarea required rows={6} value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} placeholder="Tell us how we can help…" className={`${inputCls} resize-none`} />
                 </div>
                 {status === "error" && (
-                  <p className="text-red-500 text-sm">Something went wrong. Please email us directly at hello@techninja.mu</p>
+                  <p className="text-red-500 text-sm">Something went wrong. Please email us directly at {settings.email}</p>
                 )}
-                <button type="submit" disabled={status === "sending"}
-                  className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors">
+                <button
+                  type="submit"
+                  disabled={status === "sending"}
+                  className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors"
+                >
                   {status === "sending" ? "Sending…" : "Send Message"}
                 </button>
               </form>
