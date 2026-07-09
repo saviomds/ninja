@@ -64,40 +64,38 @@ function LoginContent() {
   };
 
   // ── Send magic link email ────────────────────────────────────────────────
-  // Uses our Resend-backed /api/magic-link route instead of Supabase's built-in
-  // SMTP (which is misconfigured and returns "Error sending magic link email").
+  // Uses Supabase's native OTP email, delivered via the project's custom SMTP
+  // (Gmail). If Gmail SMTP creds are invalid this surfaces Supabase's
+  // "Error sending magic link email" — fix the App Password in the Supabase
+  // dashboard (Authentication → Emails → SMTP).
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { setError("Enter your email address."); return; }
     if (magicCooldown > 0) return;
     setMagicLoading(true);
     setError("");
-    try {
-      const res = await fetch("/api/magic-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), origin: window.location.origin }),
-      });
-      const text = await res.text();
-      let result: { error?: string } = {};
-      try { result = JSON.parse(text); } catch { /* ignore */ }
-      setMagicLoading(false);
-      if (!res.ok) {
-        const msg = result.error || "Couldn't send the magic link. Please try again.";
-        if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("too many")) {
-          startCooldown(setMagicCooldown, 60);
-          setMagicSent(true);
-        } else {
-          setError(msg);
-        }
-        return;
+    const { error: err } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        shouldCreateUser: false,
+      },
+    });
+    setMagicLoading(false);
+    if (err) {
+      const m = err.message.toLowerCase();
+      if (m.includes("rate limit") || m.includes("too many")) {
+        startCooldown(setMagicCooldown, 60);
+        setMagicSent(true);
+      } else if (m.includes("signup") || m.includes("not found") || m.includes("invalid login")) {
+        setError("No account found with this email. Please sign up first.");
+      } else {
+        setError(err.message);
       }
-      startCooldown(setMagicCooldown, 60);
-      setMagicSent(true);
-    } catch {
-      setMagicLoading(false);
-      setError("Network error. Please check your connection and try again.");
+      return;
     }
+    startCooldown(setMagicCooldown, 60);
+    setMagicSent(true);
   };
 
   // ── Password sign-in ─────────────────────────────────────────────────────
@@ -160,36 +158,31 @@ function LoginContent() {
   };
 
   // ── Forgot password ──────────────────────────────────────────────────────
-  // Uses our Resend-backed /api/forgot-password route (Supabase SMTP is broken).
+  // Uses Supabase's native recovery email, delivered via the project's custom
+  // SMTP (Gmail). Fix the Gmail App Password in the Supabase dashboard if this
+  // fails to deliver.
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { setError("Enter your email address."); return; }
     if (resetCooldown > 0) return;
     setLoading(true);
     setError("");
-    try {
-      const res = await fetch("/api/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), origin: window.location.origin }),
-      });
-      const data: { ok?: boolean; error?: string } = await res.json().catch(() => ({}));
-      setLoading(false);
-      if (!res.ok) {
-        if ((data.error || "").toLowerCase().includes("rate limit") || (data.error || "").toLowerCase().includes("too many")) {
-          startCooldown(setResetCooldown, 60);
-          setResetSent(true);
-        } else {
-          setError(data.error || "Couldn't send the reset link. Please try again.");
-        }
-        return;
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+    });
+    setLoading(false);
+    if (err) {
+      const m = err.message.toLowerCase();
+      if (m.includes("rate limit") || m.includes("too many")) {
+        startCooldown(setResetCooldown, 60);
+        setResetSent(true);
+      } else {
+        setError(err.message);
       }
-      startCooldown(setResetCooldown, 60);
-      setResetSent(true);
-    } catch {
-      setLoading(false);
-      setError("Network error. Please try again.");
+      return;
     }
+    startCooldown(setResetCooldown, 60);
+    setResetSent(true);
   };
 
   const Spinner = () => (
