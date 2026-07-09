@@ -1,10 +1,14 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
+import LoadingScreen from "./LoadingScreen";
 
-const LoadingScreen = dynamic(() => import("./LoadingScreen"), { ssr: false });
-
+// LoadingScreen is SSR-safe: its first render is deterministic and every browser
+// API (Date.now, requestAnimationFrame, window) is confined to useEffect. Import
+// it statically rather than via dynamic(..., { ssr: false }) — an ssr:false
+// dynamic renders as a lazy/Suspense boundary that streams a placeholder <script>
+// on the server but nothing during client hydration, shifting sibling node counts
+// and causing the ContactFAB hydration mismatch on dashboard routes.
 const DASHBOARD_PREFIXES = ["/dashboard", "/client-dashboard", "/admin"];
 
 export default function ClientLoadingScreen() {
