@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { serviceClient, clientMeta, logAudit } from "@/lib/admin-auth";
 
 export async function POST(request: Request) {
   const resend = new Resend(process.env.RESEND_API_KEY);
+  const sb = serviceClient();
+  const { ip, userAgent } = clientMeta(request);
   try {
     const { email, origin } = await request.json();
     if (!email) return NextResponse.json({ error: "Email is required." }, { status: 400 });
@@ -31,18 +34,14 @@ export async function POST(request: Request) {
     try { data = JSON.parse(text); }
     catch { return NextResponse.json({ error: `Auth server error: ${text.slice(0, 200)}` }, { status: 500 }); }
 
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: data.msg || data.error_description || "Failed to generate reset link." },
-        { status: 400 }
-      );
+    // Do not reveal whether the email exists (spec #12): if no account/link,
+    // respond as if the email was sent without actually sending anything.
+    if (!res.ok || !data.action_link) {
+      await logAudit(sb, { event: "password_reset_requested", email: email.trim(), ip, userAgent, success: false });
+      return NextResponse.json({ ok: true });
     }
 
-    if (!data.action_link) {
-      return NextResponse.json({ error: "No link returned from auth server." }, { status: 500 });
-    }
-
-    await resend.emails.send({
+    const { error: sendError } = await resend.emails.send({
       from: "Tech Ninja <onboarding@resend.dev>",
       to: email.trim(),
       subject: "Reset your Tech Ninja password",
@@ -90,6 +89,14 @@ export async function POST(request: Request) {
 </html>`,
     });
 
+    if (sendError) {
+      return NextResponse.json(
+        { error: `Email delivery failed: ${sendError.message}` },
+        { status: 502 }
+      );
+    }
+
+    await logAudit(sb, { event: "password_reset_requested", email: email.trim(), ip, userAgent, success: true });
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     return NextResponse.json(

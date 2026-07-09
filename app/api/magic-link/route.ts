@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No link returned from auth server." }, { status: 500 });
     }
 
-    await resend.emails.send({
+    const { error: sendError } = await resend.emails.send({
       from: "Tech Ninja <onboarding@resend.dev>",
       to: email.trim(),
       subject: "Your Tech Ninja sign-in link",
@@ -105,6 +105,13 @@ export async function POST(request: Request) {
 </body>
 </html>`,
     });
+
+    if (sendError) {
+      return NextResponse.json(
+        { error: `Email delivery failed: ${sendError.message}` },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

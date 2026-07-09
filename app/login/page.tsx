@@ -5,7 +5,12 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-type Mode = "magic" | "password" | "signup" | "forgot";
+type Mode = "signin" | "signup" | "forgot";
+
+// Feature flags (spec #13) — either method can be disabled independently.
+// NEXT_PUBLIC_* is inlined at build time so it is readable in this client page.
+const MAGIC_ENABLED = process.env.NEXT_PUBLIC_ENABLE_MAGIC_LINK !== "false";
+const PASSWORD_ENABLED = process.env.NEXT_PUBLIC_ENABLE_PASSWORD_LOGIN !== "false";
 
 export default function LoginPage() {
   return (
@@ -20,12 +25,14 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const hasAuthError = searchParams.get("error") === "auth_failed";
 
-  const [mode, setMode] = useState<Mode>("magic");
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [magicLoading, setMagicLoading] = useState(false);
   const [error, setError] = useState("");
   const [magicSent, setMagicSent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -63,7 +70,7 @@ function LoginContent() {
     e.preventDefault();
     if (!email.trim()) { setError("Enter your email address."); return; }
     if (magicCooldown > 0) return;
-    setLoading(true);
+    setMagicLoading(true);
     setError("");
     try {
       const res = await fetch("/api/magic-link", {
@@ -74,7 +81,7 @@ function LoginContent() {
       const text = await res.text();
       let result: { error?: string } = {};
       try { result = JSON.parse(text); } catch { /* ignore */ }
-      setLoading(false);
+      setMagicLoading(false);
       if (!res.ok) {
         const msg = result.error || "Couldn't send the magic link. Please try again.";
         if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("too many")) {
@@ -88,24 +95,39 @@ function LoginContent() {
       startCooldown(setMagicCooldown, 60);
       setMagicSent(true);
     } catch {
-      setLoading(false);
+      setMagicLoading(false);
       setError("Network error. Please check your connection and try again.");
     }
   };
 
   // ── Password sign-in ─────────────────────────────────────────────────────
+  // Goes through /api/admin/password-login, which verifies the password with
+  // Supabase (same session as magic link), then adds rate-limiting, per-admin
+  // gating and audit logging around it. Errors stay generic (spec #12).
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim()) { setError("Enter your email address."); return; }
+    if (!password) { setError("Enter your password."); return; }
     setLoading(true);
     setError("");
-    const { data, error: err } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setLoading(false);
-    if (err) { setError(err.message); return; }
-    const role = data.user?.app_metadata?.role || data.user?.user_metadata?.role;
-    router.push(role === "admin" ? "/dashboard" : "/client-dashboard");
+    try {
+      const res = await fetch("/api/admin/password-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password, rememberMe }),
+      });
+      const data: { ok?: boolean; role?: string; error?: string } = await res.json().catch(() => ({}));
+      setLoading(false);
+      if (!res.ok || !data.ok) {
+        setError(data.error || "Invalid email or password.");
+        return;
+      }
+      router.push(data.role === "admin" ? "/dashboard" : "/client-dashboard");
+      router.refresh();
+    } catch {
+      setLoading(false);
+      setError("Network error. Please try again.");
+    }
   };
 
   // ── Sign up ──────────────────────────────────────────────────────────────
@@ -138,26 +160,36 @@ function LoginContent() {
   };
 
   // ── Forgot password ──────────────────────────────────────────────────────
+  // Uses our Resend-backed /api/forgot-password route (Supabase SMTP is broken).
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { setError("Enter your email address."); return; }
     if (resetCooldown > 0) return;
     setLoading(true);
     setError("");
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
-    });
-    setLoading(false);
-    if (err) {
-      if (err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("too many")) {
-        startCooldown(setResetCooldown, 60);
-      } else {
-        setError(err.message);
+    try {
+      const res = await fetch("/api/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), origin: window.location.origin }),
+      });
+      const data: { ok?: boolean; error?: string } = await res.json().catch(() => ({}));
+      setLoading(false);
+      if (!res.ok) {
+        if ((data.error || "").toLowerCase().includes("rate limit") || (data.error || "").toLowerCase().includes("too many")) {
+          startCooldown(setResetCooldown, 60);
+          setResetSent(true);
+        } else {
+          setError(data.error || "Couldn't send the reset link. Please try again.");
+        }
+        return;
       }
-      return;
+      startCooldown(setResetCooldown, 60);
+      setResetSent(true);
+    } catch {
+      setLoading(false);
+      setError("Network error. Please try again.");
     }
-    startCooldown(setResetCooldown, 60);
-    setResetSent(true);
   };
 
   const Spinner = () => (
@@ -166,6 +198,9 @@ function LoginContent() {
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
   );
+
+  const inputCls =
+    "w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all";
 
   if (alreadyLoggedIn && hasAuthError) {
     const dest = sessionRole === "admin" ? "/dashboard" : "/client-dashboard";
@@ -231,7 +266,7 @@ function LoginContent() {
               { icon: "📦", label: "Product & inventory management" },
               { icon: "🔔", label: "Real-time client order notifications" },
               { icon: "📄", label: "One-click invoice generation" },
-              { icon: "⚡", label: "Magic link — no password needed" },
+              { icon: "⚡", label: "Magic link or password — your choice" },
             ].map(({ icon, label }) => (
               <div key={label} className="flex items-center gap-3 text-sm text-zinc-400">
                 <span>{icon}</span>
@@ -287,7 +322,7 @@ function LoginContent() {
                 ) : (
                   <button
                     onClick={(e) => { setMagicSent(false); handleMagicLink(e as unknown as React.FormEvent); }}
-                    disabled={loading}
+                    disabled={magicLoading}
                     className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium disabled:opacity-40"
                   >
                     Resend link
@@ -315,7 +350,7 @@ function LoginContent() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-black dark:text-white tracking-tight">Check your inbox</h2>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">We sent a password reset link to</p>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">If an account exists, we sent a password reset link to</p>
                     <p className="text-black dark:text-white font-semibold text-sm mt-1">{email}</p>
                     <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">
                       Click the link in the email to set a new password.
@@ -333,7 +368,7 @@ function LoginContent() {
                 </div>
               ) : (
                 <>
-                  <button onClick={() => go("magic")} className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-black dark:hover:text-white transition-colors mb-8">
+                  <button onClick={() => go("signin")} className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-black dark:hover:text-white transition-colors mb-8">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                     Back
                   </button>
@@ -351,7 +386,7 @@ function LoginContent() {
                       <input
                         type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                        className={inputCls}
                       />
                     </div>
                     {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
@@ -369,7 +404,7 @@ function LoginContent() {
             <>
               {/* Mode tabs */}
               <div className="flex bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-1 mb-8 gap-1">
-                {(["magic", "password", "signup"] as Mode[]).map((m) => (
+                {(["signin", "signup"] as Mode[]).map((m) => (
                   <button
                     key={m}
                     onClick={() => go(m)}
@@ -379,39 +414,41 @@ function LoginContent() {
                         : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
                     }`}
                   >
-                    {m === "magic" ? "Magic link" : m === "password" ? "Password" : "Sign up"}
+                    {m === "signin" ? "Sign in" : "Sign up"}
                   </button>
                 ))}
               </div>
 
-              {/* ── MAGIC LINK FORM ── */}
-              {mode === "magic" && (
+              {/* ── SIGN IN (Magic Link + OR + Password) ── */}
+              {mode === "signin" && (
                 <>
                   <div className="mb-8">
                     <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight">Sign in</h2>
                     <p className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm">
-                      Enter your email and we&apos;ll send you a one-click login link. No password needed.
+                      Use a one-click magic link, or your email and password.
                     </p>
                   </div>
 
-                  <form onSubmit={handleMagicLink} className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Email address</label>
-                      <input
-                        type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                        autoFocus
-                        className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                      />
-                    </div>
+                  {/* Shared email address (used by both methods) */}
+                  <div className="mb-4">
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Email address</label>
+                    <input
+                      type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      autoFocus
+                      className={inputCls}
+                    />
+                  </div>
 
-                    {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
-
+                  {/* Magic link — primary method */}
+                  {MAGIC_ENABLED && (
                     <button
-                      type="submit" disabled={loading || magicCooldown > 0}
+                      type="button"
+                      onClick={handleMagicLink}
+                      disabled={magicLoading || magicCooldown > 0}
                       className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2.5 disabled:opacity-60 shadow-lg shadow-blue-600/20"
                     >
-                      {loading ? (
+                      {magicLoading ? (
                         <><Spinner />Sending link…</>
                       ) : magicCooldown > 0 ? (
                         `Resend available in ${magicCooldown}s`
@@ -420,66 +457,61 @@ function LoginContent() {
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                           </svg>
-                          Send magic link
+                          Continue with Magic Link
                         </>
                       )}
                     </button>
-                  </form>
+                  )}
 
-                  <div className="mt-6 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-4 flex items-start gap-3">
-                    <svg className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                      We&apos;ll email you a secure link. Click it to sign in instantly — works on any device, no password required.
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {/* ── PASSWORD SIGN-IN ── */}
-              {mode === "password" && (
-                <>
-                  <div className="mb-8">
-                    <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight">Welcome back</h2>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm">Sign in with your email and password.</p>
-                  </div>
-
-                  <form onSubmit={handleSignIn} className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Email address</label>
-                      <input
-                        type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                        className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                      />
+                  {/* OR divider — only when both methods are available */}
+                  {MAGIC_ENABLED && PASSWORD_ENABLED && (
+                    <div className="flex items-center gap-3 my-6">
+                      <span className="flex-1 h-px bg-zinc-200 dark:bg-zinc-800" />
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">or</span>
+                      <span className="flex-1 h-px bg-zinc-200 dark:bg-zinc-800" />
                     </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">Password</label>
-                        <button type="button" onClick={() => go("forgot")} className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
-                          Forgot?
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type={showPass ? "text" : "password"} required value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 pr-16 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
-                        />
-                        <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors text-xs font-medium">
-                          {showPass ? "Hide" : "Show"}
-                        </button>
-                      </div>
-                    </div>
+                  )}
 
-                    {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+                  {/* Password sign-in — secondary method */}
+                  {PASSWORD_ENABLED && (
+                    <form onSubmit={handleSignIn} className="space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">Password</label>
+                          <button type="button" onClick={() => go("forgot")} className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                            Forgot password?
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type={showPass ? "text" : "password"} value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className={`${inputCls} pr-16`}
+                          />
+                          <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors text-xs font-medium">
+                            {showPass ? "Hide" : "Show"}
+                          </button>
+                        </div>
+                      </div>
 
-                    <button type="submit" disabled={loading} className="w-full bg-black dark:bg-white text-white dark:text-black py-3.5 rounded-xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-40">
-                      {loading ? <><Spinner />Signing in…</> : "Sign in"}
-                    </button>
-                  </form>
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                        <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 accent-blue-600" />
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">Remember me on this device</span>
+                      </label>
+
+                      {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+
+                      <button type="submit" disabled={loading} className="w-full bg-black dark:bg-white text-white dark:text-black py-3.5 rounded-xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-40">
+                        {loading ? <><Spinner />Signing in…</> : "Login with Password"}
+                      </button>
+                    </form>
+                  )}
+
+                  {/* If only magic link is on, still surface errors */}
+                  {!PASSWORD_ENABLED && error && (
+                    <p className="mt-4 text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>
+                  )}
                 </>
               )}
 
@@ -505,16 +537,10 @@ function LoginContent() {
                         </p>
                       </div>
                       <button
-                        onClick={() => go("magic")}
+                        onClick={() => go("signin")}
                         className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2.5 shadow-lg shadow-blue-600/20"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                        </svg>
-                        Sign in with magic link
-                      </button>
-                      <button onClick={() => go("password")} className="text-sm text-zinc-400 hover:text-black dark:hover:text-white transition-colors">
-                        Sign in with password instead
+                        Go to sign in →
                       </button>
                     </div>
                   ) : (
@@ -534,12 +560,8 @@ function LoginContent() {
                             <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Account already exists</p>
                             <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">An account with this email is already registered.</p>
                             <div className="flex gap-3 mt-3">
-                              <button onClick={() => go("magic")} className="text-xs font-bold text-amber-700 dark:text-amber-400 underline hover:no-underline">
-                                Sign in with magic link
-                              </button>
-                              <span className="text-amber-300 dark:text-amber-700">·</span>
-                              <button onClick={() => go("password")} className="text-xs font-bold text-amber-700 dark:text-amber-400 underline hover:no-underline">
-                                Sign in with password
+                              <button onClick={() => go("signin")} className="text-xs font-bold text-amber-700 dark:text-amber-400 underline hover:no-underline">
+                                Go to sign in
                               </button>
                             </div>
                           </div>
@@ -552,7 +574,7 @@ function LoginContent() {
                           <input
                             type="text" required value={username} onChange={(e) => { setUsername(e.target.value); setAlreadyExists(false); }}
                             placeholder="johndoe"
-                            className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                            className={inputCls}
                           />
                         </div>
                         <div>
@@ -560,7 +582,7 @@ function LoginContent() {
                           <input
                             type="email" required value={email} onChange={(e) => { setEmail(e.target.value); setAlreadyExists(false); }}
                             placeholder="you@example.com"
-                            className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                            className={inputCls}
                           />
                         </div>
                         <div>
@@ -570,7 +592,7 @@ function LoginContent() {
                               type={showPass ? "text" : "password"} required value={password}
                               onChange={(e) => setPassword(e.target.value)}
                               placeholder="At least 6 characters"
-                              className="w-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl px-4 py-3 pr-16 text-sm text-black dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all"
+                              className={`${inputCls} pr-16`}
                             />
                             <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors text-xs font-medium">
                               {showPass ? "Hide" : "Show"}
@@ -601,4 +623,3 @@ function LoginContent() {
     </div>
   );
 }
-
