@@ -23,7 +23,12 @@
       "Bash(cat middleware.ts)",
       "Bash(ls app/shop)",
       "Bash(grep -n \"shopLinks\\\\|\\\\/Clients\" app/components/Navbar.tsx)",
-      "Bash(grep -n \"hero\\\\|\\\\/images\\\\/1\\\\|\\\\/images\\\\/2\\\\|slide.*Image\\\\|Image.*hero\" app/page.tsx)"
+      "Bash(grep -n \"hero\\\\|\\\\/images\\\\/1\\\\|\\\\/images\\\\/2\\\\|slide.*Image\\\\|Image.*hero\" app/page.tsx)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Dell\\\\ninja\" -Recurse -Directory | Select-Object -First 100 | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Dell\\\\ninja\" -Depth 0 | Where-Object { $_.PSIsContainer } | Select-Object Name)",
+      "mcp__supabase__get_logs",
+      "Bash(node *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
