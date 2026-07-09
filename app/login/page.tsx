@@ -57,33 +57,40 @@ function LoginContent() {
   };
 
   // ── Send magic link email ────────────────────────────────────────────────
+  // Uses our Resend-backed /api/magic-link route instead of Supabase's built-in
+  // SMTP (which is misconfigured and returns "Error sending magic link email").
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { setError("Enter your email address."); return; }
     if (magicCooldown > 0) return;
     setLoading(true);
     setError("");
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        shouldCreateUser: false,
-      },
-    });
-    setLoading(false);
-    if (err) {
-      if (err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("too many")) {
-        startCooldown(setMagicCooldown, 60);
-        setMagicSent(true);
-      } else if (err.message.toLowerCase().includes("signup") || err.message.toLowerCase().includes("not found") || err.message.toLowerCase().includes("invalid login")) {
-        setError("No account found with this email. Please sign up first.");
-      } else {
-        setError(err.message);
+    try {
+      const res = await fetch("/api/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), origin: window.location.origin }),
+      });
+      const text = await res.text();
+      let result: { error?: string } = {};
+      try { result = JSON.parse(text); } catch { /* ignore */ }
+      setLoading(false);
+      if (!res.ok) {
+        const msg = result.error || "Couldn't send the magic link. Please try again.";
+        if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("too many")) {
+          startCooldown(setMagicCooldown, 60);
+          setMagicSent(true);
+        } else {
+          setError(msg);
+        }
+        return;
       }
-      return;
+      startCooldown(setMagicCooldown, 60);
+      setMagicSent(true);
+    } catch {
+      setLoading(false);
+      setError("Network error. Please check your connection and try again.");
     }
-    startCooldown(setMagicCooldown, 60);
-    setMagicSent(true);
   };
 
   // ── Password sign-in ─────────────────────────────────────────────────────
