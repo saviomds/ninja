@@ -31,13 +31,16 @@ function LoginContent() {
   const [username, setUsername] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  // PIN-based admin password reset (no email)
+  const [resetPin, setResetPin] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [newPassConfirm, setNewPassConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [magicLoading, setMagicLoading] = useState(false);
   const [error, setError] = useState("");
   const [magicSent, setMagicSent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [magicCooldown, setMagicCooldown] = useState(0);
-  const [resetCooldown, setResetCooldown] = useState(0);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [alreadyExists, setAlreadyExists] = useState(false);
   const [alreadyLoggedIn, setAlreadyLoggedIn] = useState(false);
@@ -160,33 +163,34 @@ function LoginContent() {
     setSignupSuccess(true);
   };
 
-  // ── Forgot password ──────────────────────────────────────────────────────
-  // Uses our Resend-backed /api/forgot-password route (never reveals whether an
-  // account exists). Delivery limited to the Resend owner until a domain is set.
-  const handleForgot = async (e: React.FormEvent) => {
+  // ── PIN-based admin password reset (no email) ────────────────────────────
+  // Admin enters email + the shared reset PIN + a new password. If the PIN is
+  // correct and the email is an admin, /api/admin/pin-reset sets the password.
+  const handlePinReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { setError("Enter your email address."); return; }
-    if (resetCooldown > 0) return;
+    if (!resetPin.trim()) { setError("Enter the reset PIN."); return; }
+    if (newPass.length < 8) { setError("New password must be at least 8 characters."); return; }
+    if (!/[a-z]/.test(newPass) || !/[A-Z]/.test(newPass) || !/[0-9]/.test(newPass)) {
+      setError("Password needs an uppercase letter, a lowercase letter and a number.");
+      return;
+    }
+    if (newPass !== newPassConfirm) { setError("Passwords do not match."); return; }
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/forgot-password", {
+      const res = await fetch("/api/admin/pin-reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), origin: window.location.origin }),
+        body: JSON.stringify({ email: email.trim(), pin: resetPin.trim(), password: newPass }),
       });
       const data: { ok?: boolean; error?: string } = await res.json().catch(() => ({}));
       setLoading(false);
-      if (!res.ok) {
-        if ((data.error || "").toLowerCase().includes("rate limit") || (data.error || "").toLowerCase().includes("too many")) {
-          startCooldown(setResetCooldown, 60);
-          setResetSent(true);
-        } else {
-          setError(data.error || "Couldn't send the reset link. Please try again.");
-        }
+      if (!res.ok || !data.ok) {
+        setError(data.error || "Couldn't reset the password. Please try again.");
         return;
       }
-      startCooldown(setResetCooldown, 60);
+      setResetPin(""); setNewPass(""); setNewPassConfirm("");
       setResetSent(true);
     } catch {
       setLoading(false);
@@ -345,27 +349,24 @@ function LoginContent() {
             <>
               {resetSent ? (
                 <div className="text-center space-y-6">
-                  <div className="w-20 h-20 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 flex items-center justify-center mx-auto">
-                    <svg className="w-9 h-9 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 flex items-center justify-center mx-auto">
+                    <svg className="w-9 h-9 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-black dark:text-white tracking-tight">Check your inbox</h2>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">If an account exists, we sent a password reset link to</p>
+                    <h2 className="text-2xl font-bold text-black dark:text-white tracking-tight">Password updated</h2>
+                    <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">The password for</p>
                     <p className="text-black dark:text-white font-semibold text-sm mt-1">{email}</p>
                     <p className="text-zinc-500 dark:text-zinc-400 mt-3 text-sm leading-relaxed">
-                      Click the link in the email to set a new password.
+                      has been reset. Sign in with your new password.
                     </p>
                   </div>
-                  <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 text-left space-y-2">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Tips</p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">• Check your spam or junk folder if you don&apos;t see it</p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">• The link expires in 1 hour</p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">• Do not share this link with anyone</p>
-                  </div>
-                  <button onClick={() => { setResetSent(false); setError(""); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
-                    ← Try a different email
+                  <button
+                    onClick={() => { setResetSent(false); setError(""); setPassword(""); go("signin"); }}
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-blue-600/20"
+                  >
+                    Go to sign in →
                   </button>
                 </div>
               ) : (
@@ -376,24 +377,53 @@ function LoginContent() {
                   </button>
 
                   <div className="mb-8">
-                    <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight">Reset password</h2>
+                    <h2 className="text-3xl font-bold text-black dark:text-white tracking-tight">Reset admin password</h2>
                     <p className="text-zinc-500 dark:text-zinc-400 mt-2 text-sm">
-                      Enter your email and we&apos;ll send you a reset link.
+                      Enter the admin email, your secret reset PIN, and a new password. No email needed.
                     </p>
                   </div>
 
-                  <form onSubmit={handleForgot} className="space-y-4">
+                  <form onSubmit={handlePinReset} className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Email address</label>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Admin email</label>
                       <input
                         type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
+                        placeholder="admin@example.com"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Reset PIN</label>
+                      <input
+                        type={showPass ? "text" : "password"} required value={resetPin} onChange={(e) => setResetPin(e.target.value)}
+                        placeholder="Secret reset PIN"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500">New password</label>
+                        <button type="button" onClick={() => setShowPass(!showPass)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                          {showPass ? "Hide" : "Show"}
+                        </button>
+                      </div>
+                      <input
+                        type={showPass ? "text" : "password"} required value={newPass} onChange={(e) => setNewPass(e.target.value)}
+                        placeholder="Min 8, upper, lower, number"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Confirm new password</label>
+                      <input
+                        type={showPass ? "text" : "password"} required value={newPassConfirm} onChange={(e) => setNewPassConfirm(e.target.value)}
+                        placeholder="Re-enter new password"
                         className={inputCls}
                       />
                     </div>
                     {error && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
-                    <button type="submit" disabled={loading || resetCooldown > 0} className="w-full bg-black dark:bg-white text-white dark:text-black py-3 rounded-xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
-                      {loading ? <><Spinner />Sending…</> : resetCooldown > 0 ? `Resend in ${resetCooldown}s` : "Send reset link"}
+                    <button type="submit" disabled={loading} className="w-full bg-black dark:bg-white text-white dark:text-black py-3 rounded-xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+                      {loading ? <><Spinner />Resetting…</> : "Reset password"}
                     </button>
                   </form>
                 </>

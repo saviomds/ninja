@@ -76,12 +76,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthHashHandler />
           <LoadingScreen />
           {children}
-          <Suspense fallback={null}>
-            <Footer />
-          </Suspense>
+          {/* Fixed-position / null-rendering client widgets first so their DOM
+              order is stable during hydration. */}
           <ContactFAB />
           <InstallPrompt />
           <ServiceWorker />
+          {/* Async Footer (awaits Supabase) rendered LAST: as the final child,
+              its Suspense fallback->content swap can't shift any sibling, which
+              avoids the server/client hydration mismatch. It stays visually at
+              the bottom of the page flow regardless of source order. */}
+          <Suspense fallback={null}>
+            <Footer />
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>
